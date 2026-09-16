@@ -1,0 +1,169 @@
+/* =====================================================
+   Design Tokens - Pro-Platform-Dashboard-System v2.0.0
+   浅色（白色）主题 · Light Theme
+   ===================================================== */
+:root {
+    /* 原生控件（select/checkbox/滚动条）跟随浅色渲染 */
+    color-scheme: light;
+
+    /* ---- 表面层级 (Surfaces & Elevation) ---- */
+    --canvas-base: #f5f6f8;        /* Layer 0 全局底板 */
+    --surface-subtle: #f0f1f4;     /* 表头/输入框底 */
+    --surface-card: #ffffff;       /* Layer 1 结构卡片 */
+    --surface-float: #ffffff;      /* Layer 2 浮层 */
+    --surface-active: #e8eaee;     /* 选中态 */
+    --surface-overlay: rgba(15, 23, 42, 0.45); /* Layer 3 遮罩 */
+
+    /* ---- 边框 (Borders & Hairlines) ---- */
+    --border-subtle: #e6e8ec;
+    --border-default: #d6dae1;
+    --border-strong: #b9c0cb;
+    --border-focus: #0284c7;
+
+    /* ---- 文本 (Typography Neutrals) ---- */
+    --text-heading: #1c1e22;
+    --text-body: #3d434d;
+    --text-muted: #6b7280;
+    --text-faint: #9aa1ab;
+    --text-inverse: #ffffff;
+
+    /* ---- 交互主色 (Electric Sky · Light) ---- */
+    --primary: #0284c7;
+    --primary-hover: #0369a1;
+    --primary-active: #075985;
+    --primary-glow: rgba(2, 132, 199, 0.10);
+    --primary-glow-strong: rgba(2, 132, 199, 0.16);
+    --on-primary: #ffffff;
+
+    /* ---- 语义状态色 (Semantic Status) ---- */
+    --status-healthy-bg: rgba(22, 163, 74, 0.10);
+    --status-healthy-bg-hover: rgba(22, 163, 74, 0.18);
+    --status-healthy-fg: #16a34a;
+    --status-healthy-border: rgba(22, 163, 74, 0.30);
+
+    --status-warning-bg: rgba(217, 119, 6, 0.10);
+    --status-warning-bg-hover: rgba(217, 119, 6, 0.18);
+    --status-warning-fg: #d97706;
+    --status-warning-border: rgba(217, 119, 6, 0.30);
+
+    --status-critical-bg: rgba(220, 38, 38, 0.09);
+    --status-critical-bg-hover: rgba(220, 38, 38, 0.16);
+    --status-critical-fg: #dc2626;
+    --status-critical-border: rgba(220, 38, 38, 0.30);
+
+    --status-info-bg: rgba(2, 132, 199, 0.10);
+    --status-info-bg-hover: rgba(2, 132, 199, 0.16);
+    --status-info-fg: #0284c7;
+    --status-info-border: rgba(2, 132, 199, 0.30);
+
+    --status-neutral-bg: rgba(113, 113, 122, 0.10);
+    --status-neutral-fg: #71717a;
+    --status-neutral-border: rgba(113, 113, 122, 0.30);
+
+    /* ---- 图表序列色 (Telemetry & Chart) ---- */
+    --chart-1: #0284c7;
+    --chart-2: #6366f1;
+    --chart-2-bg: rgba(99, 102, 241, 0.10);
+    --chart-2-border: rgba(99, 102, 241, 0.30);
+    --chart-3: #9333ea;
+    --chart-4: #059669;
+    --chart-5: #ea580c;
+
+    /* ---- 圆角 ---- */
+    --rounded-none: 0px;
+    --rounded-xs: 3px;
+    --rounded-sm: 5px;
+    --rounded-md: 8px;
+    --rounded-lg: 12px;
+    --rounded-pill: 9999px;
+
+    /* ---- 间距 ---- */
+    --space-xxs: 2px;
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-xxl: 32px;
+    --space-panel: 48px;
+
+    /* ---- 组件尺寸 ---- */
+    --header-height: 48px;
+    --sidebar-width: 200px;
+    --sidebar-collapsed-width: 64px;
+    --nav-item-height: 36px;
+    --table-header-height: 36px;
+    --table-row-height: 42px;
+    --control-height: 32px;
+
+    /* ---- 字体 ---- */
+    --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+
+    /* ---- 阴影 ---- */
+    --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06);
+    --shadow-modal: 0 24px 48px -12px rgba(16, 24, 40, 0.25);
+    --shadow-drawer: -12px 0 32px rgba(16, 24, 40, 0.18);
+}
+
+/* ---- 全局滚动条（浅色） ---- */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #c4c9d1 #f0f1f4;
+}
+
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: #f0f1f4;
+    border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #c4c9d1;
+    border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #a8afb9;
+}
+
+/* ---- 数字等宽规则（严禁数字抖动）----
+   应用于数值/时间/IP/日志等场景的工具类；
+   具体组件类在各样式文件中引用同样的声明 */
+.tnum,
+.stat-value,
+.te-stat-value,
+.te-progress-pct,
+.pt-step-rate,
+.pt-host-duration,
+.duration-badge,
+.pagination-info,
+.progress-text,
+.ip-cell,
+.time-cell,
+.count-cell {
+    font-feature-settings: "tabular-nums" 1;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 等宽数据字体工具类：IP、端口、时间戳、JSON、日志、计数器 */
+.mono,
+.host-address,
+.result-card-header .host-ip,
+.pt-host-ip,
+.pt-step-summary,
+#executionLog,
+.te-terminal,
+.pt-output-pre,
+.output-content,
+.key-item textarea,
+.host-form #password[type="text"],
+.info-item span {
+    font-family: var(--font-mono);
+    font-feature-settings: "tabular-nums" 1;
+    font-variant-numeric: tabular-nums;
+}

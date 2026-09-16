@@ -1,0 +1,50 @@
+# ============================================================
+# 万象匣 - 官网宣传页自动部署工作流 (GitHub Pages)
+# 触发方式：
+#   1. 推送 main 分支且 website/ 目录有改动
+#   2. 在 GitHub 网页 Actions 页面手动点击 "Run workflow"
+# 部署内容：website/ 目录（宣传主页 + 在线 Demo）
+# 访问地址：https://it-andy-hou.github.io/wanxiang-box/
+# 首次使用需在仓库 Settings → Pages 中将 Source 设为 "GitHub Actions"
+# ============================================================
+name: Deploy Website
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'website/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只保留一次部署，避免旧版本覆盖新版本
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: 上传官网产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website
+
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

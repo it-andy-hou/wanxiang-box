@@ -1,0 +1,686 @@
+/* UI增强样式 - 对齐 DESIGN.md v2.0.0 深色控制台体系
+   说明：按钮/表单/表格/徽章/加载等公共组件已由 components.css 统一定义，
+   本文件仅保留脚本目录树、标签、快捷面板、文件上传等页面级增强样式。 */
+
+/* =====================================================
+   全局补充
+   ===================================================== */
+
+/* 页面切换淡入 */
+.page {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* 复选框主色 */
+input[type="checkbox"] {
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* =====================================================
+   通知 Toast（深色浮层）
+   ===================================================== */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 350px;
+    background: var(--surface-float);
+    border: 1px solid var(--border-default);
+    border-radius: var(--rounded-md);
+    box-shadow: var(--shadow-modal);
+    color: var(--text-body);
+    z-index: 10000;
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+.toast-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    border-top-left-radius: var(--rounded-md);
+    border-top-right-radius: var(--rounded-md);
+}
+
+.toast-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-heading);
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toast-close:hover {
+    color: var(--text-heading);
+}
+
+.toast-body {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.toast.toast-success .toast-header { color: var(--status-healthy-fg); }
+.toast.toast-error   .toast-header { color: var(--status-critical-fg); }
+.toast.toast-warning .toast-header { color: var(--status-warning-fg); }
+.toast.toast-info    .toast-header { color: var(--status-info-fg); }
+
+/* =====================================================
+   空状态
+   ===================================================== */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-muted);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-heading);
+}
+
+.empty-state-description {
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .toast {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        transform: translateY(-100px);
+    }
+
+    .toast.show {
+        transform: translateY(0);
+    }
+}
+
+/* =====================================================
+   工具类与独立按钮变体
+   ===================================================== */
+.mr-3 { margin-right: 16px; }
+
+.btn-outline-success {
+    background: transparent !important;
+    border: 1px solid var(--status-healthy-fg) !important;
+    color: var(--status-healthy-fg) !important;
+}
+
+.btn-outline-success:hover {
+    background: var(--status-healthy-fg) !important;
+    color: var(--text-inverse) !important;
+}
+
+.btn-outline-danger {
+    color: var(--status-critical-fg);
+    background: transparent;
+    border: 1px solid var(--status-critical-fg);
+}
+
+.btn-outline-danger:hover {
+    color: var(--text-inverse);
+    background: var(--status-critical-fg);
+}
+
+.radio-inline {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.radio-inline input[type="radio"] {
+    margin-right: 6px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+}
+
+/* =====================================================
+   脚本管理页 左右分栏
+   ===================================================== */
+.script-management-layout {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: 0;
+    overflow: hidden;
+}
+
+/* 左侧目录栏 */
+.script-sidebar {
+    width: 150px;
+    min-width: 130px;
+    max-width: 280px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-subtle);
+    background: var(--surface-subtle);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface-card);
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-body);
+}
+
+.sidebar-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-body);
+}
+
+/* 目录树 */
+.category-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+}
+
+.category-tree-item {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-body);
+    border-radius: 0;
+    transition: background 0.15s;
+    user-select: none;
+    position: relative;
+    gap: 0.35rem;
+    overflow: hidden;
+}
+
+.category-tree-item .cat-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.category-tree-item:hover {
+    background: var(--surface-active);
+}
+
+.category-tree-item.active {
+    background: var(--primary-glow);
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.category-tree-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--primary);
+    border-radius: 0 2px 2px 0;
+}
+
+.category-tree-item.level-2 {
+    padding-left: 1.75rem;
+    font-size: 0.8125rem;
+}
+
+.category-tree-item .item-count {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    background: var(--surface-active);
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--rounded-pill);
+    min-width: 18px;
+    text-align: center;
+}
+
+.category-tree-item.active .item-count {
+    background: var(--surface-active);
+    color: var(--primary);
+}
+
+.category-tree-separator {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 0.25rem 0.75rem;
+}
+
+.category-tree-item .expand-icon {
+    font-size: 0.625rem;
+    color: var(--text-faint);
+    width: 12px;
+    text-align: center;
+    flex-shrink: 0;
+    transition: transform 0.15s;
+}
+
+.category-tree-item.expanded .expand-icon {
+    transform: rotate(90deg);
+}
+
+/* 右侧脚本内容区 */
+.script-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.script-content .toolbar {
+    flex-shrink: 0;
+}
+
+.script-content .page-content {
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+}
+
+/* =====================================================
+   标签显示（结构化）- 语义 token
+   ===================================================== */
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--rounded-xs);
+    font-size: 0.75rem;
+    margin: 0.1rem;
+    white-space: nowrap;
+}
+
+.tag-chip.env    { background: var(--status-info-bg); color: var(--status-info-fg); border: 1px solid var(--status-info-border); }
+.tag-chip.arch   { background: var(--status-healthy-bg); color: var(--status-healthy-fg); border: 1px solid var(--status-healthy-border); }
+.tag-chip.risk   { background: var(--status-critical-bg); color: var(--status-critical-fg); border: 1px solid var(--status-critical-border); }
+.tag-chip.risk.high { background: var(--status-critical-bg); color: var(--status-critical-fg); border: 1px solid var(--status-critical-border); font-weight: 600; }
+.tag-chip.custom { background: var(--status-neutral-bg); color: var(--status-neutral-fg); border: 1px solid var(--status-neutral-border); }
+
+/* =====================================================
+   快捷面板
+   ===================================================== */
+.shortcuts-panel {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--rounded-md);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.shortcuts-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-body);
+}
+
+.shortcuts-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.shortcut-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    background: var(--primary-glow);
+    border: 1px solid var(--status-info-border);
+    border-radius: var(--rounded-sm);
+    font-size: 0.8125rem;
+    color: var(--primary);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+}
+
+.shortcut-chip:hover {
+    background: var(--primary-glow-strong);
+    border-color: var(--border-focus);
+}
+
+.shortcut-chip .remove-shortcut {
+    color: var(--text-faint);
+    font-size: 0.75rem;
+    margin-left: 0.2rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.shortcut-chip .remove-shortcut:hover {
+    color: var(--status-critical-fg);
+}
+
+/* 目录管理对话框 */
+.category-manage-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--rounded-xs);
+    margin-bottom: 0.25rem;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-subtle);
+}
+
+.category-manage-item .cat-name {
+    flex: 1;
+    font-size: 0.875rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.category-manage-item.level-2 {
+    margin-left: 1.5rem;
+    background: var(--surface-card);
+}
+
+/* 标签管理项 */
+.tag-manage-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.tag-manage-row .tag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--rounded-pill);
+    font-size: 0.8rem;
+    background: var(--status-neutral-bg);
+    color: var(--status-neutral-fg);
+    cursor: default;
+}
+
+.tag-manage-row .tag-badge .del-tag {
+    cursor: pointer;
+    color: var(--text-faint);
+    font-size: 0.7rem;
+}
+
+.tag-manage-row .tag-badge .del-tag:hover {
+    color: var(--status-critical-fg);
+}
+
+/* =====================================================
+   文件上传页 Bento 网格布局
+   ===================================================== */
+
+/* Bento 网格容器 */
+.file-upload-bento-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.25rem;
+}
+
+/* 每个 bento 卡片通用样式 */
+.file-upload-bento-item {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--rounded-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 步骤1: 占7列 */
+.file-upload-bento-step1 {
+    grid-column: span 7;
+}
+
+/* 步骤2: 占5列 */
+.file-upload-bento-step2 {
+    grid-column: span 5;
+}
+
+/* 步骤3: 占6列 */
+.file-upload-bento-step3 {
+    grid-column: span 6;
+}
+
+/* 步骤4: 占6列 */
+.file-upload-bento-step4 {
+    grid-column: span 6;
+}
+
+/* 步骤标题栏 */
+.file-upload-step-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.file-upload-step-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-heading);
+}
+
+/* 步骤编号徽章 */
+.file-upload-step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* 步骤内容区 */
+.file-upload-step-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 提示信息框 */
+.file-upload-hint-box {
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--status-info-bg);
+    border: 1px solid var(--status-info-border);
+    border-radius: var(--rounded-sm);
+    font-size: 0.875rem;
+    color: var(--text-body);
+    line-height: 1.5;
+}
+
+/* 配置选项两栏布局 */
+.file-upload-options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+/* 选项组标签 */
+.file-upload-option-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-body);
+    margin-bottom: 0.5rem;
+}
+
+/* 单选按钮组 */
+.file-upload-option-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* 单选按钮标签 */
+.file-upload-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: normal;
+    cursor: pointer;
+    padding: 0.25rem 0;
+}
+
+.file-upload-radio-label input[type="radio"] {
+    accent-color: var(--primary);
+}
+
+.file-upload-radio-label:hover span {
+    color: var(--primary);
+}
+
+/* 默认选中项高亮 */
+.file-upload-radio-active span {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* 选项提示文字 */
+.file-upload-option-hint {
+    margin-top: 0.3rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* 响应式: 窄屏时变为单列 */
+@media (max-width: 1024px) {
+    .file-upload-bento-grid {
+        grid-template-columns: 1fr;
+    }
+    .file-upload-bento-step1,
+    .file-upload-bento-step2,
+    .file-upload-bento-step3,
+    .file-upload-bento-step4 {
+        grid-column: span 1;
+    }
+    .file-upload-options-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =====================================================
+   文件上传 - 拖拽上传区
+   ===================================================== */
+
+.file-upload-dropzone {
+    border: 2px dashed var(--border-default);
+    border-radius: var(--rounded-md);
+    background: var(--surface-subtle);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.25s, background-color 0.25s;
+    gap: 0.75rem;
+}
+
+.file-upload-dropzone:hover,
+.file-upload-dropzone.file-upload-dropzone-active {
+    border-color: var(--border-focus);
+    background: var(--primary-glow);
+}
+
+.file-upload-dropzone-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.file-upload-dropzone-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-upload-dropzone-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-body);
+    line-height: 1.3;
+}
+
+.file-upload-dropzone-subtitle {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.3;
+}
+
+/* 已选文件底部操作栏 */
+.file-upload-file-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.file-upload-file-count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}

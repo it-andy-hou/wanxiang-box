@@ -1,5 +1,7 @@
 # 万象匣 (WanXiang Box)
 
+> 🌐 官网宣传页：**https://it-andy-hou.github.io/wanxiang-box/**（含在线界面 Demo）
+
 万象匣是一款基于 Electron 开发的跨平台运维自动化管控平台，专注于批量 SSH 主机管理、脚本批量执行与工程化任务编排。
 
 ## 功能特性
@@ -41,8 +43,9 @@ ssh_tools_box/
 │   │   └── lib/             # 第三方库（highlight.js / mermaid）
 │   ├── database/            # 数据层（JSON 数据库 + 模型）
 │   └── config/              # 配置管理
-├── .github/workflows/       # GitHub Actions 自动打包
+├── .github/workflows/       # GitHub Actions 自动打包 + 官网部署
 ├── docs/                    # 项目文档
+├── website/                 # GitHub Pages 官网宣传页（主页 + 在线 Demo）
 ├── build.bat                # Windows 一键打包
 ├── build-mac.sh             # macOS 一键打包（需在 Mac 上运行）
 └── package.json

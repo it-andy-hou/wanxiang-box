@@ -16,6 +16,7 @@
 6. [下载打包产物](#6-下载打包产物)
 7. [常见问题与排查](#7-常见问题与排查)
 8. [安全清单（每次新项目必查）](#8-安全清单每次新项目必查)
+9. [官网宣传页（GitHub Pages）](#9-官网宣传页github-pages)
 
 ---
 
@@ -359,6 +360,36 @@ GitHub 免费账户私有仓库 2000 分钟/月，macOS 按 10 倍计。用量�
 
 ---
 
-**文档版本**：v1.0  
+## 9. 官网宣传页（GitHub Pages）
+
+除自动打包外，仓库还附带一个静态官网宣传页，方便对外展示与分发：
+
+### 9.1 目录与工作流
+
+- 页面源码：`website/index.html`（宣传主页，样式遵循项目 DESIGN.md 设计系统）
+- 在线 Demo：`website/demo/index.html`（完整交互式界面演示，与 `demo/` 同步）
+- Logo 素材：`website/assets/logo.png`
+- 部署工作流：`.github/workflows/website.yml`，触发条件：
+  - 推送 `main` 分支且 `website/` 目录有改动
+  - 网页手动 Run workflow
+
+### 9.2 首次启用（一次性）
+
+1. GitHub 仓库 → **Settings → Pages** → **Build and deployment** → Source 选 **GitHub Actions**
+2. 推送 `website/` 目录后自动触发部署，或在 Actions 页面手动运行 "Deploy Workflow"
+3. 部署完成后访问：`https://<用户名>.github.io/<仓库名>/`
+
+本项目地址：**https://it-andy-hou.github.io/wanxiang-box/**
+
+### 9.3 注意事项
+
+- 私有仓库同样支持 Pages，但**访问者需要登录且有权限**，对外宣传请将仓库设为 Public
+- Pages 流量免费额度：软限 100GB/月，静态宣传页远达不到
+- 页面内链接使用相对路径（`./assets/...`、`./demo/`），因此部署在项目子路径下也不会失效
+- 修改官网后无需手动发布，push 到 `main` 即自动更新
+
+---
+
+**文档版本**：v1.1  
 **适用项目**：万象匣（wanxiang-box）及后续 Electron 项目  
 **最后更新**：2026-09-16
