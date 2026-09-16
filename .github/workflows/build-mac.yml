@@ -13,6 +13,10 @@ on:
       - 'v*'
   workflow_dispatch:
 
+# 必须显式授权写权限，否则 electron-builder 创建 GitHub Release 时会报 403
+permissions:
+  contents: write
+
 jobs:
   build-mac:
     runs-on: macos-latest
