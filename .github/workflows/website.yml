@@ -5,7 +5,9 @@
 #   2. 在 GitHub 网页 Actions 页面手动点击 "Run workflow"
 # 部署内容：website/ 目录（宣传主页 + 在线 Demo）
 # 访问地址：https://it-andy-hou.github.io/wanxiang-box/
-# 首次使用需在仓库 Settings → Pages 中将 Source 设为 "GitHub Actions"
+#           （用户站已绑定自定义域名，也可通过 https://hi-andy.com/wanxiang-box/ 访问）
+# configure-pages 的 enablement: true 会自动启用 Pages 并设置 Source 为 "GitHub Actions"，
+# 无需手动到仓库 Settings → Pages 设置
 # ============================================================
 name: Deploy Website
 
@@ -39,6 +41,9 @@ jobs:
 
       - name: 配置 GitHub Pages
         uses: actions/configure-pages@v5
+        with:
+          # 仓库未启用 Pages 时自动启用（需 pages: write 权限，已在上方声明）
+          enablement: true
 
       - name: 上传官网产物
         uses: actions/upload-pages-artifact@v3

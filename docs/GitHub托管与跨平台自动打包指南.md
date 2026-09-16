@@ -373,13 +373,23 @@ GitHub 免费账户私有仓库 2000 分钟/月，macOS 按 10 倍计。用量�
   - 推送 `main` 分支且 `website/` 目录有改动
   - 网页手动 Run workflow
 
-### 9.2 首次启用（一次性）
+### 9.2 首次启用（自动化）
 
-1. GitHub 仓库 → **Settings → Pages** → **Build and deployment** → Source 选 **GitHub Actions**
-2. 推送 `website/` 目录后自动触发部署，或在 Actions 页面手动运行 "Deploy Workflow"
-3. 部署完成后访问：`https://<用户名>.github.io/<仓库名>/`
+工作流中 `configure-pages@v5` 已配置 `enablement: true`，推送后会**自动启用 Pages 并将 Source 设为 GitHub Actions**，无需手动到 Settings → Pages 设置。
+
+1. 推送 `website/` 目录后自动触发部署，或在 Actions 页面手动运行 "Deploy Workflow"
+2. 部署完成后访问：`https://<用户名>.github.io/<仓库名>/`
 
 本项目地址：**https://it-andy-hou.github.io/wanxiang-box/**
+
+#### 自定义域名访问
+
+用户站 `it-andy-hou.github.io` 已绑定自定义域名 **hi-andy.com**，因此本项目 Pages 会自动通过子路径访问：
+
+- **https://hi-andy.com/wanxiang-box/**（与 github.io 地址等价，访问 github.io 地址会自动重定向至此）
+- 在线 Demo：**https://hi-andy.com/wanxiang-box/demo/**
+
+页面内链接均为相对路径，两种域名下均不会失效。如需独立子域名（如 `box.hi-andy.com`），需在本仓库 Settings → Pages 设置 Custom domain 并添加 CNAME 解析。
 
 ### 9.3 注意事项
 
@@ -390,6 +400,6 @@ GitHub 免费账户私有仓库 2000 分钟/月，macOS 按 10 倍计。用量�
 
 ---
 
-**文档版本**：v1.1  
+**文档版本**：v1.2  
 **适用项目**：万象匣（wanxiang-box）及后续 Electron 项目  
 **最后更新**：2026-09-16
