@@ -733,6 +733,8 @@ ipcMain.handle('backup:import', async (event, filePath) => {
       try { taskScheduler.stop(); } catch (_) {}
     }
     const r = await backupService.importFrom(filePath);
+    // 成功后同样需要重启调度器，否则定时任务直到重启应用前都不会再被检查
+    try { taskScheduler && taskScheduler.start && taskScheduler.start(taskExecutor, projectTaskExecutor); } catch (_) {}
     return { success: true, data: r };
   } catch (e) {
     console.error('导入备份失败:', e);
@@ -1416,14 +1418,20 @@ ipcMain.handle('shortcut:reorder', async (event, orderedScriptIds) => {
 // Ping探测处理
 ipcMain.handle('ping-host', async (event, ip) => {
   return new Promise((resolve) => {
-    const { exec } = require('child_process');
+    // 使用 execFile 参数数组执行（不经 shell），并校验目标格式，杜绝命令注入
+    const { execFile } = require('child_process');
     const isWin = process.platform === 'win32';
+    // 仅允许字母/数字/点/连字符/下划线的 IP 或主机名
+    const target = String(ip || '').trim();
+    if (!/^[\w.-]{1,253}$/.test(target)) {
+      return resolve({ success: false, message: 'IP 或主机名格式非法', duration: 0 });
+    }
     // Windows: ping -n 1 -w 1000 IP
     // Linux/Mac: ping -c 1 -W 1 IP
-    const command = isWin ? `ping -n 1 -w 1000 ${ip}` : `ping -c 1 -W 1 ${ip}`;
-    
+    const args = isWin ? ['-n', '1', '-w', '1000', target] : ['-c', '1', '-W', '1', target];
+
     const startTime = Date.now();
-    exec(command, (error, stdout, stderr) => {
+    execFile('ping', args, (error, stdout, stderr) => {
       const duration = Date.now() - startTime;
       if (error) {
         resolve({

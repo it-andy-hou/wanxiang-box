@@ -922,7 +922,12 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
             const checkResult = await this.execCommandWithTimeout(connection, 'test -f ~/.ssh/authorized_keys && echo "exists" || echo "not_exists"', { timeout });
             
             // 步骤4: 添加公钥到authorized_keys文件
-            const cleanPublicKey = publicKey.trim();
+            // 先校验格式：必须为单行标准 SSH 公钥，防止引号/换行/命令替换注入 authorized_keys 写入命令
+            const cleanPublicKey = String(publicKey || '').trim();
+            const SSH_PUBLIC_KEY_RE = /^(ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-nistp(?:256|384|521)|sk-ssh-ed25519@openssh\.com|sk-ecdsa-sha2-nistp256@openssh\.com)\s+[A-Za-z0-9+/]+={0,3}(?:\s+\S{1,255})?$/;
+            if (/[\r\n]/.test(cleanPublicKey) || !SSH_PUBLIC_KEY_RE.test(cleanPublicKey)) {
+                throw new Error('公钥格式非法：必须是单行标准 SSH 公钥（如 ssh-rsa AAAA... comment）');
+            }
             
             // 检查公钥是否已存在
             const keyCheckResult = await this.execCommandWithTimeout(connection, `grep -F "${cleanPublicKey}" ~/.ssh/authorized_keys 2>/dev/null || echo "not_found"`, { timeout });

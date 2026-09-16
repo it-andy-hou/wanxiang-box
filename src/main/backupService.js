@@ -456,10 +456,12 @@ class BackupService {
         if (!filePath || !fsSync.existsSync(filePath)) {
             throw new Error('文件不存在');
         }
-        // 安全校验：必须在备份目录之内
+        // 安全校验：必须严格位于备份目录之内（用 path.relative 判断，
+        // 避免裸 startsWith 被同前缀目录绕过，如 D:\backups-evil）
         const realPath = path.resolve(filePath);
         const root = path.resolve(this.backupRoot);
-        if (!realPath.startsWith(root)) {
+        const rel = path.relative(root, realPath);
+        if (rel === '' || rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel)) {
             throw new Error('非法路径');
         }
         await fs.unlink(realPath);
