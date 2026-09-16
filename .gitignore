@@ -1,0 +1,21 @@
+# 依赖与构建产物
+node_modules/
+dist/
+
+# 敏感文件：SSH 私钥/公钥，绝不能上传
+id_rsa
+id_rsa.pub
+*.pem
+*.key
+
+# 本地数据与配置（可能包含真实主机密码）
+database/
+config/
+hosts_export_*.xlsx
+*.zip
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

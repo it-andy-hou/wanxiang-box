@@ -1,0 +1,2 @@
+# 保证 shell 脚本在任何平台 checkout 都是 LF 换行，否则 macOS/Linux 下无法执行
+*.sh text eol=lf

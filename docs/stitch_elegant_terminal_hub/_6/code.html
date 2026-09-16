@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AssetMaster - 文件上传</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "surface-container-highest": "#2d3449",
+                "on-error-container": "#ffdad6",
+                "tertiary-container": "#e29100",
+                "inverse-on-surface": "#283044",
+                "error": "#ffb4ab",
+                "surface-tint": "#4edea3",
+                "on-surface": "#dae2fd",
+                "on-secondary-fixed": "#001a42",
+                "secondary-fixed": "#d8e2ff",
+                "outline": "#86948a",
+                "tertiary": "#ffb95f",
+                "on-primary-container": "#00422b",
+                "on-primary-fixed-variant": "#005236",
+                "surface-dim": "#0b1326",
+                "surface-container-lowest": "#060e20",
+                "on-tertiary-fixed": "#2a1700",
+                "surface-container-high": "#222a3d",
+                "on-tertiary": "#472a00",
+                "surface-bright": "#31394d",
+                "on-surface-variant": "#bbcabf",
+                "surface-variant": "#2d3449",
+                "background": "#0b1326",
+                "on-tertiary-container": "#523200",
+                "on-secondary-fixed-variant": "#004395",
+                "secondary-fixed-dim": "#adc6ff",
+                "on-secondary-container": "#e6ecff",
+                "error-container": "#93000a",
+                "primary-container": "#10b981",
+                "tertiary-fixed-dim": "#ffb95f",
+                "primary": "#4edea3",
+                "secondary-container": "#0566d9",
+                "on-secondary": "#002e6a",
+                "primary-fixed": "#6ffbbe",
+                "inverse-surface": "#dae2fd",
+                "outline-variant": "#3c4a42",
+                "inverse-primary": "#006c49",
+                "surface": "#0b1326",
+                "primary-fixed-dim": "#4edea3",
+                "surface-container": "#171f33",
+                "on-tertiary-fixed-variant": "#653e00",
+                "on-primary-fixed": "#002113",
+                "tertiary-fixed": "#ffddb8",
+                "on-error": "#690005",
+                "on-background": "#dae2fd",
+                "surface-container-low": "#131b2e",
+                "on-primary": "#003824",
+                "secondary": "#adc6ff"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "row-height": "3.5rem",
+                "stack-gap": "1rem",
+                "container-margin": "2rem",
+                "sidebar-width": "260px",
+                "gutter": "1.5rem"
+            },
+            "fontFamily": {
+                "code-sm": ["JetBrains Mono"],
+                "body-md": ["Hanken Grotesk"],
+                "headline-md": ["Hanken Grotesk"],
+                "label-mono": ["JetBrains Mono"],
+                "display-lg": ["Hanken Grotesk"]
+            },
+            "fontSize": {
+                "code-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-screen w-sidebar-width bg-surface-container-low dark:bg-surface-container-low border-r border-outline-variant flex flex-col h-full py-gutter px-4 gap-stack-gap z-40">
+<div class="mb-6 px-2">
+<span class="text-headline-md font-headline-md font-black text-primary">AssetMaster</span>
+</div>
+<div class="mb-4">
+<h3 class="px-2 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider mb-2">Quick Operations</h3>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface p-2 hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+<span class="font-label-mono text-label-mono">Import Excel</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface p-2 hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+<span class="font-label-mono text-label-mono">Export Excel</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface p-2 hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span class="font-label-mono text-label-mono">Batch Test</span>
+</a>
+</nav>
+</div>
+<div class="mt-4 border-t border-outline-variant pt-6">
+<div class="flex items-center gap-3 px-2 mb-6">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="Admin" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3HW8d80dLQvGpVdP_VHDErdF11oSvS_FcIIcRRclW-g-Q-DRqN8y4XrPnu6uErha-pjIw6xmFaRzaPKoNCogqs7_yFVKcW0GY7aPM_cDiebfZgW6QZ5yrrdntL1d6XBnmYiy-MR0lcoWX0aF6dIl3-OhgshmtdgTQZOR4jdXxxjt7yyA7GhyOPgH2-084VGWFj1u154gFOYbGeQYqfUt03Gp4PvH3Dxr7kl0U3RJkLx-Ee6wpbectknb3AN8R_1AYb7DjJl6DdWM"/>
+</div>
+<div>
+<p class="text-body-md font-body-md font-bold text-on-surface">System Admin</p>
+<p class="text-[10px] text-on-surface-variant uppercase font-label-mono">Statistics Dashboard</p>
+</div>
+</div>
+<h3 class="px-2 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider mb-2">Statistics</h3>
+<div class="space-y-3 px-2">
+<div class="bg-surface-container-high rounded-lg p-3 border border-outline-variant">
+<div class="flex justify-between items-center mb-1">
+<span class="text-label-mono font-label-mono text-on-surface-variant">Server Count</span>
+<span class="text-primary font-bold">198</span>
+</div>
+<div class="w-full bg-surface-dim h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 85%"></div>
+</div>
+</div>
+<div class="bg-surface-container-high rounded-lg p-3 border border-outline-variant">
+<div class="flex justify-between items-center mb-1">
+<span class="text-label-mono font-label-mono text-on-surface-variant">Script Count</span>
+<span class="text-tertiary font-bold">42</span>
+</div>
+<div class="w-full bg-surface-dim h-1 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full" style="width: 60%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-auto space-y-1">
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface p-2 hover:bg-surface-container-highest rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-mono text-label-mono">System Logs</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface p-2 hover:bg-surface-container-highest rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-mono text-label-mono">Support</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 right-0 left-sidebar-width h-row-height bg-surface-container dark:bg-surface-container border-b border-outline-variant flex justify-between items-center px-gutter z-30 ml-[260px]">
+<nav class="flex items-center gap-6 h-full">
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md px-1" href="#">Host Management</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md px-1" href="#">Project Tasks</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md px-1" href="#">Script Management</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md px-1" href="#">Script Execution</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md px-1" href="#">Command Execution</a>
+<a class="text-primary border-b-2 border-primary pb-1 font-bold h-full flex items-center font-body-md text-body-md px-1" href="#">File Upload</a>
+</nav>
+<div class="flex items-center gap-4">
+<div class="px-4 py-1 bg-surface-container-highest rounded-full border border-outline-variant">
+<span class="text-primary font-bold text-label-mono">Ready (0)</span>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[260px] pt-row-height h-screen overflow-y-auto bg-background p-container-margin">
+<div class="max-w-6xl mx-auto">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h1 class="text-display-lg font-display-lg text-on-surface mb-2">文件上传</h1>
+<p class="text-on-surface-variant font-body-md">配置并分发文件到指定的目标主机群组。</p>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+<span>创建任务</span>
+</button>
+</div>
+<!-- Configuration Bento Grid -->
+<div class="bento-grid">
+<!-- Step 1: File Selection -->
+<section class="col-span-12 lg:col-span-7 bg-surface-container p-6 rounded-xl border border-outline-variant flex flex-col gap-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[12px] font-bold">1</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">选择文件</h2>
+</div>
+<div class="flex-1 border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-low flex flex-col items-center justify-center p-8 text-center hover:border-primary/50 transition-colors group cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-surface-container-highest flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[32px]" data-icon="cloud_upload">cloud_upload</span>
+</div>
+<p class="text-on-surface font-bold mb-1">点击或拖拽文件至此区域</p>
+<p class="text-on-surface-variant text-label-mono">支持多文件选择，单文件最大限制 2GB</p>
+</div>
+<div class="flex justify-between items-center mt-2">
+<span class="text-on-surface-variant text-label-mono">未选择任何文件</span>
+<button class="text-error flex items-center gap-1 hover:bg-error-container/20 px-3 py-1.5 rounded-lg transition-colors font-label-mono">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete_sweep">delete_sweep</span>
+                            清空文件
+                        </button>
+</div>
+</section>
+<!-- Step 2: Destination -->
+<section class="col-span-12 lg:col-span-5 bg-surface-container p-6 rounded-xl border border-outline-variant">
+<div class="flex items-center gap-2 mb-6">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[12px] font-bold">2</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">目标路径</h2>
+</div>
+<div class="space-y-4">
+<label class="block">
+<span class="text-label-mono text-on-surface-variant uppercase mb-2 block">存放目录 (Linux Path)</span>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant" data-icon="folder_open">folder_open</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-code-sm" placeholder="例如: /opt/app/ 或 /home/user/config/" type="text"/>
+</div>
+</label>
+<div class="bg-secondary-container/10 border border-secondary-container/20 p-3 rounded-lg flex gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="info">info</span>
+<p class="text-on-surface-variant text-body-md">请确保路径在目标主机上具有写入权限。建议使用绝对路径。</p>
+</div>
+</div>
+</section>
+<!-- Step 3: Options -->
+<section class="col-span-12 lg:col-span-6 bg-surface-container p-6 rounded-xl border border-outline-variant">
+<div class="flex items-center gap-2 mb-6">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[12px] font-bold">3</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">配置选项</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div>
+<span class="text-label-mono text-on-surface-variant uppercase mb-4 block">文件冲突处理</span>
+<div class="space-y-3">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary bg-surface-dim border-outline-variant focus:ring-primary" name="conflict" type="radio"/>
+<span class="text-on-surface group-hover:text-primary transition-colors">直接覆盖</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary bg-surface-dim border-outline-variant focus:ring-primary" name="conflict" type="radio"/>
+<span class="text-on-surface group-hover:text-primary transition-colors">跳过同名文件</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="w-4 h-4 text-primary bg-surface-dim border-outline-variant focus:ring-primary" name="conflict" type="radio"/>
+<div class="flex flex-col">
+<span class="text-primary font-bold">备份后覆盖 (默认)</span>
+<span class="text-[10px] text-on-surface-variant font-code-sm">文件名.bak.时间戳</span>
+</div>
+</label>
+</div>
+</div>
+<div>
+<span class="text-label-mono text-on-surface-variant uppercase mb-4 block">目标路径不存在时</span>
+<div class="space-y-3">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-4 h-4 text-primary bg-surface-dim border-outline-variant focus:ring-primary" name="path_not_exist" type="radio"/>
+<span class="text-on-surface group-hover:text-primary transition-colors">自动创建目录</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="w-4 h-4 text-primary bg-surface-dim border-outline-variant focus:ring-primary" name="path_not_exist" type="radio"/>
+<span class="text-primary font-bold">报错中止 (默认)</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Step 4: Host Selection -->
+<section class="col-span-12 lg:col-span-6 bg-surface-container p-6 rounded-xl border border-outline-variant flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[12px] font-bold">4</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">选择目标主机</h2>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-container-highest text-on-surface px-3 py-1.5 rounded-lg text-label-mono flex items-center gap-1 border border-outline-variant hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="list">list</span>
+                                从管理列表选择
+                            </button>
+<button class="bg-surface-container-highest text-on-surface px-3 py-1.5 rounded-lg text-label-mono flex items-center gap-1 border border-outline-variant hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="close">close</span>
+                                清空选择
+                            </button>
+</div>
+</div>
+<div class="flex-1 bg-surface-container-low rounded-xl border border-outline-variant p-4 flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[48px] mb-2 opacity-20" data-icon="dns">dns</span>
+<p class="font-body-md italic opacity-60">未选择任何目标主机</p>
+<p class="text-[11px] mt-2 font-label-mono uppercase tracking-widest opacity-40">Target Nodes: 0/198</p>
+</div>
+</section>
+</div>
+<!-- Footer Actions -->
+<div class="mt-8 flex items-center justify-between border-t border-outline-variant pt-8">
+<div class="flex items-center gap-4 text-on-surface-variant">
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="text-label-mono">网络状态: 良好</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-label-mono">待机任务: 0</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="px-8 py-3 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-highest border border-outline-variant transition-all">
+                        取消
+                    </button>
+<button class="bg-primary text-on-primary px-10 py-3 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 shadow-xl shadow-primary/20">
+<span class="material-symbols-outlined" data-icon="rocket_launch">rocket_launch</span>
+                        开始上传
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Information (Simulated Version) -->
+<footer class="fixed bottom-0 right-0 left-sidebar-width h-8 bg-surface-container-lowest border-t border-outline-variant px-gutter flex justify-between items-center z-30 ml-[260px]">
+<div class="flex items-center gap-4">
+<span class="text-[10px] font-label-mono text-on-surface-variant uppercase">Status: Connected to Terminal Cluster</span>
+</div>
+<div>
+<span class="text-[10px] font-label-mono text-on-surface-variant">Version: 1.260309.0</span>
+</div>
+</footer>
+</body></html>

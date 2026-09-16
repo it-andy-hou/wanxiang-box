@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AssetMaster - 脚本管理</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Hanken+Grotesk:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    body {
+      font-family: 'Hanken Grotesk', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      line-height: 1;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0b1326;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #3c4a42;
+      border-radius: 10px;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-dim": "#0b1326",
+            "surface-container-lowest": "#060e20",
+            "secondary": "#adc6ff",
+            "primary-fixed-dim": "#4edea3",
+            "on-primary-container": "#00422b",
+            "surface-container-high": "#222a3d",
+            "surface-bright": "#31394d",
+            "primary-container": "#10b981",
+            "on-background": "#dae2fd",
+            "on-surface-variant": "#bbcabf",
+            "surface-container-low": "#131b2e",
+            "on-error-container": "#ffdad6",
+            "on-error": "#690005",
+            "secondary-container": "#0566d9",
+            "tertiary-fixed": "#ffddb8",
+            "on-primary-fixed-variant": "#005236",
+            "on-secondary-fixed-variant": "#004395",
+            "surface-variant": "#2d3449",
+            "on-surface": "#dae2fd",
+            "on-secondary-container": "#e6ecff",
+            "outline-variant": "#3c4a42",
+            "on-secondary": "#002e6a",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-tertiary": "#472a00",
+            "secondary-fixed-dim": "#adc6ff",
+            "primary": "#4edea3",
+            "on-tertiary-fixed": "#2a1700",
+            "on-tertiary-container": "#523200",
+            "secondary-fixed": "#d8e2ff",
+            "on-primary": "#003824",
+            "surface-container-highest": "#2d3449",
+            "on-tertiary-fixed-variant": "#653e00",
+            "error-container": "#93000a",
+            "surface-container": "#171f33",
+            "background": "#0b1326",
+            "on-secondary-fixed": "#001a42",
+            "inverse-primary": "#006c49",
+            "inverse-on-surface": "#283044",
+            "surface-tint": "#4edea3",
+            "error": "#ffb4ab",
+            "primary-fixed": "#6ffbbe",
+            "inverse-surface": "#dae2fd",
+            "tertiary": "#ffb95f",
+            "tertiary-container": "#e29100",
+            "surface": "#0b1326",
+            "on-primary-fixed": "#002113",
+            "outline": "#86948a"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "stack-gap": "1rem",
+            "sidebar-width": "260px",
+            "container-margin": "2rem",
+            "row-height": "3.5rem",
+            "gutter": "1.5rem"
+          },
+          "fontFamily": {
+            "label-mono": ["JetBrains Mono"],
+            "headline-md": ["Hanken Grotesk"],
+            "code-sm": ["JetBrains Mono"],
+            "display-lg": ["Hanken Grotesk"],
+            "body-md": ["Hanken Grotesk"]
+          },
+          "fontSize": {
+            "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+            "code-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-surface-dim text-on-surface overflow-hidden h-screen flex">
+<!-- SideNavBar Component -->
+<aside class="flex flex-col h-full py-gutter px-4 gap-stack-gap bg-surface-container-low dark:bg-surface-container-low fixed left-0 top-0 h-screen w-sidebar-width border-r border-outline-variant z-40">
+<div class="mb-6 px-2">
+<h1 class="text-headline-md font-headline-md font-black text-primary">AssetMaster</h1>
+<p class="text-label-mono font-label-mono text-on-surface-variant mt-1 uppercase">Titanium Ops</p>
+</div>
+<!-- Quick Operations -->
+<div class="space-y-2">
+<h2 class="text-label-mono font-label-mono text-outline px-2 uppercase tracking-widest">快速操作</h2>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all group" href="#">
+<span class="material-symbols-outlined text-primary">upload_file</span>
+<span class="text-body-md font-body-md group-hover:translate-x-1 transition-transform">导入Excel</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all group" href="#">
+<span class="material-symbols-outlined">download</span>
+<span class="text-body-md font-body-md group-hover:translate-x-1 transition-transform">导出Excel</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all group" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="text-body-md font-body-md group-hover:translate-x-1 transition-transform">批量测试</span>
+</a>
+</nav>
+</div>
+<!-- Statistics Dashboard -->
+<div class="mt-4 space-y-4">
+<h2 class="text-label-mono font-label-mono text-outline px-2 uppercase tracking-widest">统计信息</h2>
+<!-- Server Card -->
+<div class="bg-surface-container p-4 rounded-xl border border-outline-variant">
+<div class="flex justify-between items-center mb-2">
+<span class="text-label-mono font-label-mono text-on-surface-variant">主机总数</span>
+<span class="text-headline-md font-headline-md font-bold text-primary">198</span>
+</div>
+<div class="flex gap-2">
+<div class="flex-1 bg-primary/10 rounded-lg p-2 text-center">
+<div class="text-[10px] text-primary font-bold uppercase">在线</div>
+<div class="text-body-md font-bold text-primary">198</div>
+</div>
+<div class="flex-1 bg-error/10 rounded-lg p-2 text-center">
+<div class="text-[10px] text-error font-bold uppercase">离线</div>
+<div class="text-body-md font-bold text-error">0</div>
+</div>
+</div>
+</div>
+<!-- Resource Card -->
+<div class="bg-surface-container p-4 rounded-xl border border-outline-variant space-y-3">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">description</span>
+<span class="text-body-md font-body-md text-on-surface-variant">脚本数量</span>
+</div>
+<span class="font-bold">28</span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">assignment_turned_in</span>
+<span class="text-body-md font-body-md text-on-surface-variant">工程任务</span>
+</div>
+<span class="font-bold">3</span>
+</div>
+</div>
+</div>
+<!-- Footer Tabs -->
+<div class="mt-auto pt-4 border-t border-outline-variant flex flex-col gap-1">
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-body-md font-body-md">系统日志</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="text-body-md font-body-md">技术支持</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<main class="flex-1 ml-sidebar-width h-full flex flex-col overflow-hidden">
+<!-- TopNavBar Component -->
+<header class="bg-surface-container dark:bg-surface-container flex justify-between items-center w-full px-gutter z-50 docked full-width top-0 h-row-height border-b border-outline-variant">
+<nav class="flex items-center gap-8 h-full">
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface h-full flex items-center px-2 transition-colors text-body-md font-body-md" href="#">主机管理</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface h-full flex items-center px-2 transition-colors text-body-md font-body-md" href="#">工程任务</a>
+<a class="text-primary border-b-2 border-primary h-full flex items-center px-2 font-bold transition-all duration-200 text-body-md font-body-md" href="#">脚本管理</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface h-full flex items-center px-2 transition-colors text-body-md font-body-md" href="#">脚本执行</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface h-full flex items-center px-2 transition-colors text-body-md font-body-md" href="#">命令执行</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface h-full flex items-center px-2 transition-colors text-body-md font-body-md" href="#">文件上传</a>
+</nav>
+<div class="flex items-center gap-4">
+<div class="bg-primary/20 text-primary px-3 py-1 rounded-full text-label-mono font-label-mono flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+          就绪 (0)
+        </div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-highest rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-highest rounded-full transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center border border-primary/50 overflow-hidden">
+<img alt="Admin" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFh1fbug6YdEdhwlutf1dzmsWeSARlp-Sg3aYAlbINNFTD4RfgUUWka2bJQryUBBWOaByfdjsY6t_4m8EIU7hl5-mGI4bky351TNpUKKzXnKLrRv7kj5z2xB6OriwrLHJhmtLI9uh5a7S8jlsZT9iL3IJm-uTXxEnf6dx4mtpxgNE8tMl0rmOdOIN4Zm94T4yPKa6ir_zL6p4UZQ97CUK8FK1kxC90Ntq4XI0yIa1JqsyHkcNeAd5bZ7Cq-RlywpAiGOihPFXaWjo"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Content Canvas with Directory Tree Sidebar -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Directory Tree Sidebar -->
+<div class="w-[240px] bg-surface-container-low border-r border-outline-variant flex flex-col">
+<div class="p-4 border-b border-outline-variant">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+<input class="w-full bg-surface-dim border border-outline-variant rounded py-1 pl-8 pr-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-outline" placeholder="过滤目录..." type="text"/>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar py-2">
+<nav class="space-y-0.5">
+<!-- All Scripts Root -->
+<a class="flex items-center justify-between px-4 py-2 bg-primary/10 text-primary group" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">folder_open</span>
+<span class="text-body-md font-medium">全部脚本</span>
+</div>
+<span class="text-[10px] font-label-mono bg-primary/20 px-1.5 rounded">28</span>
+</a>
+<!-- Tree Items -->
+<div class="pl-4">
+<a class="flex items-center justify-between px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary">folder</span>
+<span class="text-body-md">test</span>
+</div>
+<span class="text-[10px] font-label-mono opacity-50">0</span>
+</a>
+<a class="flex items-center justify-between px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary">folder</span>
+<span class="text-body-md">production</span>
+</div>
+<span class="text-[10px] font-label-mono opacity-50">12</span>
+</a>
+<a class="flex items-center justify-between px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary">folder</span>
+<span class="text-body-md">security_patches</span>
+</div>
+<span class="text-[10px] font-label-mono opacity-50">8</span>
+</a>
+<a class="flex items-center justify-between px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary">folder</span>
+<span class="text-body-md">automation</span>
+</div>
+<span class="text-[10px] font-label-mono opacity-50">5</span>
+</a>
+<a class="flex items-center justify-between px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary">folder</span>
+<span class="text-body-md">WZQ_Internal</span>
+</div>
+<span class="text-[10px] font-label-mono opacity-50">3</span>
+</a>
+</div>
+</nav>
+</div>
+<div class="p-4 border-t border-outline-variant bg-surface-container-lowest/30">
+<button class="w-full flex items-center justify-center gap-2 py-1.5 border border-dashed border-outline-variant text-outline hover:text-primary hover:border-primary transition-all text-xs rounded">
+<span class="material-symbols-outlined text-sm">create_new_folder</span>
+<span>新建目录</span>
+</button>
+</div>
+</div>
+<!-- Main List Area -->
+<div class="flex-1 p-8 overflow-y-auto custom-scrollbar">
+<!-- Page Header -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="text-display-lg font-display-lg text-on-surface">脚本管理</h2>
+<p class="text-on-surface-variant text-body-md font-body-md mt-1">集中管理自动化运维脚本，支持版本控制与标签检索。</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-primary hover:opacity-80 text-on-primary font-bold py-2 px-6 rounded-lg transition-all flex items-center gap-2 text-body-md">
+<span class="material-symbols-outlined text-[20px]">add</span>
+            添加脚本
+          </button>
+<button class="border border-outline-variant hover:bg-surface-container-highest text-on-surface-variant py-2 px-4 rounded-lg transition-all flex items-center gap-2 text-body-md">
+<span class="material-symbols-outlined text-[20px]">refresh</span>
+            刷新列表
+          </button>
+<div class="flex border border-outline-variant rounded-lg overflow-hidden">
+<button class="px-4 py-2 hover:bg-surface-container-highest text-on-surface-variant border-r border-outline-variant text-body-md transition-all">单独导入</button>
+<button class="px-4 py-2 hover:bg-surface-container-highest text-on-surface-variant text-body-md transition-all">批量导入</button>
+</div>
+</div>
+</div>
+<!-- Filters & Search Bar -->
+<div class="bg-surface-container rounded-xl p-4 border border-outline-variant mb-6 flex flex-wrap gap-4 items-center">
+<div class="flex-1 min-w-[300px] relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-surface-dim border border-outline-variant rounded-lg pl-10 pr-4 py-2 focus:ring-1 focus:ring-primary focus:border-primary text-body-md font-body-md transition-all" placeholder="搜索脚本名称或描述..." type="text"/>
+</div>
+<div class="flex gap-4">
+<div class="relative min-w-[160px]">
+<select class="w-full bg-surface-dim border border-outline-variant rounded-lg px-4 py-2 appearance-none text-body-md font-body-md focus:border-primary outline-none text-on-surface-variant">
+<option>所有类型</option>
+<option>Shell</option>
+<option>Python</option>
+<option>PowerShell</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+</div>
+<div class="relative min-w-[160px]">
+<select class="w-full bg-surface-dim border border-outline-variant rounded-lg px-4 py-2 appearance-none text-body-md font-body-md focus:border-primary outline-none text-on-surface-variant">
+<option>所有标签</option>
+<option>安全补丁</option>
+<option>系统优化</option>
+<option>日常运维</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Script Table -->
+<div class="bg-surface-container rounded-xl border border-outline-variant overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high border-b border-outline-variant">
+<th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">脚本名称</th>
+<th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">描述</th>
+<th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">标签</th>
+<th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">创建时间</th>
+<th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">更新时间</th>
+<th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider text-right">操作</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Table Row 1 -->
+<tr class="hover:bg-surface-container-highest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">code</span>
+</div>
+<span class="text-body-md font-bold text-primary">wzq_cgi_restart.sh</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">重启cgi服务组件</td>
+<td class="px-6 py-4">
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] rounded font-label-mono uppercase">架构: X86</span>
+<span class="px-2 py-0.5 bg-outline-variant/30 text-on-surface-variant text-[10px] rounded font-label-mono uppercase">WZQ</span>
+</div>
+</td>
+<td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/01/31 13:18:01</td>
+<td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/05/16 22:55:42</td>
+<td class="px-6 py-4">
+<div class="flex justify-end gap-2">
+<button class="p-1.5 hover:bg-primary/20 text-primary rounded transition-all" title="查看"><span class="material-symbols-outlined text-sm">visibility</span></button>
+<button class="p-1.5 hover:bg-secondary/20 text-secondary rounded transition-all" title="编辑"><span class="material-symbols-outlined text-sm">edit</span></button>
+<button class="p-1.5 hover:bg-on-surface/10 text-on-surface-variant rounded transition-all" title="复制"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1.5 hover:bg-error/20 text-error rounded transition-all" title="删除"><span class="material-symbols-outlined text-sm">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Table Row 2 -->
+<tr class="hover:bg-surface-container-highest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">terminal</span>
+</div>
+<span class="text-body-md font-bold text-primary">fix_yum_repo</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant italic opacity-50">无描述</td>
+<td class="px-6 py-4"><span class="text-outline text-label-mono">-</span></td>
+<td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/05/15 00:25:01</td>
+<td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/05/15 01:26:40</td>
+<td class="px-6 py-4">
+<div class="flex justify-end gap-2">
+<button class="p-1.5 hover:bg-primary/20 text-primary rounded transition-all"><span class="material-symbols-outlined text-sm">visibility</span></button>
+<button class="p-1.5 hover:bg-secondary/20 text-secondary rounded transition-all"><span class="material-symbols-outlined text-sm">edit</span></button>
+<button class="p-1.5 hover:bg-on-surface/10 text-on-surface-variant rounded transition-all"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1.5 hover:bg-error/20 text-error rounded transition-all"><span class="material-symbols-outlined text-sm">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Table Row 3 -->
+<tr class="hover:bg-surface-container-highest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">security</span>
+</div>
+<span class="text-body-md font-bold text-primary">CVE-2026-31431-patch</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">紧急安全漏洞补丁执行脚本</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 bg-error/10 text-error text-[10px] rounded font-label-mono uppercase">SECURITY</span>
+</td>
+<td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/05/15 00:25:20</td>
+<td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/05/15 01:26:31</td>
+<td class="px-6 py-4">
+<div class="flex justify-end gap-2">
+<button class="p-1.5 hover:bg-primary/20 text-primary rounded transition-all"><span class="material-symbols-outlined text-sm">visibility</span></button>
+<button class="p-1.5 hover:bg-secondary/20 text-secondary rounded transition-all"><span class="material-symbols-outlined text-sm">edit</span></button>
+<button class="p-1.5 hover:bg-on-surface/10 text-on-surface-variant rounded transition-all"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1.5 hover:bg-error/20 text-error rounded transition-all"><span class="material-symbols-outlined text-sm">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Table Row 4 -->
+<tr class="hover:bg-surface-container-highest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">monitoring</span>
+</div>
+<span class="text-body-md font-bold text-primary">zabbix-ky-fixed.sh</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant italic opacity-50">无描述</td>
+<td class="px-6 py-4"><span class="text-outline text-label-mono">-</span></td>
+<td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/02/11 21:45:51</td>
+<td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/02/11 21:45:51</td>
+<td class="px-6 py-4">
+<div class="flex justify-end gap-2">
+<button class="p-1.5 hover:bg-primary/20 text-primary rounded transition-all"><span class="material-symbols-outlined text-sm">visibility</span></button>
+<button class="p-1.5 hover:bg-secondary/20 text-secondary rounded transition-all"><span class="material-symbols-outlined text-sm">edit</span></button>
+<button class="p-1.5 hover:bg-on-surface/10 text-on-surface-variant rounded transition-all"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1.5 hover:bg-error/20 text-error rounded transition-all"><span class="material-symbols-outlined text-sm">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Table Row 5 -->
+<tr class="hover:bg-surface-container-highest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">settings_power</span>
+</div>
+<span class="text-body-md font-bold text-primary">wzq-jieru-stop.sh</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-md text-on-surface-variant">关闭接入层服务</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 bg-outline-variant/30 text-on-surface-variant text-[10px] rounded font-label-mono uppercase">WZQ</span>
+</td>
+<td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/01/30 18:24:20</td>
+<td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/01/31 13:19:22</td>
+<td class="px-6 py-4">
+<div class="flex justify-end gap-2">
+<button class="p-1.5 hover:bg-primary/20 text-primary rounded transition-all"><span class="material-symbols-outlined text-sm">visibility</span></button>
+<button class="p-1.5 hover:bg-secondary/20 text-secondary rounded transition-all"><span class="material-symbols-outlined text-sm">edit</span></button>
+<button class="p-1.5 hover:bg-on-surface/10 text-on-surface-variant rounded transition-all"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+<button class="p-1.5 hover:bg-error/20 text-error rounded transition-all"><span class="material-symbols-outlined text-sm">delete</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination -->
+<div class="px-6 py-4 bg-surface-container-low flex justify-between items-center border-t border-outline-variant">
+<span class="text-body-md text-on-surface-variant">显示 1 到 5 条，共 28 条</span>
+<div class="flex gap-1">
+<button class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-highest text-on-surface-variant"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="w-8 h-8 rounded bg-primary text-on-primary flex items-center justify-center font-bold">1</button>
+<button class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-highest text-on-surface-variant">2</button>
+<button class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-highest text-on-surface-variant">3</button>
+<button class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-highest text-on-surface-variant"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Status Bar -->
+<footer class="h-8 bg-surface-container-lowest border-t border-outline-variant px-gutter flex items-center justify-between text-label-mono text-[10px] text-outline">
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 系统运行正常</span>
+<span>连接节点: HK-EDGE-01</span>
+</div>
+<div class="flex items-center gap-4">
+<span>版本: 1.260309.0</span>
+<span>2026/05/16 23:35:42</span>
+</div>
+</footer>
+</main>
+<!-- Floating Action Button (Contextual) -->
+<button class="fixed bottom-12 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all group z-50">
+<span class="material-symbols-outlined text-3xl">add</span>
+<span class="absolute right-16 bg-surface-container-high text-on-surface px-3 py-1 rounded text-body-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-outline-variant shadow-xl">新建任务脚本</span>
+</button>
+</body></html>

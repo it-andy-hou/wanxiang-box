@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>万象匣</title>
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/enhancements.css">
+    <!-- Highlight.js 语法高亮样式 -->
+    <link rel="stylesheet" href="lib/atom-one-light.css">
+    <!-- Mermaid.js 流程图 -->
+    <script src="lib/mermaid.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 头部栏：48px，无导航（导航在左侧边栏） -->
+        <header class="app-header">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle" title="折叠/展开侧边栏">
+                    <span class="toggle-icon toggle-icon-expand" title="折叠侧边栏"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg></span>
+                    <span class="toggle-icon toggle-icon-collapse" title="展开侧边栏"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg></span>
+                </button>
+                <div class="app-logo">
+                    <span class="app-title">万象匣</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span class="status-indicator" id="connectionStatus">离线</span>
+                    <button class="btn btn-icon" id="settingsBtn" title="设置"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="app-main">
+            <!-- 侧边栏导航：240px，可折叠至 64px -->
+            <aside class="sidebar" id="mainSidebar">
+                <nav class="sidebar-nav">
+                    <a href="#" class="nav-item active" data-page="hosts"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg></span><span class="nav-item-text">主机管理</span></a>
+                    <a href="#" class="nav-item" data-page="project-tasks"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 13v5"/><path d="M12 13v5"/><path d="M16 13v5"/></svg></span><span class="nav-item-text">工程任务</span></a>
+                    <a href="#" class="nav-item" data-page="scripts"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg></span><span class="nav-item-text">脚本管理</span></a>
+                    <a href="#" class="nav-item" data-page="tasks"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg></span><span class="nav-item-text">脚本执行</span></a>
+                    <a href="#" class="nav-item" data-page="commands"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg></span><span class="nav-item-text">命令执行</span></a>
+                    <a href="#" class="nav-item" data-page="fileupload"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg></span><span class="nav-item-text">文件上传</span></a>
+                    <a href="#" class="nav-item" data-page="scheduled"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="nav-item-text">任务调度</span></a>
+                    <a href="#" class="nav-item" data-page="history"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span><span class="nav-item-text">任务记录</span></a>
+                </nav>
+            </aside>
+
+            <!-- 主内容区 -->
+            <section class="content">
+                
+                <div class="page" id="page-hosts">
+                    <div class="page-header">
+                        <h2>主机管理</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-primary" id="addHostBtn">添加主机</button>
+                            <button class="btn btn-secondary" id="refreshHostsBtn">刷新列表</button>
+                            <button class="btn btn-secondary" id="clearFiltersBtn" title="清空所有搜索与筛选条件">重置全部<span id="resetAllBadge" class="reset-all-badge" style="display:none;">0</span></button>
+                            <button class="btn btn-primary" id="importCsvBtn">导入Excel</button>
+                            <button class="btn btn-secondary" id="exportCsvBtn">导出Excel</button>
+                            <button class="btn btn-success" id="batchConnectBtn">批量连接测试</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 工具栏 -->
+                    <div class="toolbar">
+                        <div class="toolbar-left">
+                            <div class="search-bar">
+                                <input type="text" class="form-control" placeholder="搜索主机名、IP地址或描述..." id="hostSearchInput">
+                                <button class="btn btn-secondary btn-sm" id="batchSearchBtn" title="批量IP搜索，支持粘贴多个IP" style="margin-left: 4px; white-space: nowrap;">批量IP</button>
+                            </div>
+                        </div>
+                        <div class="toolbar-right">
+                            <select class="form-control" id="hostSystemNameFilter" autocomplete="off">
+                                <option value="">全部系统</option>
+                            </select>
+                            <select class="form-control" id="hostAppNameFilter" autocomplete="off">
+                                <option value="">全部应用</option>
+                            </select>
+                            <select class="form-control" id="hostDatacenterFilter" autocomplete="off">
+                                <option value="">全部机房</option>
+                            </select>
+                            <select class="form-control" id="hostEnvironmentFilter" autocomplete="off">
+                                <option value="">全部环境</option>
+                                <option value="生产">生产</option>
+                                <option value="测试">测试</option>
+                                <option value="灰度">灰度</option>
+                                <option value="开发">开发</option>
+                            </select>
+                            <select class="form-control" id="hostOwnerFilter" autocomplete="off">
+                                <option value="">全部负责人</option>
+                            </select>
+                            <select class="form-control" id="hostStatusFilter" autocomplete="off">
+                                <option value="">全部状态</option>
+                                <option value="online">在线</option>
+                                <option value="offline">离线</option>
+                                <option value="unknown">未知</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 批量IP搜索状态条 -->
+                    <div id="searchStatusBar" class="search-status-bar" style="display:none;">
+                        <span style="color: var(--status-info-fg); display: inline-flex; align-items: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>
+                        <span id="searchStatusText"></span>
+                    </div>
+
+                    <!-- 批量操作栏 -->
+                    <div class="batch-actions" id="batchActions" style="display: none;">
+                        <div class="batch-info">
+                            <span id="selectedCount">已选择 0 台主机</span>
+                        </div>
+                        <div class="batch-buttons">
+                            <button class="btn btn-sm btn-success" id="copyIpsBtn">复制IP列表</button>
+                            <button class="btn btn-sm btn-primary" id="batchTestBtn">批量测试连接</button>
+                            <button class="btn btn-sm btn-info" id="batchCollectBtn">批量收集信息</button>
+                            <button class="btn btn-sm btn-warning" id="batchConfigKeyBtn">批量配置密钥</button>
+                            <div class="batch-modify-dropdown">
+                                <button class="btn btn-sm btn-secondary" id="batchModifyBtn">批量修改 ▾</button>
+                                <div class="batch-modify-menu" id="batchModifyMenu">
+                                    <div class="batch-modify-item" id="batchChangeUsername">批量改用户名</div>
+                                    <div class="batch-modify-item" id="batchChangePassword">批量改密码</div>
+                                    <div class="batch-modify-item" id="batchChangeOwner">批量改负责人</div>
+                                    <div class="batch-modify-item" id="batchChangeSystemName">批量改系统名称</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-danger" id="batchDeleteBtn">批量删除</button>
+                        </div>
+                    </div>
+                    
+                    <div class="page-content">
+                        <!-- 表格视图 -->
+                        <div class="table-container">
+                            <table class="table" id="hostsTable">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" id="selectAllHosts"></th>
+                                        <th class="sortable" data-sort="ip">
+                                            IP地址 <span class="sort-arrow"></span>
+                                        </th>
+                                        <th class="sortable" data-sort="systemName">
+                                            系统名称 <span class="sort-arrow"></span>
+                                        </th>
+                                        <th class="sortable" data-sort="appName">
+                                            应用名称 <span class="sort-arrow"></span>
+                                        </th>
+                                        <th>端口</th>
+                                        <th>用户名</th>
+                                        <th class="sortable" data-sort="osType">
+                                            系统 <span class="sort-arrow"></span>
+                                        </th>
+                                        <th class="sortable" data-sort="datacenter">
+                                            机房 <span class="sort-arrow"></span>
+                                        </th>
+                                        <th class="sortable" data-sort="environment">
+                                            环境 <span class="sort-arrow"></span>
+                                        </th>
+                                        <th class="sortable" data-sort="owner">
+                                            负责人 <span class="sort-arrow"></span>
+                                        </th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- 主机列表将动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- 分页控件 -->
+                        <div class="pagination" id="pagination">
+                            <div class="pagination-info" id="paginationInfo">
+                                显示 1-100 共 0 条记录
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="pagination-btn" id="firstPageBtn" title="首页">«</button>
+                                <button class="pagination-btn" id="prevPageBtn" title="上一页">‹</button>
+                                <div class="pagination-numbers" id="paginationNumbers">
+                                    <!-- 页码按钮将动态生成 -->
+                                </div>
+                                <button class="pagination-btn" id="nextPageBtn" title="下一页">›</button>
+                                <button class="pagination-btn" id="lastPageBtn" title="末页">»</button>
+                            </div>
+                            <div class="pagination-size-selector">
+                                <span>每页显示:</span>
+                                <select id="pageSizeSelect">
+                                    <option value="50">50</option>
+                                    <option value="100" selected>100</option>
+                                    <option value="200">200</option>
+                                    <option value="500">500</option>
+                                    <option value="1000">1000</option>
+                                    <option value="2000">2000</option>
+                                </select>
+                                <span>条</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 脚本管理页面 -->
+                <div class="page" id="page-scripts" style="display: none;">
+                    <div class="page-header">
+                        <h2>脚本管理</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-primary" id="addScriptBtn">添加脚本</button>
+                            <button class="btn btn-secondary" id="refreshScriptsBtn">刷新列表</button>
+                            <button class="btn btn-secondary" id="importSingleScriptBtn">单独导入</button>
+                            <button class="btn btn-secondary" id="importScriptExcelBtn">批量导入</button>
+                            <button class="btn btn-secondary" id="exportScriptExcelBtn">批量导出</button>
+                        </div>
+                    </div>
+
+                    <!-- 左右分局：左侧目录树 + 右侧内容 -->
+                    <div class="script-management-layout">
+
+                        <!-- 左侧目录树 -->
+                        <div class="script-sidebar">
+                            <div class="sidebar-header">
+                                <span class="sidebar-title">目录</span>
+                                <button class="btn btn-icon btn-sm" id="manageCategoriesBtn" title="管理目录"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                            </div>
+                            <div class="category-tree" id="categoryTree">
+                                <!-- 动态生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 右侧内容区 -->
+                        <div class="script-content">
+                            <!-- 工具栏 -->
+                            <div class="toolbar">
+                                <div class="toolbar-left">
+                                    <div class="search-bar">
+                                        <input type="text" class="form-control" placeholder="搜索脚本名称或描述..." id="scriptSearchInput">
+                                        <button class="btn btn-icon" id="searchScriptBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+                                        <button class="btn btn-icon" id="clearScriptSearchBtn" title="清除搜索"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                                    </div>
+                                </div>
+                                <div class="toolbar-right" style="display:flex;gap:0.5rem;align-items:center;">
+                                    <select class="form-control" id="scriptTagTypeFilter" style="width:120px;" title="标签类型">
+                                        <option value="">所有类型</option>
+                                    </select>
+                                    <select class="form-control" id="scriptTagValueFilter" style="width:130px;" title="标签值">
+                                        <option value="">所有标签</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="page-content">
+                                <!-- 脚本列表 -->
+                                <div class="table-container">
+                                    <table class="table" id="scriptsTable">
+                                        <thead>
+                                            <tr>
+                                                <th class="sortable" data-sort="name">
+                                                    脚本名称 <span class="sort-arrow"></span>
+                                                </th>
+                                                <th>描述</th>
+                                                <th>标签</th>
+                                                <th class="sortable" data-sort="created_at">
+                                                    创建时间 <span class="sort-arrow"></span>
+                                                </th>
+                                                <th class="sortable" data-sort="updated_at">
+                                                    更新时间 <span class="sort-arrow"></span>
+                                                </th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- 脚本列表将动态加载 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="page" id="page-tasks" style="display: none;">
+                    <div class="page-header">
+                        <h2>脚本执行</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-primary" id="createTaskBtn">创建任务</button>
+                        </div>
+                    </div>
+                    <div class="page-content page-content--scroll">
+                        <!-- 任务配置区域（默认隐藏，点击创建任务展开） -->
+                        <div class="task-config-section" id="taskConfigSection" style="display: none;">
+                            <div class="card te-config-card" style="margin-bottom: 1rem;">
+                                <div class="card-header">
+                                    <h3>脚本配置</h3>
+                                </div>
+                                <div class="card-body te-config-body">
+                                    <!-- 2列配置网格：左=脚本，右=主机 -->
+                                    <div class="te-config-grid">
+                                        <!-- 左列：选择脚本 -->
+                                        <div class="te-config-col">
+                                            <label class="te-label">步骤 1: 选择执行脚本 <span class="te-required">*</span></label>
+                                            <!-- 脚本搜索式选择面板：搜索 + 分组列表 -->
+                                            <div class="te-script-picker">
+                                                <div class="te-script-search">
+                                                    <svg class="te-script-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                                    <input type="text" class="te-script-search-input" id="teScriptSearchInput" placeholder="搜索脚本名称 / 描述 / 标签，↑↓选择，回车确认" autocomplete="off" spellcheck="false">
+                                                    <button type="button" class="te-script-clear-btn" id="teScriptSearchClear" title="清空搜索与标签过滤" style="display:none;">×</button>
+                                                    <span class="te-script-count" id="teScriptCount"></span>
+                                                </div>
+                                                <div class="te-script-selected" id="teScriptSelected" style="display:none;"></div>
+                                                <div class="te-script-list" id="teScriptList"></div>
+                                            </div>
+                                            <input type="hidden" id="taskScriptSelect">
+                                            <button class="te-link-btn" id="viewScriptBtn" disabled title="请先选择脚本"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> 查看内容</button>
+                                        </div>
+                                        <!-- 右列：选择主机 -->
+                                        <div class="te-config-col">
+                                            <label class="te-label">步骤 2: 选择目标主机 <span class="te-required">*</span></label>
+                                            <div class="te-host-btns">
+                                                <button class="btn btn-secondary btn-sm" id="selectHostsBtn">从主机管理选择</button>
+                                                <button class="btn btn-secondary btn-sm" id="clearHostsBtn">清空选择</button>
+                                                <span id="selectedHostsCount" class="te-host-count"></span>
+                                            </div>
+                                            <div id="selectedHostsList" class="te-host-chips">
+                                                <span class="te-host-empty">未选择主机</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                            
+                                    <!-- 选项行：定时执行 + sudo + 执行参数（内联紧凑） -->
+                                    <div class="te-options-row">
+                                        <label class="te-checkbox-label">
+                                            <input type="checkbox" id="taskScheduleEnabled">
+                                            <span>定时执行</span>
+                                            <span title="选中后可设置任务在指定时间自动执行" class="te-hint-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>
+                                        </label>
+                                        <label class="te-checkbox-label">
+                                            <input type="checkbox" id="taskUseSudo">
+                                            <span>sudo执行</span>
+                                            <span title="提示：系统需配置免密sudo" class="te-hint-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>
+                                        </label>
+                                        <div class="te-params-inline">
+                                            <label class="te-params-label">并发数(1-20)</label>
+                                            <input type="number" class="form-control te-param-input" id="taskConcurrency" value="1" min="1" max="20" step="1">
+                                            <label class="te-params-label">超时(秒)</label>
+                                            <input type="number" class="form-control te-param-input" id="taskTimeout" value="300" min="10" max="3600" step="10">
+                                        </div>
+                                    </div>
+                            
+                                    <!-- 定时执行时间（勾选后展开） -->
+                                    <div id="taskScheduleTimeSection" style="display: none;" class="te-schedule-section">
+                                        <label class="form-label">执行时间:</label>
+                                        <input type="datetime-local" id="taskScheduleTime" class="form-control" style="max-width: 300px;">
+                                        <div class="te-schedule-hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> 选择完时间后，点击“开始执行”按鈕创建定时任务</div>
+                                    </div>
+                            
+                                    <input type="hidden" id="taskName">
+                            
+                                    <!-- 执行按鈕行 -->
+                                    <div class="te-actions-row">
+                                        <button class="btn btn-success" id="startExecutionBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><polygon points="6 3 20 12 6 21 6 3"/></svg> 开始执行</button>
+                                        <button class="btn btn-danger" id="stopExecutionBtn" style="display: none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect width="18" height="18" x="3" y="3" rx="2"/></svg> 停止执行</button>
+                                        <button class="btn btn-secondary" id="cancelTaskBtn">取消</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 执行监控区域 -->
+                            <div class="card" id="taskMonitorSection" style="display: none; margin-bottom: 1.5rem;">
+                                <div class="card-header te-monitor-header">
+                                    <h3>执行监控</h3>
+                                    <div class="te-monitor-status">
+                                        <span class="te-status-dot"></span>
+                                        <span class="te-status-text">运行中</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- 进度条 -->
+                                    <div class="te-progress-section">
+                                        <div class="te-progress-labels">
+                                            <span>总体进度</span>
+                                            <span id="overallProgress" class="te-progress-pct">0%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 统计 Bento 格 -->
+                                    <div class="te-stats-grid">
+                                        <div class="te-stat-card">
+                                            <div class="te-stat-label">总数</div>
+                                            <div class="te-stat-value" id="totalCount">0</div>
+                                        </div>
+                                        <div class="te-stat-card te-stat-success">
+                                            <div class="te-stat-label">成功</div>
+                                            <div class="te-stat-value" id="successCount">0</div>
+                                        </div>
+                                        <div class="te-stat-card te-stat-error">
+                                            <div class="te-stat-label">失败</div>
+                                            <div class="te-stat-value" id="failedCount">0</div>
+                                        </div>
+                                        <div class="te-stat-card te-stat-time">
+                                            <div class="te-stat-label">运行时间</div>
+                                            <div class="te-stat-value" id="executionTime">00:00</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 视图切换工具栏 -->
+                                    <div class="result-view-toolbar">
+                                        <div class="view-toggle">
+                                            <button class="view-toggle-btn active" data-view="result" id="scriptViewResultBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> 结果模式</button>
+                                            <button class="view-toggle-btn" data-view="log" id="scriptViewLogBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg> 日志模式</button>
+                                        </div>
+                                        <div class="filter-group" id="scriptFilterGroup">
+                                            <button class="filter-btn active" data-filter="all">全部</button>
+                                            <button class="filter-btn filter-success" data-filter="success"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M20 6 9 17l-5-5"/></svg> 成功</button>
+                                            <button class="filter-btn filter-failed" data-filter="failed"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> 失败</button>
+                                        </div>
+                                        <input type="text" class="search-input" id="scriptResultSearch" placeholder="搜索IP或输出内容...">
+                                        <div class="te-log-toolbar">
+                                            <button class="btn btn-sm btn-info" id="exportResultBtn">导出结果</button>
+                                            <button class="btn btn-sm btn-primary" id="downloadLogBtn">下载日志</button>
+                                            <button class="btn btn-sm btn-success" id="copyLogBtn">复制日志</button>
+                                            <button class="btn btn-sm btn-secondary" id="clearLogBtn">清空日志</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 日志模式 -->
+                                    <div class="log-section" id="scriptLogView" style="display: none;">
+                                        <div id="executionLog" class="te-terminal"></div>
+                                    </div>
+
+                                    <!-- 结果概览模式 -->
+                                    <div id="scriptResultView">
+                                        <div class="result-overview-container" id="scriptResultContainer">
+                                            <div class="result-empty-tip">暂无执行结果，请先执行任务</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 执行历史列表 -->
+                        <div class="task-history-section" id="taskHistorySection">
+                            <div class="list-section-header"><h3>执行历史</h3></div>
+                            <div class="table-container">
+                                <table class="table" id="taskHistoryTable">
+                                    <thead>
+                                        <tr>
+                                            <th>任务ID</th>
+                                            <th>任务名称</th>
+                                            <th>脚本名称</th>
+                                            <th>目标主机数</th>
+                                            <th>成功/失败</th>
+                                            <th>状态</th>
+                                            <th>创建时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 任务历史将动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 命令执行页面 -->
+                <div class="page" id="page-commands" style="display: none;">
+                    <div class="page-header">
+                        <h2>命令执行</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-primary" id="createCommandTaskBtn">创建任务</button>
+                        </div>
+                    </div>
+                    <div class="page-content page-content--scroll">
+                        <!-- 任务配置区域 -->
+                        <div class="command-task-config-section" id="commandTaskConfigSection" style="display: none;">
+                            <div class="card te-config-card" style="margin-bottom: 1rem;">
+                                <div class="card-header">
+                                    <h3>命令配置</h3>
+                                </div>
+                                <div class="card-body te-config-body">
+                                    <!-- 2列配置网格：左=命令，右=主机 -->
+                                    <div class="te-config-grid">
+                                        <!-- 左列：填写命令内容 -->
+                                        <div class="te-config-col">
+                                            <label class="te-label">步骤 1: 填写命令内容 <span class="te-required">*</span></label>
+                                            <textarea class="form-control" id="commandContent" rows="8" placeholder="请输入要执行的命令或脚本内容..." style="font-family: 'Courier New', monospace; font-size: 0.9rem; min-height: 120px; resize: vertical;"></textarea>
+                                            <div class="te-hint-text">提示：支持多行命令，命令不会保存，仅本次执行有效。</div>
+                                        </div>
+                                        <!-- 右列：选择主机 -->
+                                        <div class="te-config-col">
+                                            <label class="te-label">步骤 2: 选择目标主机 <span class="te-required">*</span></label>
+                                            <div class="te-host-btns">
+                                                <button class="btn btn-secondary btn-sm" id="selectCommandHostsBtn">从主机管理选择</button>
+                                                <button class="btn btn-secondary btn-sm" id="clearCommandHostsBtn">清空选择</button>
+                                                <span id="selectedCommandHostsCount" class="te-host-count"></span>
+                                            </div>
+                                            <div id="selectedCommandHostsList" class="te-host-chips">
+                                                <span class="te-host-empty">未选择主机</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 选项行：定时执行 + sudo + 执行参数（内联紧凑） -->
+                                    <div class="te-options-row">
+                                        <label class="te-checkbox-label">
+                                            <input type="checkbox" id="commandScheduleEnabled">
+                                            <span>定时执行</span>
+                                            <span title="选中后可设置任务在指定时间自动执行" class="te-hint-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>
+                                        </label>
+                                        <label class="te-checkbox-label">
+                                            <input type="checkbox" id="commandUseSudo">
+                                            <span>sudo执行</span>
+                                            <span title="系统需配置免密sudo" class="te-hint-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>
+                                        </label>
+                                        <div class="te-params-inline">
+                                            <label class="te-params-label">并发数(1-20)</label>
+                                            <input type="number" class="form-control te-param-input" id="commandTaskConcurrency" value="1" min="1" max="20" step="1">
+                                            <label class="te-params-label">超时(秒)</label>
+                                            <input type="number" class="form-control te-param-input" id="commandTaskTimeout" value="300" min="10" max="3600" step="10">
+                                        </div>
+                                    </div>
+
+                                    <!-- 定时执行时间（勾选后展开） -->
+                                    <div id="commandScheduleTimeSection" style="display: none;" class="te-schedule-section">
+                                        <label class="form-label">执行时间:</label>
+                                        <input type="datetime-local" id="commandScheduleTime" class="form-control" style="max-width: 300px;">
+                                        <div class="te-schedule-hint"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> 选择完时间后，点击"开始执行"按钮创建定时任务</div>
+                                    </div>
+
+                                    <input type="hidden" id="commandTaskName">
+
+                                    <!-- 执行按钮行 -->
+                                    <div class="te-actions-row">
+                                        <button class="btn btn-success" id="startCommandExecutionBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><polygon points="6 3 20 12 6 21 6 3"/></svg> 开始执行</button>
+                                        <button class="btn btn-danger" id="stopCommandExecutionBtn" style="display: none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect width="18" height="18" x="3" y="3" rx="2"/></svg> 停止执行</button>
+                                        <button class="btn btn-secondary" id="cancelCommandTaskBtn">取消</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 执行监控区域 -->
+                            <div class="card" id="commandTaskMonitorSection" style="display: none; margin-bottom: 1.5rem;">
+                                <div class="card-header te-monitor-header">
+                                    <h3>执行监控</h3>
+                                    <div class="te-monitor-status">
+                                        <span class="te-status-dot"></span>
+                                        <span class="te-status-text">运行中</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- 进度条 -->
+                                    <div class="te-progress-section">
+                                        <div class="te-progress-labels">
+                                            <span>总体进度</span>
+                                            <span id="commandOverallProgress" class="te-progress-pct">0%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="commandProgressFill" style="width: 0%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 统计 Bento 格 -->
+                                    <div class="te-stats-grid">
+                                        <div class="te-stat-card">
+                                            <div class="te-stat-label">总数</div>
+                                            <div class="te-stat-value" id="commandTotalCount">0</div>
+                                        </div>
+                                        <div class="te-stat-card te-stat-success">
+                                            <div class="te-stat-label">成功</div>
+                                            <div class="te-stat-value" id="commandSuccessCount">0</div>
+                                        </div>
+                                        <div class="te-stat-card te-stat-error">
+                                            <div class="te-stat-label">失败</div>
+                                            <div class="te-stat-value" id="commandFailedCount">0</div>
+                                        </div>
+                                        <div class="te-stat-card te-stat-time">
+                                            <div class="te-stat-label">运行时间</div>
+                                            <div class="te-stat-value" id="commandExecutionTime">00:00</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 视图切换工具栏 -->
+                                    <div class="result-view-toolbar">
+                                        <div class="view-toggle">
+                                            <button class="view-toggle-btn active" data-view="result" id="commandViewResultBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> 结果模式</button>
+                                            <button class="view-toggle-btn" data-view="log" id="commandViewLogBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg> 日志模式</button>
+                                        </div>
+                                        <div class="filter-group" id="commandFilterGroup">
+                                            <button class="filter-btn active" data-filter="all">全部</button>
+                                            <button class="filter-btn filter-success" data-filter="success"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M20 6 9 17l-5-5"/></svg> 成功</button>
+                                            <button class="filter-btn filter-failed" data-filter="failed"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> 失败</button>
+                                        </div>
+                                        <input type="text" class="search-input" id="commandResultSearch" placeholder="搜索IP或输出内容...">
+                                        <div class="te-log-toolbar">
+                                            <button class="btn btn-sm btn-info" id="exportCommandResultBtn">导出结果</button>
+                                            <button class="btn btn-sm btn-primary" id="downloadCommandLogBtn">下载日志</button>
+                                            <button class="btn btn-sm btn-success" id="copyCommandLogBtn">复制日志</button>
+                                            <button class="btn btn-sm btn-secondary" id="clearCommandLogBtn">清空日志</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 日志模式 -->
+                                    <div class="log-section" id="commandLogView" style="display: none;">
+                                        <div id="commandExecutionLog" class="te-terminal"></div>
+                                    </div>
+
+                                    <!-- 结果概览模式 -->
+                                    <div id="commandResultView">
+                                        <div class="result-overview-container" id="commandResultContainer">
+                                            <div class="result-empty-tip">暂无执行结果，请先执行任务</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 执行历史列表 -->
+                        <div class="command-task-history-section" id="commandTaskHistorySection">
+                            <div class="list-section-header"><h3>执行历史</h3></div>
+                            <div class="table-container">
+                                <table class="table" id="commandTaskHistoryTable">
+                                    <thead>
+                                        <tr>
+                                            <th>任务ID</th>
+                                            <th>任务名称</th>
+                                            <th>目标主机数</th>
+                                            <th>成功/失败</th>
+                                            <th>状态</th>
+                                            <th>创建时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 任务历史将动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文件上传页面 -->
+                <div class="page" id="page-fileupload" style="display: none;">
+                    <div class="page-header">
+                        <h2>文件上传</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-primary" id="createFileUploadTaskBtn">创建任务</button>
+                        </div>
+                    </div>
+                    <div class="page-content page-content--scroll">
+                        <!-- 任务配置区域 -->
+                        <div class="file-upload-task-config-section" id="fileUploadTaskConfigSection" style="display: none;">
+                            <!-- Bento 网格布局 -->
+                            <div class="file-upload-bento-grid">
+                                <!-- 步骤1: 选择文件 (占7列) -->
+                                <section class="file-upload-bento-item file-upload-bento-step1">
+                                    <div class="file-upload-step-header">
+                                        <span class="file-upload-step-badge">1</span>
+                                        <h3>选择文件 <span style="color: red;">*</span></h3>
+                                    </div>
+                                    <div class="file-upload-step-body">
+                                        <!-- 拖拽上传区 -->
+                                        <div class="file-upload-dropzone" id="fileUploadDropzone">
+                                            <div class="file-upload-dropzone-icon">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                            </div>
+                                            <div class="file-upload-dropzone-text">
+                                                <p class="file-upload-dropzone-title">点击或拖拽文件至此区域</p>
+                                                <p class="file-upload-dropzone-subtitle">支持多文件选择，不支持目录上传</p>
+                                            </div>
+                                            <button class="btn btn-primary btn-sm" id="selectFilesBtn" style="margin-left: auto; flex-shrink: 0;">选择文件</button>
+                                        </div>
+                                        <!-- 已选文件列表 -->
+                                        <div id="selectedFilesList" style="display: none; margin-top: 0.75rem; padding: 0.5rem; background: var(--surface-subtle); border-radius: 6px; max-height: 200px; overflow-y: auto;"></div>
+                                        <!-- 底部操作栏 -->
+                                        <div class="file-upload-file-actions">
+                                            <span class="file-upload-file-count" id="fileUploadFileCount">未选择任何文件</span>
+                                            <button class="btn btn-sm btn-outline-danger" id="clearFilesBtn" style="display: none;">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 2px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                清空文件
+                                            </button>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <!-- 步骤2: 目标路径 (占5列) -->
+                                <section class="file-upload-bento-item file-upload-bento-step2">
+                                    <div class="file-upload-step-header">
+                                        <span class="file-upload-step-badge">2</span>
+                                        <h3>目标路径 <span style="color: red;">*</span></h3>
+                                    </div>
+                                    <div class="file-upload-step-body">
+                                        <div class="form-group">
+                                            <input type="text" class="form-control" id="targetPath" placeholder="例如：/opt/app/ 或 /home/user/config/" style="font-family: 'Courier New', monospace;">
+                                        </div>
+                                        <div id="fullPathPreview" style="margin-top: 0.5rem; padding: 0.5rem; background: var(--primary-glow); border-radius: 6px; font-family: var(--font-mono); font-size: 0.875rem; display: none;">
+                                            <strong>完整路径预览：</strong>
+                                            <div id="fullPathList" style="margin-top: 0.3rem;"></div>
+                                        </div>
+                                        <div class="file-upload-hint-box">
+                                            <span style="color: var(--primary); margin-right: 4px;">ℹ</span>
+                                            请确保路径在目标主机上具有写入权限。建议使用绝对路径。
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <!-- 步骤3: 配置选项 (占6列) -->
+                                <section class="file-upload-bento-item file-upload-bento-step3">
+                                    <div class="file-upload-step-header">
+                                        <span class="file-upload-step-badge">3</span>
+                                        <h3>配置选项</h3>
+                                    </div>
+                                    <div class="file-upload-step-body">
+                                        <div class="file-upload-options-grid">
+                                            <!-- 文件冲突处理 -->
+                                            <div>
+                                                <label class="file-upload-option-label">文件冲突处理</label>
+                                                <div class="file-upload-option-group">
+                                                    <label class="file-upload-radio-label">
+                                                        <input type="radio" name="conflictStrategy" value="overwrite">
+                                                        <span>覆盖</span>
+                                                    </label>
+                                                    <label class="file-upload-radio-label">
+                                                        <input type="radio" name="conflictStrategy" value="skip">
+                                                        <span>跳过</span>
+                                                    </label>
+                                                    <label class="file-upload-radio-label file-upload-radio-active">
+                                                        <input type="radio" name="conflictStrategy" value="backup" checked>
+                                                        <span>备份后覆盖（默认）</span>
+                                                    </label>
+                                                </div>
+                                                <div class="file-upload-option-hint">备份格式：原文件名.bak.时间戳</div>
+                                            </div>
+
+                                            <!-- 路径不存在时 -->
+                                            <div>
+                                                <label class="file-upload-option-label">目标路径不存在时</label>
+                                                <div class="file-upload-option-group">
+                                                    <label class="file-upload-radio-label">
+                                                        <input type="radio" name="pathCreateStrategy" value="auto">
+                                                        <span>自动创建</span>
+                                                    </label>
+                                                    <label class="file-upload-radio-label file-upload-radio-active">
+                                                        <input type="radio" name="pathCreateStrategy" value="error" checked>
+                                                        <span>报错中止（默认）</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <!-- 步骤4: 选择目标主机 (占6列) -->
+                                <section class="file-upload-bento-item file-upload-bento-step4">
+                                    <div class="file-upload-step-header">
+                                        <span class="file-upload-step-badge">4</span>
+                                        <h3>选择目标主机 <span style="color: red;">*</span></h3>
+                                    </div>
+                                    <div class="file-upload-step-body" style="display: flex; flex-direction: column;">
+                                        <div style="margin-bottom: 0.5rem;">
+                                            <button class="btn btn-secondary" id="selectFileUploadHostsBtn">从主机管理选择</button>
+                                            <button class="btn btn-secondary" id="clearFileUploadHostsBtn">清空选择</button>
+                                            <span id="selectedFileUploadHostsCount" style="margin-left: 1rem; font-weight: bold;"></span>
+                                        </div>
+                                        <div id="selectedFileUploadHostsList" style="flex: 1; padding: 0.5rem; background: var(--surface-subtle); border-radius: 6px; min-height: 50px; max-height: 150px; overflow-y: auto;">
+                                            <span style="color: var(--text-muted);">未选择主机</span>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <!-- 执行参数配置（可覆盖全局设置） -->
+                            <div class="card" style="margin-top: 1rem;">
+                                <div class="card-body" style="padding: 0.75rem 1.25rem;">
+                                    <div style="display: flex; align-items: center; gap: 2rem;">
+                                        <label style="font-size: 13px; color: var(--text-muted); white-space: nowrap;">执行参数（可临时覆盖全局设置）</label>
+                                        <div style="display: flex; gap: 1rem; flex: 1;">
+                                            <div style="flex: 1;">
+                                                <label for="fileUploadTaskConcurrency" style="font-size: 12px; color: var(--text-faint);">并发数 (1-20)</label>
+                                                <input type="number" class="form-control" id="fileUploadTaskConcurrency" value="1" min="1" max="20" step="1" style="height: 34px;">
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <label for="fileUploadTaskTimeout" style="font-size: 12px; color: var(--text-faint);">超时(秒) ≥ 10</label>
+                                                <input type="number" class="form-control" id="fileUploadTaskTimeout" value="300" min="10" max="3600" step="10" style="height: 34px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="fileUploadTaskName">
+
+                            <!-- 执行按钮 -->
+                            <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                                <button class="btn btn-secondary" id="cancelFileUploadTaskBtn">取消</button>
+                                <button class="btn btn-success btn-lg" id="startFileUploadBtn">开始上传</button>
+                                <button class="btn btn-danger btn-lg" id="stopFileUploadBtn" style="display: none;">停止上传</button>
+                            </div>
+
+                            <!-- 执行监控区域 -->
+                            <div class="card" id="fileUploadTaskMonitorSection" style="display: none;">
+                                <div class="card-header">
+                                    <h3>上传监控</h3>
+                                </div>
+                                <div class="card-body">
+                                    <!-- 总体进度 -->
+                                    <div class="progress-section" style="margin-bottom: 1.5rem;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                            <span>总体进度</span>
+                                            <span id="fileUploadOverallProgress">0%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="fileUploadProgressFill" style="width: 0%;"></div>
+                                        </div>
+                                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem; text-align: center;">
+                                            <div>
+                                                <div style="font-size: 0.875rem; color: var(--text-muted);">总数</div>
+                                                <div style="font-size: 1.5rem; font-weight: bold;" id="fileUploadTotalCount">0</div>
+                                            </div>
+                                            <div>
+                                                <div style="font-size: 0.875rem; color: var(--text-muted);">成功</div>
+                                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--status-healthy-fg);" id="fileUploadSuccessCount">0</div>
+                                            </div>
+                                            <div>
+                                                <div style="font-size: 0.875rem; color: var(--text-muted);">失败</div>
+                                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--status-critical-fg);" id="fileUploadFailedCount">0</div>
+                                            </div>
+                                            <div>
+                                                <div style="font-size: 0.875rem; color: var(--text-muted);">运行时间</div>
+                                                <div style="font-size: 1.5rem; font-weight: bold;" id="fileUploadExecutionTime">00:00</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 实时日志 -->
+                                    <div class="log-section">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                            <h4>实时日志</h4>
+                                            <div style="display: flex; gap: 0.5rem;">
+                                                <button class="btn btn-sm btn-primary" id="downloadFileUploadLogBtn">下载日志</button>
+                                                <button class="btn btn-sm btn-success" id="copyFileUploadLogBtn">复制日志</button>
+                                                <button class="btn btn-sm btn-secondary" id="clearFileUploadLogBtn">清空日志</button>
+                                            </div>
+                                        </div>
+                                        <div id="fileUploadExecutionLog" style="background: var(--surface-card); color: var(--text-body); padding: 1rem; border-radius: 6px; height: 600px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.6;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 执行历史列表 -->
+                        <div class="file-upload-task-history-section" id="fileUploadTaskHistorySection">
+                            <div class="list-section-header"><h3>执行历史</h3></div>
+                            <div class="table-container">
+                                <table class="table" id="fileUploadTaskHistoryTable">
+                                    <thead>
+                                        <tr>
+                                            <th>任务ID</th>
+                                            <th>任务名称</th>
+                                            <th>文件数</th>
+                                            <th>目标路径</th>
+                                            <th>目标主机数</th>
+                                            <th>成功/失败</th>
+                                            <th>状态</th>
+                                            <th>创建时间</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 任务历史将动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 任务调度页面 -->
+                <div class="page" id="page-scheduled" style="display: none;">
+                    <div class="page-header">
+                        <h2>任务调度</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" id="refreshScheduledTasksBtn">刷新列表</button>
+                        </div>
+                    </div>
+                    
+                    <div class="page-content">
+                        <div class="list-section-header"><h3>待执行的定时任务</h3></div>
+                        <div class="table-container">
+                            <table class="table" id="scheduledTasksTable">
+                                <thead>
+                                    <tr>
+                                        <th>任务ID</th>
+                                        <th>任务名称</th>
+                                        <th>任务类型</th>
+                                        <th>目标主机数</th>
+                                        <th>计划执行时间</th>
+                                        <th>剩余时间</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- 定时任务将动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="page" id="page-history" style="display: none;">
+                    <div class="page-header">
+                        <h2>任务记录</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" id="refreshHistoryBtn">刷新列表</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 工具栏 -->
+                    <div class="toolbar">
+                        <div class="toolbar-left">
+                            <div class="search-bar">
+                                <input type="text" class="form-control" placeholder="搜索任务名称..." id="historySearchInput">
+                                <button class="btn btn-icon" id="searchHistoryBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+                            </div>
+                        </div>
+                        <div class="toolbar-right" style="display: flex; gap: 10px;">
+                            <select class="form-control" id="historySourceFilter" style="min-width: 120px;">
+                                <option value="">全部来源</option>
+                                <option value="regular">普通任务</option>
+                                <option value="project">工程任务</option>
+                            </select>
+                            <select class="form-control" id="historyTaskTypeFilter" style="min-width: 120px;">
+                                <option value="">全部类型</option>
+                                <option value="script">脚本执行</option>
+                                <option value="command">命令执行</option>
+                                <option value="file">文件上传</option>
+                                <option value="project">工程任务</option>
+                            </select>
+                            <select class="form-control" id="historyStatusFilter" style="min-width: 120px;">
+                                <option value="">全部状态</option>
+                                <option value="completed">已完成</option>
+                                <option value="failed">失败</option>
+                                <option value="cancelled">已取消</option>
+                                <option value="running">运行中</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="page-content">
+                        <div class="table-container">
+                            <table class="table" id="historyTable">
+                                <thead>
+                                    <tr>
+                                        <th>任务ID</th>
+                                        <th>任务名称</th>
+                                        <th>任务来源</th>
+                                        <th>任务类型</th>
+                                        <th>目标主机</th>
+                                        <th>成功/失败</th>
+                                        <th>状态</th>
+                                        <th>创建时间</th>
+                                        <th>完成时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- 任务记录将动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 工程任务页面 -->
+                <div class="page" id="page-project-tasks" style="display: none;">
+                    <div class="page-header">
+                        <h2>工程任务</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-primary" id="createProjectTaskBtn">新建工程</button>
+                            <button class="btn btn-secondary" id="refreshProjectTasksBtn">刷新</button>
+                        </div>
+                    </div>
+                    <!-- 工具栏：搜索 -->
+                    <div class="toolbar">
+                        <div class="toolbar-left">
+                            <div class="search-bar">
+                                <input type="text" class="form-control" placeholder="搜索工程名称或描述..." id="projectTaskSearchInput">
+                                <button class="btn btn-icon" id="searchProjectTaskBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+                                <button class="btn btn-icon" id="clearProjectTaskSearchBtn" title="清除搜索"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                            </div>
+                        </div>
+                        <div class="toolbar-right">
+                            <select class="form-control" id="projectTaskStatusFilter">
+                                <option value="">全部状态</option>
+                                <option value="idle">就绪</option>
+                                <option value="running">执行中</option>
+                                <option value="completed">已完成</option>
+                                <option value="failed">失败</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="page-content" id="projectTaskManagementContent">
+                        <!-- 工程任务列表由 projectTaskManagement.js 动态渲染 -->
+                    </div>
+                </div>
+
+            </section>
+        </main>
+
+        <!-- 状态栏 -->
+        <footer class="app-footer">
+            <div class="footer-left">
+                <span id="statusMessage">就绪</span>
+            </div>
+            <div class="footer-stats">
+                <!-- 主机统计 -->
+                <span class="footer-stat-item" title="主机总数">
+                    <i class="fas fa-server"></i> 主机
+                    <span class="footer-stat-value" id="totalHosts">0</span>
+                </span>
+                <span class="footer-stat-divider"></span>
+                <span class="footer-stat-item footer-stat-online" title="在线主机">
+                    <span class="footer-stat-dot"></span> 在线
+                    <span class="footer-stat-value" id="onlineHosts">0</span>
+                </span>
+                <span class="footer-stat-item footer-stat-offline" title="离线主机">
+                    <span class="footer-stat-dot"></span> 离线
+                    <span class="footer-stat-value" id="offlineHosts">0</span>
+                </span>
+                <span class="footer-stat-item footer-stat-unknown" title="未知状态主机">
+                    <span class="footer-stat-dot"></span> 未知
+                    <span class="footer-stat-value" id="unknownHosts">0</span>
+                </span>
+                <span class="footer-stat-divider"></span>
+                <!-- 资源统计 -->
+                <span class="footer-stat-item" title="脚本总数">
+                    <i class="fas fa-code"></i> 脚本
+                    <span class="footer-stat-value" id="totalScripts">0</span>
+                </span>
+                <span class="footer-stat-item" title="工程任务总数">
+                    <i class="fas fa-project-diagram"></i> 工程任务
+                    <span class="footer-stat-value" id="totalProjectTasks">0</span>
+                </span>
+                <span class="footer-stat-item" title="定时任务总数">
+                    <i class="fas fa-clock"></i> 定时任务
+                    <span class="footer-stat-value" id="totalScheduledTasks">0</span>
+                </span>
+            </div>
+            <div class="footer-right">
+                <span>版本: <span id="appVersion">1.260309.0</span></span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 模态框容器 -->
+    <div id="modalContainer"></div>
+
+    <!-- 加载脚本 -->
+    <script src="lib/highlight-init.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/scriptExcelComponents.js"></script>
+    <script src="js/connectionMonitor.js"></script>
+    <script src="js/services/hostService.js"></script>
+    <script src="js/services/scriptService.js"></script>
+    <script src="js/services/taskService.js"></script>
+    <script src="js/services/projectTaskService.js"></script>
+    <script src="js/services/backupService.js"></script>
+    <script src="js/scriptManagement.js"></script>
+    <script src="js/taskExecution.js"></script>
+    <script src="js/commandExecution.js"></script>
+    <script src="js/fileUpload.js"></script>
+    <script src="js/scheduledTasks.js"></script>
+    <script src="js/taskHistory.js"></script>
+    <script src="js/projectTaskManagement.js"></script>
+    <script src="js/projectTaskExecution.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

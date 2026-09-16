@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>万象匣 - 调试模式</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .debug-section {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .debug-section h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .status-ok {
+            color: #28a745;
+        }
+        .status-error {
+            color: #dc3545;
+        }
+        .status-warning {
+            color: #ffc107;
+        }
+        .console-log {
+            background: #1e1e1e;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .test-button {
+            background: #28a745;
+        }
+        .test-button:hover {
+            background: #1e7e34;
+        }
+    </style>
+</head>
+<body>
+    <h1>万象匣 - 界面响应调试</h1>
+    
+    <div class="debug-panel">
+        <h2>系统状态检查</h2>
+        
+        <div class="debug-section">
+            <h3>JavaScript执行状态</h3>
+            <div id="jsStatus">检查中...</div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>事件监听器状态</h3>
+            <div id="eventStatus">检查中...</div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>DOM元素状态</h3>
+            <div id="domStatus">检查中...</div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>工具函数状态</h3>
+            <div id="utilsStatus">检查中...</div>
+        </div>
+    </div>
+    
+    <div class="debug-panel">
+        <h2>交互测试</h2>
+        
+        <div class="debug-section">
+            <h3>基础点击测试</h3>
+            <button id="testClick" class="test-button">点击我测试</button>
+            <div id="clickResult">等待点击...</div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>Utils函数测试</h3>
+            <button id="testUtils" class="test-button">测试工具函数</button>
+            <div id="utilsResult">等待测试...</div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>导航测试</h3>
+            <button id="testNavigation" class="test-button">测试页面导航</button>
+            <div id="navResult">等待测试...</div>
+        </div>
+    </div>
+    
+    <div class="debug-panel">
+        <h2>控制台日志</h2>
+        <div id="consoleLog" class="console-log">准备捕获控制台输出...</div>
+        <button onclick="clearConsole()">清除日志</button>
+    </div>
+
+    <script>
+        // 控制台日志捕获
+        const consoleLog = document.getElementById('consoleLog');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function appendLog(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = {
+                'log': 'ℹ️',
+                'error': '❌',
+                'warn': '⚠️'
+            }[type] || 'ℹ️';
+            
+            consoleLog.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            appendLog(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            appendLog(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            appendLog(args.join(' '), 'warn');
+        };
+        
+        function clearConsole() {
+            consoleLog.textContent = '';
+        }
+        
+        // 状态检查函数
+        function checkJavaScriptStatus() {
+            try {
+                const status = document.getElementById('jsStatus');
+                
+                // 检查基本JavaScript功能
+                const tests = [
+                    () => typeof window !== 'undefined',
+                    () => typeof document !== 'undefined',
+                    () => typeof console !== 'undefined',
+                    () => document.querySelector !== undefined,
+                    () => document.addEventListener !== undefined
+                ];
+                
+                const results = tests.map(test => {
+                    try {
+                        return test();
+                    } catch (e) {
+                        return false;
+                    }
+                });
+                
+                const allPassed = results.every(r => r);
+                
+                if (allPassed) {
+                    status.innerHTML = '<span class="status-ok">✅ JavaScript运行正常</span>';
+                } else {
+                    status.innerHTML = '<span class="status-error">❌ JavaScript运行异常</span>';
+                }
+                
+                console.log('JavaScript状态检查完成:', allPassed);
+                
+            } catch (error) {
+                document.getElementById('jsStatus').innerHTML = '<span class="status-error">❌ JavaScript检查失败: ' + error.message + '</span>';
+                console.error('JavaScript状态检查失败:', error);
+            }
+        }
+        
+        function checkEventStatus() {
+            try {
+                const status = document.getElementById('eventStatus');
+                
+                // 测试事件监听器
+                let eventWorking = false;
+                const testButton = document.createElement('button');
+                testButton.style.display = 'none';
+                document.body.appendChild(testButton);
+                
+                testButton.addEventListener('click', () => {
+                    eventWorking = true;
+                });
+                
+                // 触发点击事件
+                testButton.click();
+                
+                // 清理测试元素
+                document.body.removeChild(testButton);
+                
+                if (eventWorking) {
+                    status.innerHTML = '<span class="status-ok">✅ 事件系统正常</span>';
+                } else {
+                    status.innerHTML = '<span class="status-error">❌ 事件系统异常</span>';
+                }
+                
+                console.log('事件状态检查完成:', eventWorking);
+                
+            } catch (error) {
+                document.getElementById('eventStatus').innerHTML = '<span class="status-error">❌ 事件检查失败: ' + error.message + '</span>';
+                console.error('事件状态检查失败:', error);
+            }
+        }
+        
+        function checkDOMStatus() {
+            try {
+                const status = document.getElementById('domStatus');
+                
+                // 检查DOM操作
+                const tests = [
+                    () => document.createElement('div') !== null,
+                    () => document.querySelector('body') !== null,
+                    () => document.getElementById('domStatus') !== null
+                ];
+                
+                const results = tests.map(test => {
+                    try {
+                        return test();
+                    } catch (e) {
+                        return false;
+                    }
+                });
+                
+                const allPassed = results.every(r => r);
+                
+                if (allPassed) {
+                    status.innerHTML = '<span class="status-ok">✅ DOM操作正常</span>';
+                } else {
+                    status.innerHTML = '<span class="status-error">❌ DOM操作异常</span>';
+                }
+                
+                console.log('DOM状态检查完成:', allPassed);
+                
+            } catch (error) {
+                document.getElementById('domStatus').innerHTML = '<span class="status-error">❌ DOM检查失败: ' + error.message + '</span>';
+                console.error('DOM状态检查失败:', error);
+            }
+        }
+        
+        function checkUtilsStatus() {
+            try {
+                const status = document.getElementById('utilsStatus');
+                let message = '';
+                
+                // 检查Utils对象是否存在
+                if (typeof window.Utils !== 'undefined') {
+                    const utilsTests = [
+                        { name: '$', test: () => typeof window.Utils.$ === 'function' },
+                        { name: 'on', test: () => typeof window.Utils.on === 'function' },
+                        { name: 'sleep', test: () => typeof window.Utils.sleep === 'function' },
+                        { name: 'notify', test: () => typeof window.Utils.notify === 'object' }
+                    ];
+                    
+                    const results = utilsTests.map(test => ({
+                        name: test.name,
+                        passed: test.test()
+                    }));
+                    
+                    const passedCount = results.filter(r => r.passed).length;
+                    
+                    if (passedCount === utilsTests.length) {
+                        message = '<span class="status-ok">✅ Utils工具函数正常</span>';
+                    } else {
+                        message = `<span class="status-warning">⚠️ Utils部分功能异常 (${passedCount}/${utilsTests.length})</span>`;
+                    }
+                } else {
+                    message = '<span class="status-error">❌ Utils对象未定义</span>';
+                }
+                
+                status.innerHTML = message;
+                console.log('Utils状态检查完成');
+                
+            } catch (error) {
+                document.getElementById('utilsStatus').innerHTML = '<span class="status-error">❌ Utils检查失败: ' + error.message + '</span>';
+                console.error('Utils状态检查失败:', error);
+            }
+        }
+        
+        // 交互测试函数
+        function setupInteractionTests() {
+            // 基础点击测试
+            document.getElementById('testClick').addEventListener('click', function() {
+                const result = document.getElementById('clickResult');
+                result.innerHTML = '<span class="status-ok">✅ 点击事件正常工作！时间: ' + new Date().toLocaleTimeString() + '</span>';
+                console.log('点击测试成功');
+            });
+            
+            // Utils函数测试
+            document.getElementById('testUtils').addEventListener('click', function() {
+                const result = document.getElementById('utilsResult');
+                
+                try {
+                    if (typeof window.Utils !== 'undefined') {
+                        // 测试$函数
+                        const testElement = window.Utils.$('body');
+                        if (testElement) {
+                            result.innerHTML = '<span class="status-ok">✅ Utils.$函数工作正常</span>';
+                            console.log('Utils测试成功');
+                        } else {
+                            result.innerHTML = '<span class="status-error">❌ Utils.$函数返回null</span>';
+                        }
+                    } else {
+                        result.innerHTML = '<span class="status-error">❌ Utils对象不存在</span>';
+                    }
+                } catch (error) {
+                    result.innerHTML = '<span class="status-error">❌ Utils测试失败: ' + error.message + '</span>';
+                    console.error('Utils测试失败:', error);
+                }
+            });
+            
+            // 导航测试
+            document.getElementById('testNavigation').addEventListener('click', function() {
+                const result = document.getElementById('navResult');
+                
+                try {
+                    // 尝试打开主应用页面
+                    window.open('index.html', '_blank');
+                    result.innerHTML = '<span class="status-ok">✅ 导航测试完成，已尝试打开主页面</span>';
+                    console.log('导航测试成功');
+                } catch (error) {
+                    result.innerHTML = '<span class="status-error">❌ 导航测试失败: ' + error.message + '</span>';
+                    console.error('导航测试失败:', error);
+                }
+            });
+        }
+        
+        // 初始化调试页面
+        function initDebugPage() {
+            console.log('调试页面初始化开始');
+            
+            // 运行所有状态检查
+            setTimeout(() => {
+                checkJavaScriptStatus();
+                checkEventStatus();
+                checkDOMStatus();
+                checkUtilsStatus();
+            }, 100);
+            
+            // 设置交互测试
+            setupInteractionTests();
+            
+            console.log('调试页面初始化完成');
+        }
+        
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDebugPage);
+        } else {
+            initDebugPage();
+        }
+        
+        // 全局错误捕获
+        window.addEventListener('error', function(e) {
+            console.error('全局错误:', e.error);
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('未处理的Promise拒绝:', e.reason);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>万象匣 - 简化版</title>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        /* 简化样式，确保兼容性 */
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-primary { background: #007bff; }
+        .btn-success { background: #28a745; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; }
+        .btn-secondary { background: #6c757d; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 简化的头部 -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="app-logo">
+                    <span class="app-title">万象匣 - 简化版</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 简化的主内容 -->
+        <main class="app-main">
+            <section class="content" style="padding: 20px;">
+                <div class="page-header">
+                    <h2>主机管理</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="addHostBtn">添加主机</button>
+                        <button class="btn btn-secondary" id="refreshBtn">刷新</button>
+                        <button class="btn btn-success" id="testBtn">测试连接</button>
+                    </div>
+                </div>
+                
+                <div class="test-section" style="margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                    <h3>交互测试</h3>
+                    <button class="btn btn-primary" onclick="testClick()">点击测试</button>
+                    <button class="btn btn-success" onclick="showAlert()">显示警告</button>
+                    <button class="btn btn-warning" onclick="console.log('控制台测试')">控制台测试</button>
+                    <div id="testResult" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                        等待测试...
+                    </div>
+                </div>
+                
+                <div class="host-list" id="hostList">
+                    <table class="table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 12px; border: 1px solid #ddd;">主机名</th>
+                                <th style="padding: 12px; border: 1px solid #ddd;">IP地址</th>
+                                <th style="padding: 12px; border: 1px solid #ddd;">端口</th>
+                                <th style="padding: 12px; border: 1px solid #ddd;">状态</th>
+                                <th style="padding: 12px; border: 1px solid #ddd;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hostTableBody">
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #ddd;">示例主机</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">192.168.1.100</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">22</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">未知</td>
+                                <td style="padding: 12px; border: 1px solid #ddd;">
+                                    <button class="btn btn-sm btn-primary" onclick="connectHost(0)">连接</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="editHost(0)">编辑</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // 简化的JavaScript，确保基础功能可用
+        console.log('简化版应用开始加载...');
+        
+        // 基础工具函数
+        function $(selector) {
+            return document.querySelector(selector);
+        }
+        
+        function $$(selector) {
+            return document.querySelectorAll(selector);
+        }
+        
+        // 测试函数
+        function testClick() {
+            const result = $('#testResult');
+            result.innerHTML = '✅ 点击测试成功！时间: ' + new Date().toLocaleTimeString();
+            result.style.background = '#d4edda';
+            result.style.color = '#155724';
+            console.log('点击测试成功');
+        }
+        
+        function showAlert() {
+            alert('警告功能正常工作！');
+            console.log('警告测试成功');
+        }
+        
+        function connectHost(index) {
+            console.log('连接主机:', index);
+            alert('连接主机功能 - 索引: ' + index);
+        }
+        
+        function editHost(index) {
+            console.log('编辑主机:', index);
+            alert('编辑主机功能 - 索引: ' + index);
+        }
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成');
+            
+            // 绑定按钮事件
+            const addBtn = $('#addHostBtn');
+            if (addBtn) {
+                addBtn.addEventListener('click', function() {
+                    alert('添加主机功能');
+                    console.log('添加主机按钮点击');
+                });
+            }
+            
+            const refreshBtn = $('#refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    alert('刷新功能');
+                    console.log('刷新按钮点击');
+                });
+            }
+            
+            const testBtn = $('#testBtn');
+            if (testBtn) {
+                testBtn.addEventListener('click', function() {
+                    alert('测试连接功能');
+                    console.log('测试连接按钮点击');
+                });
+            }
+            
+            console.log('简化版应用初始化完成');
+            
+            // 显示初始化完成提示
+            setTimeout(() => {
+                const result = $('#testResult');
+                if (result) {
+                    result.innerHTML = '✅ 简化版应用已就绪，所有基础功能正常';
+                    result.style.background = '#d1ecf1';
+                    result.style.color = '#0c5460';
+                }
+            }, 500);
+        });
+        
+        // 全局错误处理
+        window.addEventListener('error', function(e) {
+            console.error('全局错误:', e.error);
+            const result = $('#testResult');
+            if (result) {
+                result.innerHTML = '❌ 发生错误: ' + e.error.message;
+                result.style.background = '#f8d7da';
+                result.style.color = '#721c24';
+            }
+        });
+        
+        console.log('简化版脚本加载完成');
+    </script>
+</body>
+</html>

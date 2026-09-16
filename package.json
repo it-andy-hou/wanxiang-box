@@ -1,0 +1,78 @@
+{
+  "name": "wanxiang-box",
+  "version": "1.260912.0",
+  "description": "万象匣-运维自动化管控平台",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "chcp 65001 > nul && electron .",
+    "dev": "chcp 65001 > nul && electron . --dev",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "keywords": [
+    "ssh",
+    "server-management",
+    "script-execution",
+    "batch-operation",
+    "electron"
+  ],
+  "author": {
+    "name": "侯金刚",
+    "email": "andy@hi-andy.com"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "csv-writer": "^1.6.0",
+    "highlight.js": "^11.11.1",
+    "mermaid": "^11.12.3",
+    "node-ssh": "^13.2.1",
+    "xlsx": "^0.18.5"
+  },
+  "build": {
+    "appId": "com.wanxiangbox.app",
+    "productName": "万象匣",
+    "copyright": "Copyright \u00a9 2026 侯金刚. All rights reserved.",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/**/*",
+      "docs/wanxianglogo-mini.ico",
+      "docs/wanxianglogo-mini.png"
+    ],
+    "electronDownload": {
+      "mirror": "https://npmmirror.com/mirrors/electron/"
+    },
+    "win": {
+      "target": "zip",
+      "icon": "docs/wanxianglogo-mini.ico",
+      "legalTrademarks": "万象匣 (WanXiang Box) 是侯金刚的注册商标",
+      "publisherName": "侯金刚"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "docs/wanxianglogo-mini.png"
+    },
+    "mac": {
+      "target": {
+        "target": "dmg",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      },
+      "icon": "docs/wanxianglogo-mini.png"
+    }
+  }
+}

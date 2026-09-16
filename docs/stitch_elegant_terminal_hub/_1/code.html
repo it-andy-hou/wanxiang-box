@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AssetMaster - Host Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#adc6ff",
+                        "outline-variant": "#3c4a42",
+                        "tertiary-container": "#e29100",
+                        "error": "#ffb4ab",
+                        "surface-container": "#171f33",
+                        "on-surface": "#dae2fd",
+                        "secondary": "#adc6ff",
+                        "error-container": "#93000a",
+                        "secondary-fixed": "#d8e2ff",
+                        "surface-container-low": "#131b2e",
+                        "surface-container-lowest": "#060e20",
+                        "inverse-surface": "#dae2fd",
+                        "surface-container-highest": "#2d3449",
+                        "primary": "#4edea3",
+                        "background": "#0b1326",
+                        "surface": "#0b1326",
+                        "tertiary": "#ffb95f",
+                        "on-primary-container": "#00422b",
+                        "surface-bright": "#31394d",
+                        "on-tertiary-fixed": "#2a1700",
+                        "inverse-on-surface": "#283044",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "secondary-container": "#0566d9",
+                        "on-secondary-container": "#e6ecff",
+                        "on-secondary": "#002e6a",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-tertiary-container": "#523200",
+                        "primary-container": "#10b981",
+                        "primary-fixed-dim": "#4edea3",
+                        "outline": "#86948a",
+                        "surface-container-high": "#222a3d",
+                        "on-tertiary": "#472a00",
+                        "primary-fixed": "#6ffbbe",
+                        "on-secondary-fixed-variant": "#004395",
+                        "inverse-primary": "#006c49",
+                        "on-primary": "#003824",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#bbcabf",
+                        "on-secondary-fixed": "#001a42",
+                        "on-background": "#dae2fd",
+                        "on-primary-fixed": "#002113",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#005236",
+                        "tertiary-fixed": "#ffddb8",
+                        "surface-variant": "#2d3449",
+                        "surface-tint": "#4edea3",
+                        "surface-dim": "#0b1326"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "1.5rem",
+                        "stack-gap": "1rem",
+                        "sidebar-width": "260px",
+                        "container-margin": "2rem",
+                        "row-height": "3.5rem"
+                    },
+                    "fontFamily": {
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "label-mono": ["JetBrains Mono"],
+                        "body-md": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "code-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                        "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+            font-family: 'Hanken Grotesk', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #131b2e;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2d3449;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 right-0 h-row-height bg-surface-container flex justify-between items-center w-full px-gutter z-50 border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<span class="text-headline-md font-headline-md font-bold text-on-surface">AssetMaster</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-primary border-b-2 border-primary pb-1 font-bold text-body-md font-body-md" href="#">Host Management</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors text-body-md font-body-md" href="#">Project Tasks</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors text-body-md font-body-md" href="#">Script Management</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors text-body-md font-body-md" href="#">Script Execution</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors text-body-md font-body-md" href="#">Command Execution</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors text-body-md font-body-md" href="#">File Upload</a>
+</nav>
+<div class="flex items-center gap-4">
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-label-mono font-label-mono border border-primary/20">Ready (0)</span>
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-lg transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-lg transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-row-height h-[calc(100vh-theme(spacing.row-height))] w-sidebar-width bg-surface-container-low border-r border-outline-variant flex flex-col py-gutter px-4 gap-stack-gap z-40">
+<div class="mb-4">
+<h2 class="text-label-mono font-label-mono uppercase text-primary/70 tracking-widest mb-4">Quick Operations</h2>
+<div class="space-y-1">
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1 group" href="#">
+<span class="material-symbols-outlined">upload_file</span>
+<span class="text-body-md font-body-md">Import Excel</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1 group" href="#">
+<span class="material-symbols-outlined">download</span>
+<span class="text-body-md font-body-md">Export Excel</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1 group" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="text-body-md font-body-md">Batch Test</span>
+</a>
+</div>
+</div>
+<div class="mb-auto">
+<h2 class="text-label-mono font-label-mono uppercase text-primary/70 tracking-widest mb-4">Statistics</h2>
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-surface-container-highest p-3 rounded-xl border border-outline-variant">
+<p class="text-label-mono font-label-mono text-on-surface-variant mb-1">Servers</p>
+<p class="text-headline-md font-headline-md text-primary">198</p>
+</div>
+<div class="bg-surface-container-highest p-3 rounded-xl border border-outline-variant">
+<p class="text-label-mono font-label-mono text-on-surface-variant mb-1">Scripts</p>
+<p class="text-headline-md font-headline-md text-secondary">28</p>
+</div>
+</div>
+<div class="mt-4 bg-surface-container p-3 rounded-xl border border-outline-variant">
+<div class="flex justify-between items-center mb-2">
+<span class="text-body-md font-body-md">Task Status</span>
+<span class="text-label-mono font-label-mono text-primary">85% Success</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[85%]"></div>
+</div>
+</div></div></aside>
+<!-- Main Content Canvas -->
+<main class="ml-sidebar-width mt-row-height h-[calc(100vh-theme(spacing.row-height))] overflow-y-auto p-gutter custom-scrollbar">
+<!-- Dashboard Header -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h1 class="text-display-lg font-display-lg text-on-surface">Host Management</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1">Manage, monitor and access your infrastructure assets.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 border border-outline-variant hover:bg-surface-container-highest text-on-surface rounded-lg text-body-md font-body-md transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">refresh</span>
+                    Refresh List
+                </button>
+<button class="px-6 py-2 bg-primary hover:opacity-90 text-on-primary-container rounded-lg text-body-md font-body-md font-bold transition-all flex items-center gap-2 shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+                    Add Host
+                </button>
+</div>
+</div>
+<!-- Filter Bento Section -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+<div class="md:col-span-4 relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-xl pl-10 pr-4 py-3 text-body-md font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Search hostname, IP address or description..." type="text"/>
+</div>
+<div class="md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+<select class="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-body-md font-body-md focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer">
+<option>All Systems</option>
+<option>Linux</option>
+<option>Windows</option>
+</select>
+<select class="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-body-md font-body-md focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer">
+<option>Environment</option>
+<option>Production</option>
+<option>Testing</option>
+<option>Development</option>
+</select>
+<select class="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-body-md font-body-md focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer">
+<option>All Owners</option>
+<option>张超 (Zhang Chao)</option>
+<option>任朋飞 (Ren Pengfei)</option>
+</select>
+<button class="bg-surface-container-highest hover:bg-surface-bright text-on-surface border border-outline-variant rounded-xl px-4 py-3 text-body-md font-body-md transition-all">
+                    Reset Filters
+                </button>
+</div>
+</div>
+<!-- Data Table Section -->
+<div class="bg-surface-container-low border border-outline-variant rounded-2xl overflow-hidden shadow-2xl">
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high border-b border-outline-variant">
+<th class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></th>
+<th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">IP Address</th>
+<th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">System Name</th>
+<th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider text-center">Port</th>
+<th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">Owner</th>
+<th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">Environment</th>
+<th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">Status</th>
+<th class="py-4 px-6 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-highest transition-colors group">
+<td class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></td>
+<td class="py-4 px-4 font-code-sm text-code-sm text-secondary">172.28.210.116</td>
+<td class="py-4 px-4 text-body-md font-body-md">佣金宝-防篡改</td>
+<td class="py-4 px-4 text-center">
+<span class="bg-surface-container-highest px-2 py-0.5 rounded text-code-sm font-code-sm border border-outline-variant">22</span>
+</td>
+<td class="py-4 px-4 text-body-md font-body-md">张超</td>
+<td class="py-4 px-4 text-body-md font-body-md text-on-surface-variant">科技-仿真网</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-label-mono font-label-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(78,222,163,0.6)]"></span> Online
+                                </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 hover:bg-secondary/10 text-secondary transition-colors rounded-lg" title="Terminal"><span class="material-symbols-outlined text-[20px]">terminal</span></button>
+<button class="p-2 hover:bg-primary/10 text-primary transition-colors rounded-lg" title="Web SSH"><span class="material-symbols-outlined text-[20px]">language</span></button>
+<button class="p-2 hover:bg-tertiary/10 text-tertiary transition-colors rounded-lg" title="Edit"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2 hover:bg-error/10 text-error transition-colors rounded-lg" title="Delete"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-highest transition-colors group">
+<td class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></td>
+<td class="py-4 px-4 font-code-sm text-code-sm text-secondary">172.28.25.121</td>
+<td class="py-4 px-4 text-body-md font-body-md">佣金宝-防篡改</td>
+<td class="py-4 px-4 text-center"><span class="bg-surface-container-highest px-2 py-0.5 rounded text-code-sm font-code-sm border border-outline-variant">22</span></td>
+<td class="py-4 px-4 text-body-md font-body-md">张超</td>
+<td class="py-4 px-4 text-body-md font-body-md text-on-surface-variant">科技-测试网</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-highest text-on-surface-variant border border-outline-variant text-label-mono font-label-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-on-surface-variant"></span> Unknown
+                                </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 hover:bg-secondary/10 text-secondary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">terminal</span></button>
+<button class="p-2 hover:bg-primary/10 text-primary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">language</span></button>
+<button class="p-2 hover:bg-tertiary/10 text-tertiary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2 hover:bg-error/10 text-error transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-highest transition-colors group">
+<td class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></td>
+<td class="py-4 px-4 font-code-sm text-code-sm text-secondary">172.28.25.209</td>
+<td class="py-4 px-4 text-body-md font-body-md">DNS Server</td>
+<td class="py-4 px-4 text-center"><span class="bg-surface-container-highest px-2 py-0.5 rounded text-code-sm font-code-sm border border-outline-variant">22</span></td>
+<td class="py-4 px-4 text-body-md font-body-md">任朋飞</td>
+<td class="py-4 px-4 text-body-md font-body-md text-on-surface-variant">科技-测试网</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error/10 text-error border border-error/20 text-label-mono font-label-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.6)]"></span> Offline
+                                </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 hover:bg-secondary/10 text-secondary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">terminal</span></button>
+<button class="p-2 hover:bg-primary/10 text-primary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">language</span></button>
+<button class="p-2 hover:bg-tertiary/10 text-tertiary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2 hover:bg-error/10 text-error transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-highest transition-colors group">
+<td class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></td>
+<td class="py-4 px-4 font-code-sm text-code-sm text-secondary">172.28.60.132</td>
+<td class="py-4 px-4 text-body-md font-body-md">佣金宝-凌志MOT</td>
+<td class="py-4 px-4 text-center"><span class="bg-surface-container-highest px-2 py-0.5 rounded text-code-sm font-code-sm border border-outline-variant">22</span></td>
+<td class="py-4 px-4 text-body-md font-body-md">张超</td>
+<td class="py-4 px-4 text-body-md font-body-md text-on-surface-variant">科技-仿真网</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-label-mono font-label-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(78,222,163,0.6)]"></span> Online
+                                </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 hover:bg-secondary/10 text-secondary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">terminal</span></button>
+<button class="p-2 hover:bg-primary/10 text-primary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">language</span></button>
+<button class="p-2 hover:bg-tertiary/10 text-tertiary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2 hover:bg-error/10 text-error transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Additional filler row to show density -->
+<tr class="hover:bg-surface-container-highest transition-colors group">
+<td class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></td>
+<td class="py-4 px-4 font-code-sm text-code-sm text-secondary">172.28.60.134</td>
+<td class="py-4 px-4 text-body-md font-body-md">佣金宝-凌志MOT</td>
+<td class="py-4 px-4 text-center"><span class="bg-surface-container-highest px-2 py-0.5 rounded text-code-sm font-code-sm border border-outline-variant">22</span></td>
+<td class="py-4 px-4 text-body-md font-body-md">张超</td>
+<td class="py-4 px-4 text-body-md font-body-md text-on-surface-variant">科技-仿真网</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-label-mono font-label-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(78,222,163,0.6)]"></span> Online
+                                </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 hover:bg-secondary/10 text-secondary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">terminal</span></button>
+<button class="p-2 hover:bg-primary/10 text-primary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">language</span></button>
+<button class="p-2 hover:bg-tertiary/10 text-tertiary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2 hover:bg-error/10 text-error transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Modern Pagination -->
+<div class="bg-surface-container-high border-t border-outline-variant px-6 py-4 flex justify-between items-center">
+<p class="text-body-md font-body-md text-on-surface-variant">
+                    Showing <span class="text-on-surface font-bold">1-100</span> of <span class="text-on-surface font-bold">198</span> records
+                </p>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined text-[20px]">first_page</span>
+</button>
+<button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 rounded-lg bg-primary text-on-primary-container font-bold text-body-md font-body-md shadow-lg shadow-primary/20">1</button>
+<button class="w-10 h-10 rounded-lg hover:bg-surface-container-highest text-on-surface text-body-md font-body-md transition-colors">2</button>
+</div>
+<button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+<button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-[20px]">last_page</span>
+</button>
+<div class="ml-4 flex items-center gap-2 border-l border-outline-variant pl-4">
+<span class="text-label-mono font-label-mono text-on-surface-variant">Show:</span>
+<select class="bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-label-mono font-label-mono focus:outline-none cursor-pointer">
+<option>100</option>
+<option>250</option>
+<option>500</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+<!-- System Footer -->
+<footer class="mt-12 mb-6 flex justify-between items-center px-4">
+<div class="flex gap-6">
+<a class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors text-label-mono font-label-mono" href="#">
+<span class="material-symbols-outlined text-[18px]">history</span> System Logs
+                </a>
+<a class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors text-label-mono font-label-mono" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span> Support
+                </a>
+</div>
+<div class="text-on-surface-variant text-label-mono font-label-mono opacity-50">
+                AssetMaster v1.260309.0 • Build Success
+            </div>
+</footer>
+</main>
+</body></html>

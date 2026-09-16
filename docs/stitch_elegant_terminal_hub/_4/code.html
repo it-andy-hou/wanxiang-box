@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AssetMaster - 工程任务</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Hanken Grotesk -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'surface': '#0b1326',
+            'surface-dim': '#0b1326',
+            'surface-bright': '#31394d',
+            'surface-container-lowest': '#060e20',
+            'surface-container-low': '#131b2e',
+            'surface-container-high': '#1a243a',
+            'primary-green': '#10b981',
+            'accent-blue': '#3b82f6',
+            'text-dim': '#94a3b8',
+            'border-subtle': 'rgba(255, 255, 255, 0.1)',
+          },
+          fontFamily: {
+            sans: ['Hanken Grotesk', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-scrollbars">
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b1326; }
+    ::-webkit-scrollbar-thumb { background: #1a243a; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #31394d; }
+  </style>
+<style data-purpose="layout-typography">
+    body {
+      background-color: #0b1326;
+      color: #e2e8f0;
+      font-family: 'Hanken Grotesk', sans-serif;
+    }
+  </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+<!-- BEGIN: TopNavigationBar -->
+<header class="h-16 border-b border-border-subtle flex items-center justify-between px-6 shrink-0 bg-surface-container-low">
+<div class="flex items-center space-x-12">
+<div class="flex flex-col">
+<h1 class="text-xl font-bold tracking-tight text-primary-green">AssetMaster</h1>
+<span class="text-[10px] text-text-dim tracking-widest uppercase">Titanium Ops</span>
+</div>
+<nav class="flex items-center space-x-6 text-sm font-medium">
+<a class="text-text-dim hover:text-white transition-colors" href="#">主机管理</a>
+<a class="text-white border-b-2 border-primary-green pb-5 mt-5" href="#">工程任务</a>
+<a class="text-text-dim hover:text-white transition-colors" href="#">脚本管理</a>
+<a class="text-text-dim hover:text-white transition-colors" href="#">脚本执行</a>
+<a class="text-text-dim hover:text-white transition-colors" href="#">命令执行</a>
+<a class="text-text-dim hover:text-white transition-colors" href="#">文件上传</a>
+</nav>
+</div>
+<div class="flex items-center space-x-4">
+<div class="flex items-center bg-surface-container-lowest px-3 py-1 rounded-full border border-border-subtle">
+<span class="w-2 h-2 rounded-full bg-primary-green mr-2"></span>
+<span class="text-xs text-primary-green font-medium">就绪 (0)</span>
+</div>
+<button class="p-2 text-text-dim hover:text-white transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<button class="p-2 text-text-dim hover:text-white transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-bright border border-primary-green/30 overflow-hidden">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5FIik-5N-ES2SpdQnHvb27WuVTJ7jJo5VLRG2klpbEkIpLgc276rmb_-IH5T1VDi3SVo-5nE9ve4K7CbOMtTL2RTwR4Wk4eEu3K9C3oAgX9PR9GzsIo10szSCQSJJQ2PqcXPNbC6R0DK-rMApfEOc0JL0770hk_i1tnbzppEdLBuIbcZDFP_7uuIAkjzrZZmQfbmdY24gUBDODRdm9Aw6aIahbhvsh7bOq1ySVDj3_Z05nlhLTNoGZ-U9j07OMZ_ecF_Y40haZ0I"/>
+</div>
+</div>
+</header>
+<!-- END: TopNavigationBar -->
+<div class="flex-1 flex overflow-hidden">
+<!-- BEGIN: SideNavigation -->
+<aside class="w-64 border-r border-border-subtle bg-surface-container-lowest flex flex-col p-6 space-y-8 shrink-0">
+<div data-purpose="quick-ops">
+<h3 class="text-[10px] uppercase tracking-widest text-text-dim font-bold mb-4">快速操作</h3>
+<ul class="space-y-2">
+<li>
+<button class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-surface-container-high transition-all text-sm group">
+<svg class="w-5 h-5 text-text-dim group-hover:text-primary-green" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span>导入Excel</span>
+</button>
+</li>
+<li>
+<button class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-surface-container-high transition-all text-sm group">
+<svg class="w-5 h-5 text-text-dim group-hover:text-primary-green" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span>导出Excel</span>
+</button>
+</li>
+<li>
+<button class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-surface-container-high transition-all text-sm group">
+<svg class="w-5 h-5 text-text-dim group-hover:text-primary-green" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span>批量测试</span>
+</button>
+</li>
+</ul>
+</div>
+<div data-purpose="statistics">
+<h3 class="text-[10px] uppercase tracking-widest text-text-dim font-bold mb-4">统计信息</h3>
+<div class="grid grid-cols-2 gap-3 mb-4">
+<div class="bg-surface-container-high p-3 rounded-xl border border-border-subtle">
+<span class="text-[10px] text-text-dim block mb-1">总主机</span>
+<span class="text-xl font-bold text-white">198</span>
+</div>
+<div class="bg-surface-container-high p-3 rounded-xl border border-border-subtle">
+<span class="text-[10px] text-text-dim block mb-1">在线</span>
+<span class="text-xl font-bold text-primary-green">198</span>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs bg-surface-container-low p-2 rounded-lg">
+<span class="text-text-dim">脚本数量</span>
+<span class="font-bold">28</span>
+</div>
+<div class="flex justify-between items-center text-xs bg-surface-container-low p-2 rounded-lg">
+<span class="text-text-dim">工程任务</span>
+<span class="font-bold">3</span>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-6 border-t border-border-subtle space-y-4">
+<button class="flex items-center space-x-3 text-sm text-text-dim hover:text-white transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span>系统日志</span>
+</button>
+<button class="flex items-center space-x-3 text-sm text-text-dim hover:text-white transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span>技术支持</span>
+</button>
+</div>
+</aside>
+<!-- END: SideNavigation -->
+<!-- BEGIN: MainContent -->
+<main class="flex-1 overflow-y-auto bg-surface p-8">
+<!-- BEGIN: ContentHeader -->
+<div class="flex justify-between items-end mb-8" data-purpose="page-title-section">
+<div>
+<h2 class="text-3xl font-bold text-white mb-2">工程任务</h2>
+<p class="text-text-dim text-sm">配置与编排自动化工程任务流。</p>
+</div>
+<div class="flex space-x-3">
+<button class="bg-surface-container-high hover:bg-surface-bright text-white px-4 py-2 rounded-lg text-sm font-medium border border-border-subtle transition-all flex items-center space-x-2">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span>刷新</span>
+</button>
+<button class="bg-primary-green hover:bg-emerald-500 text-surface font-bold px-4 py-2 rounded-lg text-sm transition-all flex items-center space-x-2">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span>新建工程</span>
+</button>
+</div>
+</div>
+<!-- END: ContentHeader -->
+<div class="flex space-x-6">
+<!-- BEGIN: LeftColumnForm -->
+<div class="flex-1 space-y-6">
+<!-- BEGIN: ProjectEditorCard -->
+<div class="bg-surface-container-low rounded-2xl border border-border-subtle overflow-hidden" data-purpose="edit-form">
+<div class="px-6 py-4 border-b border-border-subtle flex items-center justify-between">
+<div class="flex items-center space-x-4">
+<button class="text-text-dim hover:text-white p-1">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<h3 class="font-bold text-lg">编辑工程</h3>
+</div>
+<button class="bg-accent-blue/10 text-accent-blue px-4 py-1.5 rounded-lg text-sm font-bold border border-accent-blue/20 hover:bg-accent-blue/20 transition-all">保存工程</button>
+</div>
+<div class="p-6">
+<!-- Basic Info -->
+<div class="mb-10">
+<h4 class="text-xs font-bold uppercase text-text-dim tracking-wider mb-6">基本信息</h4>
+<div class="grid grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="text-xs text-text-dim px-1">工程名称 <span class="text-red-400">*</span></label>
+<input class="w-full bg-surface-container-lowest border-border-subtle rounded-xl text-sm focus:border-primary-green focus:ring-0 transition-all text-white py-3 px-4" type="text" value="test 3"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs text-text-dim px-1">工程描述</label>
+<input class="w-full bg-surface-container-lowest border-border-subtle rounded-xl text-sm focus:border-primary-green focus:ring-0 transition-all text-white py-3 px-4" type="text" value="22"/>
+</div>
+</div>
+</div>
+<!-- Execution Steps -->
+<div class="mb-8">
+<div class="flex justify-between items-center mb-6">
+<h4 class="text-xs font-bold uppercase text-text-dim tracking-wider">执行步骤</h4>
+<button class="text-xs font-bold text-primary-green hover:underline flex items-center space-x-1">
+<svg class="w-3 h-3" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<span>添加步骤</span>
+</button>
+</div>
+<div class="space-y-3">
+<!-- Step 1 -->
+<div class="group bg-surface-container-lowest border border-border-subtle hover:border-accent-blue/50 p-4 rounded-xl flex items-center justify-between transition-all">
+<div class="flex items-center space-x-4">
+<div class="text-text-dim opacity-30 cursor-grab">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-12a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"></path></svg>
+</div>
+<div class="w-8 h-8 rounded-lg bg-accent-blue/20 text-accent-blue flex items-center justify-center font-bold text-xs">1</div>
+<div>
+<div class="flex items-center space-x-2">
+<span class="font-bold text-sm">date</span>
+<span class="text-[10px] bg-orange-500/10 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/20">命令执行</span>
+</div>
+<p class="text-[10px] text-text-dim mt-1">无依赖（起始步骤）</p>
+</div>
+</div>
+<div class="flex space-x-2">
+<button class="p-2 text-text-dim hover:text-white transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+<button class="p-2 text-text-dim hover:text-red-400 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="group bg-surface-container-lowest border border-border-subtle hover:border-accent-blue/50 p-4 rounded-xl flex items-center justify-between transition-all">
+<div class="flex items-center space-x-4">
+<div class="text-text-dim opacity-30">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-12a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"></path></svg>
+</div>
+<div class="w-8 h-8 rounded-lg bg-accent-blue/20 text-accent-blue flex items-center justify-center font-bold text-xs">2</div>
+<div>
+<div class="flex items-center space-x-2">
+<span class="font-bold text-sm">计划任务</span>
+<span class="text-[10px] bg-primary-green/10 text-primary-green px-1.5 py-0.5 rounded border border-primary-green/20">脚本执行</span>
+</div>
+<p class="text-[10px] text-text-dim mt-1">无依赖（起始步骤）</p>
+</div>
+</div>
+<div class="flex space-x-2">
+<button class="p-2 text-text-dim hover:text-white transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+<button class="p-2 text-text-dim hover:text-red-400 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="group bg-surface-container-lowest border border-border-subtle hover:border-accent-blue/50 p-4 rounded-xl flex items-center justify-between transition-all">
+<div class="flex items-center space-x-4">
+<div class="text-text-dim opacity-30">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-12a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"></path></svg>
+</div>
+<div class="w-8 h-8 rounded-lg bg-accent-blue/20 text-accent-blue flex items-center justify-center font-bold text-xs">3</div>
+<div>
+<div class="flex items-center space-x-2">
+<span class="font-bold text-sm">date2</span>
+<span class="text-[10px] bg-orange-500/10 text-orange-400 px-1.5 py-0.5 rounded border border-orange-500/20">命令执行</span>
+</div>
+<p class="text-[10px] text-text-dim mt-1">依赖：步骤 1</p>
+</div>
+</div>
+<div class="flex space-x-2">
+<button class="p-2 text-text-dim hover:text-white transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+<button class="p-2 text-text-dim hover:text-red-400 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- END: ProjectEditorCard -->
+<!-- BEGIN: NotificationSection -->
+<div class="bg-surface-container-low rounded-2xl border border-border-subtle p-6" data-purpose="notification-settings">
+<h4 class="text-xs font-bold uppercase text-text-dim tracking-wider mb-6">企业微信通知</h4>
+<div class="flex space-x-4">
+<div class="flex-1 space-y-2">
+<label class="text-[10px] text-text-dim px-1">Webhook URL</label>
+<input class="w-full bg-surface-container-lowest border-border-subtle rounded-xl text-sm focus:border-primary-green focus:ring-0 transition-all text-white py-3 px-4" type="text" value="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=ccd2bd86-ce50-45fa-bae9-6ef847c3583a"/>
+</div>
+<div class="flex items-end">
+<button class="bg-surface-bright hover:bg-surface-container-high text-white font-bold px-6 py-3 rounded-xl text-sm border border-border-subtle transition-all">测试</button>
+</div>
+</div>
+</div>
+<!-- END: NotificationSection -->
+</div>
+<!-- END: LeftColumnForm -->
+<!-- BEGIN: RightColumnDiagram -->
+<div class="w-1/3 shrink-0">
+<div class="bg-surface-container-low rounded-2xl border border-border-subtle h-full flex flex-col overflow-hidden" data-purpose="flow-preview">
+<div class="px-6 py-4 border-b border-border-subtle flex justify-between items-center bg-surface-container-high">
+<h3 class="font-bold text-sm">流程图预览</h3>
+<span class="text-[10px] text-text-dim">实时显示步骤依赖关系</span>
+</div>
+<div class="flex-1 relative flex items-center justify-center p-8 bg-surface-container-lowest/50">
+<!-- Modernized SVG Flowchart -->
+<svg class="w-full h-full max-h-[600px]" height="400" viewbox="0 0 240 400" width="240">
+<defs>
+<marker id="arrowhead" markerheight="7" markerwidth="10" orient="auto" refx="9" refy="3.5">
+<polygon fill="#475569" points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+</defs>
+<!-- Start Node -->
+<circle cx="120" cy="40" fill="#131b2e" r="25" stroke="#10b981" stroke-width="2"></circle>
+<text fill="#10b981" font-size="12" font-weight="bold" text-anchor="middle" x="120" y="44">开始</text>
+<!-- Connections from Start -->
+<path d="M95 40 C 60 40, 50 150, 50 200" fill="none" marker-end="url(#arrowhead)" stroke="#475569" stroke-width="1.5"></path>
+<path d="M145 40 C 180 40, 190 80, 190 100" fill="none" marker-end="url(#arrowhead)" stroke="#475569" stroke-width="1.5"></path>
+<!-- Date Task (Step 1) -->
+<rect fill="#131b2e" height="40" rx="8" stroke="#f97316" stroke-width="1.5" width="80" x="150" y="100"></rect>
+<text fill="#f97316" font-size="12" text-anchor="middle" x="190" y="125">date</text>
+<!-- Date2 Task (Step 3 - depends on 1) -->
+<path d="M190 140 L 190 185" fill="none" marker-end="url(#arrowhead)" stroke="#475569" stroke-width="1.5"></path>
+<rect fill="#131b2e" height="40" rx="8" stroke="#f97316" stroke-width="1.5" width="80" x="150" y="185"></rect>
+<text fill="#f97316" font-size="12" text-anchor="middle" x="190" y="210">date2</text>
+<!-- Planned Task (Step 2) -->
+<rect fill="#131b2e" height="40" rx="8" stroke="#10b981" stroke-width="1.5" width="80" x="10" y="200"></rect>
+<text fill="#10b981" font-size="12" text-anchor="middle" x="50" y="225">计划任务</text>
+<!-- Connections to End -->
+<path d="M50 240 C 50 300, 90 340, 120 345" fill="none" marker-end="url(#arrowhead)" stroke="#475569" stroke-width="1.5"></path>
+<path d="M190 225 C 190 300, 150 340, 120 345" fill="none" marker-end="url(#arrowhead)" stroke="#475569" stroke-width="1.5"></path>
+<!-- End Node -->
+<circle cx="120" cy="360" fill="#131b2e" r="25" stroke="#64748b" stroke-width="2"></circle>
+<text fill="#94a3b8" font-size="12" font-weight="bold" text-anchor="middle" x="120" y="364">结束</text>
+</svg>
+</div>
+<div class="p-6 border-t border-border-subtle bg-surface-container-high/30">
+<div class="flex items-center space-x-4 text-[10px] text-text-dim">
+<div class="flex items-center space-x-1">
+<span class="w-2 h-2 rounded bg-orange-500"></span>
+<span>命令执行</span>
+</div>
+<div class="flex items-center space-x-1">
+<span class="w-2 h-2 rounded bg-primary-green"></span>
+<span>脚本执行</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- END: RightColumnDiagram -->
+</div>
+</main>
+<!-- END: MainContent -->
+</div>
+<!-- BEGIN: Footer -->
+<footer class="h-10 border-t border-border-subtle bg-surface-container-lowest px-6 flex items-center justify-between shrink-0 text-[10px] text-text-dim uppercase tracking-wider">
+<div class="flex items-center space-x-6">
+<div class="flex items-center">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-green mr-2 animate-pulse"></span>
+        系统运行正常
+      </div>
+<span>连接节点: HK-EDGE-01</span>
+</div>
+<div class="flex items-center space-x-4">
+<span>AssetMaster v1.260309.0</span>
+<span class="text-primary-green">Build Success</span>
+<span>2026/05/16 23:35:42</span>
+</div>
+</footer>
+<!-- END: Footer -->
+</body></html>

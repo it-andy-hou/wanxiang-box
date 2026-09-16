@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AssetMaster - Script Execution</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #2d3449;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container": "#171f33",
+            "on-tertiary-container": "#523200",
+            "on-surface-variant": "#bbcabf",
+            "inverse-on-surface": "#283044",
+            "secondary": "#adc6ff",
+            "surface-container-low": "#131b2e",
+            "error-container": "#93000a",
+            "surface-container-highest": "#2d3449",
+            "outline-variant": "#3c4a42",
+            "on-primary-fixed": "#002113",
+            "error": "#ffb4ab",
+            "on-primary": "#003824",
+            "surface-container-lowest": "#060e20",
+            "primary": "#4edea3",
+            "secondary-container": "#0566d9",
+            "on-error-container": "#ffdad6",
+            "on-background": "#dae2fd",
+            "primary-fixed": "#6ffbbe",
+            "on-primary-fixed-variant": "#005236",
+            "background": "#0b1326",
+            "surface-variant": "#2d3449",
+            "on-tertiary": "#472a00",
+            "tertiary-container": "#e29100",
+            "tertiary-fixed": "#ffddb8",
+            "on-surface": "#dae2fd",
+            "primary-container": "#10b981",
+            "secondary-fixed": "#d8e2ff",
+            "surface-bright": "#31394d",
+            "on-secondary-fixed-variant": "#004395",
+            "inverse-primary": "#006c49",
+            "on-primary-container": "#00422b",
+            "outline": "#86948a",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface-container-high": "#222a3d",
+            "tertiary-fixed-dim": "#ffb95f",
+            "surface": "#0b1326",
+            "on-secondary": "#002e6a",
+            "tertiary": "#ffb95f",
+            "primary-fixed-dim": "#4edea3",
+            "on-secondary-container": "#e6ecff",
+            "on-secondary-fixed": "#001a42",
+            "surface-dim": "#0b1326",
+            "secondary-fixed-dim": "#adc6ff",
+            "on-error": "#690005",
+            "surface-tint": "#4edea3",
+            "inverse-surface": "#dae2fd",
+            "on-tertiary-fixed": "#2a1700"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "stack-gap": "1rem",
+            "container-margin": "2rem",
+            "row-height": "3.5rem",
+            "sidebar-width": "260px",
+            "gutter": "1.5rem"
+          },
+          "fontFamily": {
+            "label-mono": ["JetBrains Mono"],
+            "display-lg": ["Hanken Grotesk"],
+            "code-sm": ["JetBrains Mono"],
+            "body-md": ["Hanken Grotesk"],
+            "headline-md": ["Hanken Grotesk"]
+          },
+          "fontSize": {
+            "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+            "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+            "code-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden flex h-screen">
+<!-- Side Navigation Bar -->
+<aside class="fixed left-0 top-0 h-screen w-sidebar-width bg-surface-container-low border-r border-outline-variant flex flex-col py-gutter px-4 gap-stack-gap z-50">
+<div class="mb-4">
+<h1 class="text-headline-md font-headline-md font-black text-primary">AssetMaster</h1>
+</div>
+<div class="flex flex-col gap-2">
+<div class="mb-2">
+<p class="text-label-mono font-label-mono text-on-surface-variant uppercase opacity-60">Quick Operations</p>
+</div>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">upload_file</span>
+<span class="text-label-mono font-label-mono uppercase">Import Excel</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">download</span>
+<span class="text-label-mono font-label-mono uppercase">Export Excel</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">terminal</span>
+<span class="text-label-mono font-label-mono uppercase">Batch Test</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dns</span>
+<span class="text-label-mono font-label-mono uppercase">Server Count</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">description</span>
+<span class="text-label-mono font-label-mono uppercase">Script Count</span>
+</a>
+<a class="flex items-center gap-3 p-2 bg-primary-container text-on-primary-container rounded-lg font-bold transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">assignment_turned_in</span>
+<span class="text-label-mono font-label-mono uppercase">Task Status</span>
+</a>
+</div>
+<div class="mt-auto pt-4 border-t border-outline-variant flex flex-col gap-2">
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">history</span>
+<span class="text-label-mono font-label-mono uppercase">System Logs</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+<span class="text-label-mono font-label-mono uppercase">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-[260px] flex flex-col h-screen relative">
+<!-- Top Navigation Bar -->
+<header class="bg-surface-container border-b border-outline-variant flex justify-between items-center w-full px-gutter z-40 sticky top-0 h-row-height shrink-0">
+<nav class="flex gap-8 h-full">
+<a class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md" href="#">Host Management</a>
+<a class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md" href="#">Project Tasks</a>
+<a class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md" href="#">Script Management</a>
+<a class="flex items-center text-primary border-b-2 border-primary h-full font-bold font-body-md text-body-md" href="#">Script Execution</a>
+<a class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md" href="#">Command Execution</a>
+<a class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors font-body-md text-body-md" href="#">File Upload</a>
+</nav>
+<div class="flex items-center gap-4">
+<div class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-label-mono font-label-mono">
+          Ready (0)
+        </div>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-gutter custom-scrollbar space-y-gutter">
+<!-- Page Header -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="text-display-lg font-display-lg text-on-surface">Script Execution</h2>
+<p class="text-on-surface-variant text-body-md">Initiate and monitor automated deployment scripts across infrastructure.</p>
+</div>
+<button class="bg-secondary-container text-on-secondary-container px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-all">
+<span class="material-symbols-outlined">add_task</span>
+          创建任务
+        </button>
+</div>
+<!-- Script Configuration Section -->
+<section class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden">
+<div class="px-6 py-4 bg-surface-container-high border-b border-outline-variant flex items-center justify-between">
+<h3 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">settings_applications</span>
+            脚本配置
+          </h3>
+<span class="text-label-mono font-label-mono text-on-surface-variant">STEP-BY-STEP SETUP</span>
+</div>
+<div class="p-6 space-y-6">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Col 1: Script Selection -->
+<div class="space-y-4">
+<label class="block text-label-mono font-label-mono text-on-surface-variant">步骤 1: 选择执行脚本 <span class="text-error">*</span></label>
+<div class="relative group">
+<select class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-3 text-on-surface appearance-none focus:outline-none focus:border-primary transition-colors pr-10">
+<option>cron.sh - 查看计划任务 (2025/11/27 00:15)</option>
+<option>backup_db.sh - Database Daily Backup</option>
+<option>cleanup_logs.sh - Rotate System Logs</option>
+</select>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+<button class="text-secondary text-label-mono font-label-mono flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+                查看内容
+              </button>
+</div>
+<!-- Col 2: Host Selection -->
+<div class="space-y-4">
+<label class="block text-label-mono font-label-mono text-on-surface-variant">步骤 2: 选择目标主机 <span class="text-error">*</span></label>
+<div class="flex gap-2 mb-2">
+<button class="bg-surface-container-highest border border-outline-variant px-3 py-1 rounded text-label-mono font-label-mono text-on-surface hover:border-primary transition-colors">从主机管理选择</button>
+<button class="bg-surface-container-highest border border-outline-variant px-3 py-1 rounded text-label-mono font-label-mono text-on-surface hover:border-error transition-colors">清空选择</button>
+<span class="ml-auto text-on-surface-variant text-label-mono font-label-mono self-center">已选择 <span class="text-primary font-bold">1</span> 台主机</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 min-h-[60px] flex flex-wrap gap-2">
+<div class="bg-primary/10 border border-primary/30 text-primary px-3 py-1 rounded-full flex items-center gap-2 text-label-mono font-label-mono">
+                  172.28.62.157 (172.28.62.157)
+                  <button class="hover:text-on-surface">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Options -->
+<div class="flex flex-wrap gap-8 items-center pt-2 border-t border-outline-variant/30">
+<label class="flex items-center gap-3 cursor-pointer group">
+<div class="relative flex items-center">
+<input class="peer appearance-none w-5 h-5 border border-outline rounded bg-surface-container-highest checked:bg-primary checked:border-primary transition-all" type="checkbox"/>
+<span class="material-symbols-outlined absolute text-on-primary text-[16px] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100">check</span>
+</div>
+<span class="text-body-md text-on-surface-variant group-hover:text-on-surface transition-colors">定时执行</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">lightbulb</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<div class="relative flex items-center">
+<input checked="" class="peer appearance-none w-5 h-5 border border-outline rounded bg-surface-container-highest checked:bg-primary checked:border-primary transition-all" type="checkbox"/>
+<span class="material-symbols-outlined absolute text-on-primary text-[16px] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100">check</span>
+</div>
+<span class="text-body-md text-on-surface-variant group-hover:text-on-surface transition-colors">使用sudo执行</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">lightbulb</span>
+</label>
+</div>
+<!-- Actions -->
+<div class="flex gap-4 pt-4">
+<button class="bg-primary text-on-primary px-8 py-3 rounded-lg font-bold flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">play_arrow</span>
+              开始执行
+            </button>
+<button class="bg-surface-container-highest border border-outline-variant text-on-surface px-8 py-3 rounded-lg font-bold hover:bg-surface-variant transition-all">
+              取消
+            </button>
+</div>
+</div>
+</section>
+<!-- Execution Monitoring Section -->
+<section class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden mb-8">
+<div class="px-6 py-4 bg-surface-container-high border-b border-outline-variant flex items-center justify-between">
+<h3 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">monitoring</span>
+            执行监控
+          </h3>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-primary animate-pulse"></span>
+<span class="text-label-mono font-label-mono text-primary">COMPLETED</span>
+</div>
+</div>
+<div class="p-6 space-y-8">
+<!-- Progress -->
+<div class="space-y-2">
+<div class="flex justify-between text-label-mono font-label-mono text-on-surface-variant">
+<span>总体进度</span>
+<span class="text-on-surface font-bold">100%</span>
+</div>
+<div class="h-3 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-full shadow-[0_0_15px_rgba(78,222,163,0.4)]"></div>
+</div>
+</div>
+<!-- Stats Bento Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="bg-surface-container border border-outline-variant p-4 rounded-lg text-center">
+<p class="text-label-mono font-label-mono text-on-surface-variant uppercase mb-1">总数</p>
+<p class="text-display-lg font-display-lg text-on-surface">1</p>
+</div>
+<div class="bg-surface-container border border-outline-variant p-4 rounded-lg text-center">
+<p class="text-label-mono font-label-mono text-on-surface-variant uppercase mb-1">成功</p>
+<p class="text-display-lg font-display-lg text-primary">1</p>
+</div>
+<div class="bg-surface-container border border-outline-variant p-4 rounded-lg text-center">
+<p class="text-label-mono font-label-mono text-on-surface-variant uppercase mb-1">失败</p>
+<p class="text-display-lg font-display-lg text-error">0</p>
+</div>
+<div class="bg-surface-container border border-outline-variant p-4 rounded-lg text-center">
+<p class="text-label-mono font-label-mono text-on-surface-variant uppercase mb-1">运行时间</p>
+<p class="text-display-lg font-display-lg text-secondary">00:10</p>
+</div>
+</div>
+<!-- Logs Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<h4 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">list_alt</span>
+              实时日志
+            </h4>
+<div class="flex flex-wrap gap-2">
+<button class="bg-secondary-container text-on-secondary-container px-4 py-1.5 rounded-lg text-label-mono font-label-mono flex items-center gap-1.5 hover:opacity-90">
+<span class="material-symbols-outlined text-[18px]">output</span>
+                导出结果
+              </button>
+<button class="bg-surface-container-highest border border-outline-variant text-on-surface px-4 py-1.5 rounded-lg text-label-mono font-label-mono flex items-center gap-1.5 hover:bg-surface-variant">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                下载日志
+              </button>
+<button class="bg-surface-container-highest border border-outline-variant text-on-surface px-4 py-1.5 rounded-lg text-label-mono font-label-mono flex items-center gap-1.5 hover:bg-surface-variant">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+                复制日志
+              </button>
+<button class="bg-surface-container-highest border border-outline-variant text-on-surface px-4 py-1.5 rounded-lg text-label-mono font-label-mono flex items-center gap-1.5 hover:bg-surface-variant">
+<span class="material-symbols-outlined text-[18px]">delete_sweep</span>
+                清空日志
+              </button>
+</div>
+</div>
+<!-- Terminal Container -->
+<div class="bg-black border border-outline-variant rounded-xl p-6 font-code-sm text-code-sm min-h-[400px] shadow-2xl relative">
+<div class="absolute top-3 right-4 flex gap-1.5">
+<div class="w-2.5 h-2.5 rounded-full bg-error/40"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-tertiary/40"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-primary/40"></div>
+</div>
+<div class="space-y-1.5 text-[#e2e8f0] custom-scrollbar h-[400px] overflow-y-auto pr-2">
+<p class="text-on-surface-variant">[00:46:21] 开始执行任务: <span class="text-primary">cron.sh_20260517_004607</span></p>
+<p class="text-on-surface-variant">[00:46:21] 目标主机: <span class="text-secondary">1 台</span></p>
+<p class="text-on-surface-variant">[00:46:21] 并发数: 1, 超时时间: 300秒</p>
+<p class="text-on-surface-variant">[00:46:26] 172.28.62.157 - 开始执行...</p>
+<p class="text-on-surface-variant">[00:46:29] <span class="text-secondary">172.28.62.157</span> - <span class="text-primary font-bold">✓ 执行成功</span> (耗时: 743ms)</p>
+<div class="my-4 pl-4 border-l-2 border-outline-variant">
+<p class="text-on-surface-variant opacity-60">┌── 执行过程 (172.28.62.157) ──</p>
+<p class="text-secondary pl-4">+ crontab -l</p>
+<p class="text-on-surface-variant opacity-60">└──────────────────────────────</p>
+</div>
+<div class="my-4 pl-4 border-l-2 border-primary/30">
+<p class="text-primary/70">┌── 标准输出 (172.28.62.157) ──</p>
+<p class="text-primary pl-4">| 12 */2 * * * /bin/bash /etc/titanagent/agent_update_cron.sh &gt;&gt; /var/log/titanagent/check.o.log 2&gt;&gt; /var/log/titanagent/check.e.log</p>
+<p class="text-primary pl-4">| */2 * * * * /bin/bash /etc/titanagent/agent_update_exception_cron.sh &gt;&gt; /var/log/titanagent/check.o.log 2&gt;&gt; /var/log/titanagent/check.e.log</p>
+<p class="text-primary pl-4">| */2 * * * * /bin/bash /etc/titanagent/agent_monitor_cron.sh &gt;&gt; /var/log/titanagent/edog.o.log 2&gt;&gt; /var/log/titanagent/edog.e.log</p>
+<p class="text-primary/70">└──────────────────────────────</p>
+</div>
+<p class="text-on-surface-variant mt-4">[00:46:31] 任务执行完成</p>
+<p class="text-on-surface-variant">[00:46:31] 总计: 1 台, 成功: 1 台, 失败: 0 台</p>
+<p class="animate-pulse inline-block w-2 h-4 bg-primary align-middle ml-1"></p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Footer Status -->
+<footer class="h-10 bg-surface-container-lowest border-t border-outline-variant flex items-center justify-between px-gutter shrink-0">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="text-label-mono font-label-mono text-on-surface-variant text-[10px] uppercase">Engine Status: Stable</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-secondary">database</span>
+<span class="text-label-mono font-label-mono text-on-surface-variant text-[10px] uppercase">Sync: Active</span>
+</div>
+</div>
+<div class="text-label-mono font-label-mono text-on-surface-variant text-[10px]">
+        版本: 1.260309.0
+      </div>
+</footer>
+</main>
+</body></html>

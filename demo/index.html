@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html class="dark" lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SSH Tools Box - 运维工具箱 Demo</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "secondary-fixed-dim": "#adc6ff",
+        "outline-variant": "#3c4a42",
+        "tertiary-container": "#e29100",
+        "error": "#ffb4ab",
+        "surface-container": "#171f33",
+        "on-surface": "#dae2fd",
+        "secondary": "#adc6ff",
+        "error-container": "#93000a",
+        "secondary-fixed": "#d8e2ff",
+        "surface-container-low": "#131b2e",
+        "surface-container-lowest": "#060e20",
+        "inverse-surface": "#dae2fd",
+        "surface-container-highest": "#2d3449",
+        "primary": "#4edea3",
+        "background": "#0b1326",
+        "surface": "#0b1326",
+        "tertiary": "#ffb95f",
+        "on-primary-container": "#00422b",
+        "surface-bright": "#31394d",
+        "on-tertiary-fixed": "#2a1700",
+        "inverse-on-surface": "#283044",
+        "tertiary-fixed-dim": "#ffb95f",
+        "secondary-container": "#0566d9",
+        "on-secondary-container": "#e6ecff",
+        "on-secondary": "#002e6a",
+        "on-tertiary-fixed-variant": "#653e00",
+        "on-tertiary-container": "#523200",
+        "primary-container": "#10b981",
+        "primary-fixed-dim": "#4edea3",
+        "outline": "#86948a",
+        "surface-container-high": "#222a3d",
+        "on-tertiary": "#472a00",
+        "primary-fixed": "#6ffbbe",
+        "on-secondary-fixed-variant": "#004395",
+        "inverse-primary": "#006c49",
+        "on-primary": "#003824",
+        "on-error": "#690005",
+        "on-surface-variant": "#bbcabf",
+        "on-secondary-fixed": "#001a42",
+        "on-background": "#dae2fd",
+        "on-primary-fixed": "#002113",
+        "on-error-container": "#ffdad6",
+        "on-primary-fixed-variant": "#005236",
+        "tertiary-fixed": "#ffddb8",
+        "surface-variant": "#2d3449",
+        "surface-tint": "#4edea3",
+        "surface-dim": "#0b1326"
+      },
+      borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" },
+      spacing: { "gutter": "1.5rem", "stack-gap": "1rem", "sidebar-width": "260px", "container-margin": "2rem", "row-height": "3.5rem" },
+      fontFamily: {
+        "code-sm": ["JetBrains Mono"], "headline-md": ["Hanken Grotesk"],
+        "label-mono": ["JetBrains Mono"], "body-md": ["Hanken Grotesk"], "display-lg": ["Hanken Grotesk"]
+      },
+      fontSize: {
+        "code-sm": ["13px", {lineHeight: "18px", fontWeight: "400"}],
+        "headline-md": ["24px", {lineHeight: "32px", fontWeight: "500"}],
+        "label-mono": ["12px", {lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500"}],
+        "body-md": ["14px", {lineHeight: "20px", fontWeight: "400"}],
+        "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "600"}]
+      }
+    }
+  }
+}
+</script>
+<style>
+body { background-color: #0b1326; color: #dae2fd; font-family: 'Hanken Grotesk', sans-serif; }
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #131b2e; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 10px; }
+.page-content { display: block; }
+.page-content.hidden { display: none; }
+.nav-link.active { color: #4edea3; border-bottom: 2px solid #4edea3; font-weight: bold; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body class="overflow-hidden">
+
+<!-- ====== TOP NAV BAR ====== -->
+<header class="fixed top-0 left-0 right-0 h-row-height bg-surface-container flex justify-between items-center w-full px-gutter z-50 border-b border-outline-variant">
+  <div class="flex items-center gap-4">
+    <span class="text-headline-md font-headline-md font-bold text-on-surface">SSH Tools Box</span>
+    <span class="text-[10px] text-on-surface-variant uppercase font-label-mono tracking-widest">运维工具箱</span>
+  </div>
+  <nav class="hidden md:flex items-center gap-6 h-full" id="main-nav">
+    <a class="nav-link active text-body-md font-body-md h-full flex items-center px-1 transition-colors" href="#" onclick="switchPage('page-hosts', this)">主机管理</a>
+    <a class="nav-link text-on-surface-variant hover:text-on-surface text-body-md font-body-md h-full flex items-center px-1 transition-colors" href="#" onclick="switchPage('page-scripts', this)">脚本管理</a>
+    <a class="nav-link text-on-surface-variant hover:text-on-surface text-body-md font-body-md h-full flex items-center px-1 transition-colors" href="#" onclick="switchPage('page-task-exec', this)">脚本执行</a>
+    <a class="nav-link text-on-surface-variant hover:text-on-surface text-body-md font-body-md h-full flex items-center px-1 transition-colors" href="#" onclick="switchPage('page-commands', this)">命令执行</a>
+    <a class="nav-link text-on-surface-variant hover:text-on-surface text-body-md font-body-md h-full flex items-center px-1 transition-colors" href="#" onclick="switchPage('page-fileupload', this)">文件传输</a>
+    <a class="nav-link text-on-surface-variant hover:text-on-surface text-body-md font-body-md h-full flex items-center px-1 transition-colors" href="#" onclick="switchPage('page-project-tasks', this)">工程任务</a>
+    <a class="nav-link text-on-surface-variant hover:text-on-surface text-body-md font-body-md h-full flex items-center px-1 transition-colors" href="#" onclick="switchPage('page-scheduled', this)">任务调度</a>
+    <a class="nav-link text-on-surface-variant hover:text-on-surface text-body-md font-body-md h-full flex items-center px-1 transition-colors" href="#" onclick="switchPage('page-history', this)">任务记录</a>
+  </nav>
+  <div class="flex items-center gap-4">
+    <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-label-mono font-label-mono border border-primary/20">Ready (0)</span>
+    <button class="text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-lg transition-colors"><span class="material-symbols-outlined">settings</span></button>
+    <button class="text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-lg transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+  </div>
+</header>
+
+<!-- ====== SIDE BAR ====== -->
+<aside class="fixed left-0 top-row-height h-[calc(100vh-theme(spacing.row-height))] w-sidebar-width bg-surface-container-low border-r border-outline-variant flex flex-col py-gutter px-4 gap-stack-gap z-40">
+  <div class="mb-4">
+    <h2 class="text-label-mono font-label-mono uppercase text-primary/70 tracking-widest mb-4">Quick Operations</h2>
+    <div class="space-y-1">
+      <a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1 group" href="#"><span class="material-symbols-outlined">upload_file</span><span class="text-body-md font-body-md">导入Excel</span></a>
+      <a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1 group" href="#"><span class="material-symbols-outlined">download</span><span class="text-body-md font-body-md">导出Excel</span></a>
+      <a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-all hover:translate-x-1 group" href="#"><span class="material-symbols-outlined">terminal</span><span class="text-body-md font-body-md">批量测试</span></a>
+    </div>
+  </div>
+  <div class="mb-auto">
+    <h2 class="text-label-mono font-label-mono uppercase text-primary/70 tracking-widest mb-4">Statistics</h2>
+    <div class="grid grid-cols-2 gap-2">
+      <div class="bg-surface-container-highest p-3 rounded-xl border border-outline-variant"><p class="text-label-mono font-label-mono text-on-surface-variant mb-1">主机数</p><p class="text-headline-md font-headline-md text-primary">198</p></div>
+      <div class="bg-surface-container-highest p-3 rounded-xl border border-outline-variant"><p class="text-label-mono font-label-mono text-on-surface-variant mb-1">脚本数</p><p class="text-headline-md font-headline-md text-secondary">28</p></div>
+      <div class="bg-surface-container-highest p-3 rounded-xl border border-outline-variant"><p class="text-label-mono font-label-mono text-on-surface-variant mb-1">工程任务</p><p class="text-headline-md font-headline-md text-tertiary">3</p></div>
+      <div class="bg-surface-container-highest p-3 rounded-xl border border-outline-variant"><p class="text-label-mono font-label-mono text-on-surface-variant mb-1">成功率</p><p class="text-headline-md font-headline-md text-primary">85%</p></div>
+    </div>
+    <div class="mt-4 bg-surface-container p-3 rounded-xl border border-outline-variant">
+      <div class="flex justify-between items-center mb-2"><span class="text-body-md font-body-md">Task Status</span><span class="text-label-mono font-label-mono text-primary">85% Success</span></div>
+      <div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden"><div class="bg-primary h-full w-[85%]"></div></div>
+    </div>
+  </div>
+  <div class="pt-4 border-t border-outline-variant flex flex-col gap-1">
+    <a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all" href="#"><span class="material-symbols-outlined">history</span><span class="text-body-md font-body-md">系统日志</span></a>
+    <a class="flex items-center gap-3 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-lg transition-all" href="#"><span class="material-symbols-outlined">help</span><span class="text-body-md font-body-md">技术支持</span></a>
+  </div>
+</aside>
+
+<!-- ====== MAIN CONTENT ====== -->
+<main class="ml-sidebar-width mt-row-height h-[calc(100vh-theme(spacing.row-height))] overflow-y-auto p-gutter custom-scrollbar">
+
+<!-- ========== PAGE: HOSTS ========== -->
+<div id="page-hosts" class="page-content">
+<div class="flex justify-between items-end mb-8">
+  <div><h1 class="text-display-lg font-display-lg text-on-surface">主机管理</h1><p class="text-body-md font-body-md text-on-surface-variant mt-1">Manage, monitor and access your infrastructure assets.</p></div>
+  <div class="flex gap-3">
+    <button class="px-4 py-2 border border-outline-variant hover:bg-surface-container-highest text-on-surface rounded-lg text-body-md font-body-md transition-all flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">refresh</span>Refresh List</button>
+    <button class="px-6 py-2 bg-primary hover:opacity-90 text-on-primary-container rounded-lg text-body-md font-body-md font-bold transition-all flex items-center gap-2 shadow-lg shadow-primary/10"><span class="material-symbols-outlined text-[20px]">add_circle</span>Add Host</button>
+  </div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+  <div class="md:col-span-4 relative group">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">search</span>
+    <input class="w-full bg-surface-container-low border border-outline-variant rounded-xl pl-10 pr-4 py-3 text-body-md font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Search hostname, IP address or description..." type="text"/>
+  </div>
+  <div class="md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+    <select class="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-body-md font-body-md focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer"><option>全部机房</option><option>A区机房</option><option>B区机房</option><option>C区机房</option></select>
+    <select class="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-body-md font-body-md focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer"><option>全部环境</option><option>生产</option><option>仿真</option><option>测试</option><option>灾备</option></select>
+    <select class="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-body-md font-body-md focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer"><option>全部负责人</option><option>张三</option><option>李四</option><option>王五</option><option>赵六</option><option>钱七</option><option>孙八</option><option>周九</option><option>吴十</option></select>
+    <button class="bg-surface-container-highest hover:bg-surface-bright text-on-surface border border-outline-variant rounded-xl px-4 py-3 text-body-md font-body-md transition-all">Reset Filters</button>
+  </div>
+</div>
+<div class="bg-surface-container-low border border-outline-variant rounded-2xl overflow-hidden shadow-2xl">
+  <div class="overflow-x-auto custom-scrollbar">
+    <table class="w-full text-left border-collapse">
+      <thead><tr class="bg-surface-container-high border-b border-outline-variant">
+        <th class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></th>
+        <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">IP Address</th>
+        <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">System Name</th>
+        <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider text-center">Port</th>
+        <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">Owner</th>
+        <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">Environment</th>
+        <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">Status</th>
+        <th class="py-4 px-6 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+      </tr></thead>
+      <tbody class="divide-y divide-outline-variant/30">
+        <tr class="hover:bg-surface-container-highest transition-colors group">
+          <td class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></td>
+          <td class="py-4 px-4 font-code-sm text-code-sm text-secondary">172.28.210.116</td>
+          <td class="py-4 px-4 text-body-md font-body-md">佣金宝-防篡改</td>
+          <td class="py-4 px-4 text-center"><span class="bg-surface-container-highest px-2 py-0.5 rounded text-code-sm font-code-sm border border-outline-variant">22</span></td>
+          <td class="py-4 px-4 text-body-md font-body-md">张超</td>
+          <td class="py-4 px-4 text-body-md font-body-md text-on-surface-variant">科技-仿真网</td>
+          <td class="py-4 px-4"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-label-mono font-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(78,222,163,0.6)]"></span>Online</span></td>
+          <td class="py-4 px-6 text-right"><div class="flex justify-end gap-2"><button class="p-2 hover:bg-secondary/10 text-secondary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">terminal</span></button><button class="p-2 hover:bg-primary/10 text-primary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">language</span></button><button class="p-2 hover:bg-tertiary/10 text-tertiary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button><button class="p-2 hover:bg-error/10 text-error transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button></div></td>
+        </tr>
+        <tr class="hover:bg-surface-container-highest transition-colors group">
+          <td class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></td>
+          <td class="py-4 px-4 font-code-sm text-code-sm text-secondary">172.28.25.121</td>
+          <td class="py-4 px-4 text-body-md font-body-md">佣金宝-防篡改</td>
+          <td class="py-4 px-4 text-center"><span class="bg-surface-container-highest px-2 py-0.5 rounded text-code-sm font-code-sm border border-outline-variant">22</span></td>
+          <td class="py-4 px-4 text-body-md font-body-md">张超</td>
+          <td class="py-4 px-4 text-body-md font-body-md text-on-surface-variant">科技-测试网</td>
+          <td class="py-4 px-4"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-highest text-on-surface-variant border border-outline-variant text-label-mono font-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-on-surface-variant"></span>Unknown</span></td>
+          <td class="py-4 px-6 text-right"><div class="flex justify-end gap-2"><button class="p-2 hover:bg-secondary/10 text-secondary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">terminal</span></button><button class="p-2 hover:bg-primary/10 text-primary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">language</span></button><button class="p-2 hover:bg-tertiary/10 text-tertiary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button><button class="p-2 hover:bg-error/10 text-error transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button></div></td>
+        </tr>
+        <tr class="hover:bg-surface-container-highest transition-colors group">
+          <td class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></td>
+          <td class="py-4 px-4 font-code-sm text-code-sm text-secondary">172.28.25.209</td>
+          <td class="py-4 px-4 text-body-md font-body-md">DNS Server</td>
+          <td class="py-4 px-4 text-center"><span class="bg-surface-container-highest px-2 py-0.5 rounded text-code-sm font-code-sm border border-outline-variant">22</span></td>
+          <td class="py-4 px-4 text-body-md font-body-md">任朋飞</td>
+          <td class="py-4 px-4 text-body-md font-body-md text-on-surface-variant">科技-测试网</td>
+          <td class="py-4 px-4"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error/10 text-error border border-error/20 text-label-mono font-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.6)]"></span>Offline</span></td>
+          <td class="py-4 px-6 text-right"><div class="flex justify-end gap-2"><button class="p-2 hover:bg-secondary/10 text-secondary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">terminal</span></button><button class="p-2 hover:bg-primary/10 text-primary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">language</span></button><button class="p-2 hover:bg-tertiary/10 text-tertiary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button><button class="p-2 hover:bg-error/10 text-error transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button></div></td>
+        </tr>
+        <tr class="hover:bg-surface-container-highest transition-colors group">
+          <td class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface" type="checkbox"/></td>
+          <td class="py-4 px-4 font-code-sm text-code-sm text-secondary">172.28.60.132</td>
+          <td class="py-4 px-4 text-body-md font-body-md">佣金宝-凌志MOT</td>
+          <td class="py-4 px-4 text-center"><span class="bg-surface-container-highest px-2 py-0.5 rounded text-code-sm font-code-sm border border-outline-variant">22</span></td>
+          <td class="py-4 px-4 text-body-md font-body-md">张超</td>
+          <td class="py-4 px-4 text-body-md font-body-md text-on-surface-variant">科技-仿真网</td>
+          <td class="py-4 px-4"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-label-mono font-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(78,222,163,0.6)]"></span>Online</span></td>
+          <td class="py-4 px-6 text-right"><div class="flex justify-end gap-2"><button class="p-2 hover:bg-secondary/10 text-secondary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">terminal</span></button><button class="p-2 hover:bg-primary/10 text-primary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">language</span></button><button class="p-2 hover:bg-tertiary/10 text-tertiary transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button><button class="p-2 hover:bg-error/10 text-error transition-colors rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button></div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="bg-surface-container-high border-t border-outline-variant px-6 py-4 flex justify-between items-center">
+    <p class="text-body-md font-body-md text-on-surface-variant">Showing <span class="text-on-surface font-bold">1-100</span> of <span class="text-on-surface font-bold">198</span> records</p>
+    <div class="flex items-center gap-2">
+      <button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors disabled:opacity-30" disabled><span class="material-symbols-outlined text-[20px]">chevron_left</span></button>
+      <button class="w-10 h-10 rounded-lg bg-primary text-on-primary-container font-bold text-body-md">1</button>
+      <button class="w-10 h-10 rounded-lg hover:bg-surface-container-highest text-on-surface text-body-md transition-colors">2</button>
+      <button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========== PAGE: SCRIPTS ========== -->
+<div id="page-scripts" class="page-content hidden">
+<div class="flex overflow-hidden" style="height: calc(100vh - 7rem);">
+  <!-- Directory Tree Sidebar -->
+  <div class="w-[240px] bg-surface-container-low border border-outline-variant rounded-xl flex flex-col mr-4">
+    <div class="p-4 border-b border-outline-variant">
+      <div class="relative group">
+        <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+        <input class="w-full bg-surface-dim border border-outline-variant rounded py-1 pl-8 pr-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-outline" placeholder="过滤目录..." type="text"/>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto custom-scrollbar py-2">
+      <nav id="script-category-tree" class="space-y-0.5">
+        <a class="flex items-center justify-between px-4 py-2 bg-primary/10 text-primary group" href="#">
+          <div class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">folder_open</span><span class="text-body-md font-medium">全部脚本</span></div>
+          <span class="text-[10px] font-label-mono bg-primary/20 px-1.5 rounded">28</span>
+        </a>
+        <div class="pl-4">
+          <a class="flex items-center justify-between px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-outline">folder</span><span class="text-body-md">test</span></div><span class="text-[10px] font-label-mono opacity-50">0</span></a>
+          <a class="flex items-center justify-between px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-outline">folder</span><span class="text-body-md">production</span></div><span class="text-[10px] font-label-mono opacity-50">12</span></a>
+          <a class="flex items-center justify-between px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-outline">folder</span><span class="text-body-md">security_patches</span></div><span class="text-[10px] font-label-mono opacity-50">8</span></a>
+          <a class="flex items-center justify-between px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-outline">folder</span><span class="text-body-md">automation</span></div><span class="text-[10px] font-label-mono opacity-50">5</span></a>
+          <a class="flex items-center justify-between px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-colors group" href="#"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-outline">folder</span><span class="text-body-md">WZQ_Internal</span></div><span class="text-[10px] font-label-mono opacity-50">3</span></a>
+        </div>
+      </nav>
+    </div>
+    <div class="p-4 border-t border-outline-variant">
+      <button onclick="addCategory()" class="w-full flex items-center justify-center gap-2 py-1.5 border border-dashed border-outline-variant text-outline hover:text-primary hover:border-primary transition-all text-xs rounded"><span class="material-symbols-outlined text-sm">create_new_folder</span><span>新建目录</span></button>
+    </div>
+  </div>
+  <!-- Main Script List -->
+  <div class="flex-1 overflow-y-auto custom-scrollbar">
+    <div class="flex justify-between items-end mb-6">
+      <div><h2 class="text-display-lg font-display-lg text-on-surface">脚本管理</h2><p class="text-on-surface-variant text-body-md mt-1">集中管理自动化运维脚本，支持版本控制与标签检索。</p></div>
+      <div class="flex gap-3">
+        <button class="bg-primary hover:opacity-80 text-on-primary font-bold py-2 px-6 rounded-lg transition-all flex items-center gap-2 text-body-md"><span class="material-symbols-outlined text-[20px]">add</span>添加脚本</button>
+        <button class="border border-outline-variant hover:bg-surface-container-highest text-on-surface-variant py-2 px-4 rounded-lg transition-all flex items-center gap-2 text-body-md"><span class="material-symbols-outlined text-[20px]">refresh</span>刷新</button>
+      </div>
+    </div>
+    <div class="bg-surface-container rounded-xl p-4 border border-outline-variant mb-6 flex flex-wrap gap-4 items-center">
+      <div class="flex-1 min-w-[300px] relative group">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">search</span>
+        <input class="w-full bg-surface-dim border border-outline-variant rounded-lg pl-10 pr-4 py-2 focus:ring-1 focus:ring-primary focus:border-primary text-body-md transition-all" placeholder="搜索脚本名称或描述..." type="text"/>
+      </div>
+      <select class="bg-surface-dim border border-outline-variant rounded-lg px-4 py-2 appearance-none text-body-md focus:border-primary outline-none text-on-surface-variant"><option>所有类型</option><option>Shell</option><option>Python</option></select>
+      <select class="bg-surface-dim border border-outline-variant rounded-lg px-4 py-2 appearance-none text-body-md focus:border-primary outline-none text-on-surface-variant"><option>所有标签</option><option>安全补丁</option><option>系统优化</option></select>
+    </div>
+    <div class="bg-surface-container rounded-xl border border-outline-variant overflow-hidden">
+      <table class="w-full text-left border-collapse">
+        <thead><tr class="bg-surface-container-high border-b border-outline-variant">
+          <th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">脚本名称</th>
+          <th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">描述</th>
+          <th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">标签</th>
+          <th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">创建时间</th>
+          <th class="px-6 py-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider text-right">操作</th>
+        </tr></thead>
+        <tbody class="divide-y divide-outline-variant/30">
+          <tr class="hover:bg-surface-container-highest transition-colors">
+            <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center"><span class="material-symbols-outlined text-primary text-sm">code</span></div><span class="text-body-md font-bold text-primary">wzq_cgi_restart.sh</span></div></td>
+            <td class="px-6 py-4 text-body-md text-on-surface-variant">重启cgi服务组件</td>
+            <td class="px-6 py-4"><div class="flex flex-wrap gap-2"><span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] rounded font-label-mono uppercase">架构: X86</span><span class="px-2 py-0.5 bg-outline-variant/30 text-on-surface-variant text-[10px] rounded font-label-mono uppercase">WZQ</span></div></td>
+            <td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/01/31 13:18</td>
+            <td class="px-6 py-4"><div class="flex justify-end gap-2"><button class="p-1.5 hover:bg-primary/20 text-primary rounded"><span class="material-symbols-outlined text-sm">visibility</span></button><button class="p-1.5 hover:bg-secondary/20 text-secondary rounded"><span class="material-symbols-outlined text-sm">edit</span></button><button class="p-1.5 hover:bg-error/20 text-error rounded"><span class="material-symbols-outlined text-sm">delete</span></button></div></td>
+          </tr>
+          <tr class="hover:bg-surface-container-highest transition-colors">
+            <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center"><span class="material-symbols-outlined text-primary text-sm">security</span></div><span class="text-body-md font-bold text-primary">CVE-2026-31431-patch</span></div></td>
+            <td class="px-6 py-4 text-body-md text-on-surface-variant">紧急安全漏洞补丁执行脚本</td>
+            <td class="px-6 py-4"><span class="px-2 py-0.5 bg-error/10 text-error text-[10px] rounded font-label-mono uppercase">SECURITY</span></td>
+            <td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/05/15 00:25</td>
+            <td class="px-6 py-4"><div class="flex justify-end gap-2"><button class="p-1.5 hover:bg-primary/20 text-primary rounded"><span class="material-symbols-outlined text-sm">visibility</span></button><button class="p-1.5 hover:bg-secondary/20 text-secondary rounded"><span class="material-symbols-outlined text-sm">edit</span></button><button class="p-1.5 hover:bg-error/20 text-error rounded"><span class="material-symbols-outlined text-sm">delete</span></button></div></td>
+          </tr>
+          <tr class="hover:bg-surface-container-highest transition-colors">
+            <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center"><span class="material-symbols-outlined text-primary text-sm">settings_power</span></div><span class="text-body-md font-bold text-primary">wzq-jieru-stop.sh</span></div></td>
+            <td class="px-6 py-4 text-body-md text-on-surface-variant">关闭接入层服务</td>
+            <td class="px-6 py-4"><span class="px-2 py-0.5 bg-outline-variant/30 text-on-surface-variant text-[10px] rounded font-label-mono uppercase">WZQ</span></td>
+            <td class="px-6 py-4 text-label-mono text-on-surface-variant">2026/01/30 18:24</td>
+            <td class="px-6 py-4"><div class="flex justify-end gap-2"><button class="p-1.5 hover:bg-primary/20 text-primary rounded"><span class="material-symbols-outlined text-sm">visibility</span></button><button class="p-1.5 hover:bg-secondary/20 text-secondary rounded"><span class="material-symbols-outlined text-sm">edit</span></button><button class="p-1.5 hover:bg-error/20 text-error rounded"><span class="material-symbols-outlined text-sm">delete</span></button></div></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="px-6 py-4 bg-surface-container-low flex justify-between items-center border-t border-outline-variant">
+        <span class="text-body-md text-on-surface-variant">显示 1 到 3 条，共 28 条</span>
+        <div class="flex gap-1"><button class="w-8 h-8 rounded bg-primary text-on-primary flex items-center justify-center font-bold">1</button><button class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-highest text-on-surface-variant">2</button><button class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-highest text-on-surface-variant"><span class="material-symbols-outlined">chevron_right</span></button></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========== PAGE: SCRIPT EXECUTION ========== -->
+<div id="page-task-exec" class="page-content hidden">
+<div class="flex justify-between items-end mb-8">
+  <div><h1 class="text-display-lg font-display-lg text-on-surface">脚本执行</h1><p class="text-on-surface-variant text-body-md">Initiate and monitor automated deployment scripts across infrastructure.</p></div>
+  <button class="bg-secondary-container text-on-secondary-container px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-all"><span class="material-symbols-outlined">add_task</span>创建任务</button>
+</div>
+<!-- Config -->
+<section class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden mb-6">
+  <div class="px-6 py-4 bg-surface-container-high border-b border-outline-variant flex items-center justify-between">
+    <h3 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-primary">settings_applications</span>脚本配置</h3>
+    <span class="text-label-mono font-label-mono text-on-surface-variant">STEP-BY-STEP SETUP</span>
+  </div>
+  <div class="p-6 space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="space-y-4">
+        <label class="block text-label-mono font-label-mono text-on-surface-variant">步骤 1: 选择执行脚本 <span class="text-error">*</span></label>
+        <select class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-3 text-on-surface appearance-none focus:outline-none focus:border-primary transition-colors"><option>cron.sh - 查看计划任务</option><option>backup_db.sh - Database Daily Backup</option><option>cleanup_logs.sh - Rotate System Logs</option></select>
+      </div>
+      <div class="space-y-4">
+        <label class="block text-label-mono font-label-mono text-on-surface-variant">步骤 2: 选择目标主机 <span class="text-error">*</span></label>
+        <div class="flex gap-2 mb-2">
+          <button class="bg-surface-container-highest border border-outline-variant px-3 py-1 rounded text-label-mono text-on-surface hover:border-primary transition-colors">从主机管理选择</button>
+          <button class="bg-surface-container-highest border border-outline-variant px-3 py-1 rounded text-label-mono text-on-surface hover:border-error transition-colors">清空选择</button>
+          <span class="ml-auto text-on-surface-variant text-label-mono self-center">已选择 <span class="text-primary font-bold">2</span> 台主机</span>
+        </div>
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 min-h-[60px] flex flex-wrap gap-2">
+          <div class="bg-primary/10 border border-primary/30 text-primary px-3 py-1 rounded-full flex items-center gap-2 text-label-mono">172.28.62.157 <button><span class="material-symbols-outlined text-[14px]">close</span></button></div>
+          <div class="bg-primary/10 border border-primary/30 text-primary px-3 py-1 rounded-full flex items-center gap-2 text-label-mono">172.28.210.116 <button><span class="material-symbols-outlined text-[14px]">close</span></button></div>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-4 pt-4">
+      <button class="bg-primary text-on-primary px-8 py-3 rounded-lg font-bold flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"><span class="material-symbols-outlined">play_arrow</span>开始执行</button>
+      <button class="bg-surface-container-highest border border-outline-variant text-on-surface px-8 py-3 rounded-lg font-bold hover:bg-surface-variant transition-all">取消</button>
+    </div>
+  </div>
+</section>
+<!-- Execution Monitor -->
+<section class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden">
+  <div class="px-6 py-4 bg-surface-container-high border-b border-outline-variant flex items-center justify-between">
+    <h3 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-primary">monitoring</span>执行监控</h3>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-primary animate-pulse"></span><span class="text-label-mono font-label-mono text-primary">COMPLETED</span></div>
+  </div>
+  <div class="p-6 space-y-6">
+    <div class="space-y-2"><div class="flex justify-between text-label-mono text-on-surface-variant"><span>总体进度</span><span class="text-on-surface font-bold">100%</span></div><div class="h-3 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full w-full shadow-[0_0_15px_rgba(78,222,163,0.4)]"></div></div></div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-surface-container border border-outline-variant p-4 rounded-lg text-center"><p class="text-label-mono text-on-surface-variant uppercase mb-1">总数</p><p class="text-headline-md font-bold text-on-surface">2</p></div>
+      <div class="bg-surface-container border border-outline-variant p-4 rounded-lg text-center"><p class="text-label-mono text-on-surface-variant uppercase mb-1">成功</p><p class="text-headline-md font-bold text-primary">2</p></div>
+      <div class="bg-surface-container border border-outline-variant p-4 rounded-lg text-center"><p class="text-label-mono text-on-surface-variant uppercase mb-1">失败</p><p class="text-headline-md font-bold text-error">0</p></div>
+      <div class="bg-surface-container border border-outline-variant p-4 rounded-lg text-center"><p class="text-label-mono text-on-surface-variant uppercase mb-1">运行时间</p><p class="text-headline-md font-bold text-secondary">00:12</p></div>
+    </div>
+    <!-- Result/Log Mode Tabs -->
+    <div class="flex gap-1 mb-4 bg-surface-container-highest rounded-lg p-1 w-fit" id="exec-mode-tabs">
+      <button onclick="switchExecMode('log')" class="exec-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all bg-primary text-on-primary-container" data-mode="log">日志模式</button>
+      <button onclick="switchExecMode('result')" class="exec-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all text-on-surface-variant hover:text-on-surface" data-mode="result">结果模式</button>
+    </div>
+    <!-- Result Mode (table) -->
+    <div id="exec-result-view" class="hidden">
+      <div class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse">
+          <thead><tr class="bg-surface-container-high border-b border-outline-variant">
+            <th class="px-6 py-3 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">IP Address</th>
+            <th class="px-6 py-3 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">状态</th>
+            <th class="px-6 py-3 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">耗时</th>
+            <th class="px-6 py-3 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">输出摘要</th>
+          </tr></thead>
+          <tbody id="exec-result-tbody" class="divide-y divide-outline-variant/30"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Log Mode (terminal) -->
+    <div id="exec-log-view" class="bg-black border border-outline-variant rounded-xl p-6 font-code-sm text-code-sm min-h-[200px] shadow-2xl relative">
+      <div class="absolute top-3 right-4 flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-error/40"></div><div class="w-2.5 h-2.5 rounded-full bg-tertiary/40"></div><div class="w-2.5 h-2.5 rounded-full bg-primary/40"></div></div>
+      <div class="space-y-1.5 text-[#e2e8f0]">
+        <p class="text-on-surface-variant">[00:46:21] 开始执行任务: <span class="text-primary">cron.sh_20260517_004607</span></p>
+        <p class="text-on-surface-variant">[00:46:26] 172.28.62.157 - 开始执行...</p>
+        <p class="text-on-surface-variant">[00:46:29] <span class="text-secondary">172.28.62.157</span> - <span class="text-primary font-bold">✓ 执行成功</span> (耗时: 743ms)</p>
+        <p class="text-on-surface-variant">[00:46:30] 172.28.210.116 - 开始执行...</p>
+        <p class="text-on-surface-variant">[00:46:33] <span class="text-secondary">172.28.210.116</span> - <span class="text-primary font-bold">✓ 执行成功</span> (耗时: 1.2s)</p>
+        <p class="text-on-surface-variant">[00:46:33] 任务执行完成 | 总计: 2 台, 成功: 2 台, 失败: 0 台</p>
+        <p class="animate-pulse inline-block w-2 h-4 bg-primary align-middle ml-1"></p>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- ========== PAGE: COMMANDS ========== -->
+<div id="page-commands" class="page-content hidden">
+<div class="flex justify-between items-end mb-8">
+  <div><h1 class="text-display-lg font-display-lg text-on-surface">命令执行</h1><p class="text-on-surface-variant text-body-md">Execute ad-hoc commands across selected hosts in real-time.</p></div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <div class="lg:col-span-2 bg-surface-container-low border border-outline-variant rounded-xl p-6">
+    <label class="block text-label-mono font-label-mono text-on-surface-variant mb-3">输入命令</label>
+    <textarea class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-4 text-code-sm font-code-sm text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all min-h-[120px] resize-y" placeholder="输入需要执行的命令，例如:&#10;df -h&#10;free -m&#10;systemctl status nginx">df -h
+free -m</textarea>
+    <div class="flex gap-4 mt-4">
+      <button class="bg-primary text-on-primary px-8 py-3 rounded-lg font-bold flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"><span class="material-symbols-outlined">play_arrow</span>执行命令</button>
+      <button class="bg-surface-container-highest border border-outline-variant text-on-surface px-6 py-3 rounded-lg font-bold hover:bg-surface-variant transition-all flex items-center gap-2"><span class="material-symbols-outlined">stop</span>停止</button>
+    </div>
+  </div>
+  <div class="bg-surface-container-low border border-outline-variant rounded-xl p-6">
+    <label class="block text-label-mono font-label-mono text-on-surface-variant mb-3">目标主机 (已选 3)</label>
+    <div class="space-y-2 max-h-[160px] overflow-y-auto custom-scrollbar">
+      <label class="flex items-center gap-3 p-2 bg-surface-container-highest rounded-lg cursor-pointer"><input type="checkbox" checked class="rounded border-outline text-primary bg-surface"/><span class="text-body-md">172.28.210.116</span><span class="ml-auto text-label-mono text-primary">Online</span></label>
+      <label class="flex items-center gap-3 p-2 bg-surface-container-highest rounded-lg cursor-pointer"><input type="checkbox" checked class="rounded border-outline text-primary bg-surface"/><span class="text-body-md">172.28.60.132</span><span class="ml-auto text-label-mono text-primary">Online</span></label>
+      <label class="flex items-center gap-3 p-2 bg-surface-container-highest rounded-lg cursor-pointer"><input type="checkbox" checked class="rounded border-outline text-primary bg-surface"/><span class="text-body-md">172.28.60.134</span><span class="ml-auto text-label-mono text-primary">Online</span></label>
+      <label class="flex items-center gap-3 p-2 bg-surface-container-highest rounded-lg cursor-pointer"><input type="checkbox" class="rounded border-outline text-primary bg-surface"/><span class="text-body-md text-on-surface-variant">172.28.25.209</span><span class="ml-auto text-label-mono text-error">Offline</span></label>
+    </div>
+  </div>
+</div>
+<!-- Terminal Output -->
+<!-- Result/Log Mode Tabs -->
+<div class="flex gap-1 mb-4 bg-surface-container-highest rounded-lg p-1 w-fit" id="cmd-mode-tabs">
+  <button onclick="switchCmdMode('log')" class="cmd-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all bg-primary text-on-primary-container" data-mode="log">日志模式</button>
+  <button onclick="switchCmdMode('result')" class="cmd-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all text-on-surface-variant hover:text-on-surface" data-mode="result">结果模式</button>
+</div>
+<!-- Result Mode (table) -->
+<div id="cmd-result-view" class="hidden">
+  <div class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden">
+    <table class="w-full text-left border-collapse">
+      <thead><tr class="bg-surface-container-high border-b border-outline-variant">
+        <th class="px-6 py-3 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">IP Address</th>
+        <th class="px-6 py-3 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">状态</th>
+        <th class="px-6 py-3 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">耗时</th>
+        <th class="px-6 py-3 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">输出摘要</th>
+      </tr></thead>
+      <tbody id="cmd-result-tbody" class="divide-y divide-outline-variant/30"></tbody>
+    </table>
+  </div>
+</div>
+<!-- Log Mode (terminal) -->
+<div id="cmd-log-view" class="bg-black border border-outline-variant rounded-xl overflow-hidden shadow-2xl">
+  <div class="bg-surface-container-high px-6 py-3 flex items-center justify-between border-b border-outline-variant">
+    <div class="flex items-center gap-3"><div class="flex gap-1.5"><div class="w-3 h-3 rounded-full bg-error/60"></div><div class="w-3 h-3 rounded-full bg-tertiary/60"></div><div class="w-3 h-3 rounded-full bg-primary/60"></div></div><span class="text-label-mono text-on-surface-variant">Terminal Output</span></div>
+    <div class="flex gap-2"><button class="text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">content_copy</span></button><button class="text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">download</span></button></div>
+  </div>
+  <div class="p-6 font-code-sm text-code-sm min-h-[300px] max-h-[400px] overflow-y-auto custom-scrollbar">
+    <p class="text-[#22c55e]">$ ssh 172.28.210.116 "df -h"</p>
+    <p class="text-[#94a3b8]">Filesystem      Size  Used Avail Use% Mounted on</p>
+    <p class="text-[#94a3b8]">/dev/sda1        50G   32G   18G  64% /</p>
+    <p class="text-[#94a3b8]">/dev/sdb1       200G  120G   80G  60% /data</p>
+    <p class="text-[#22c55e] mt-3">$ ssh 172.28.210.116 "free -m"</p>
+    <p class="text-[#94a3b8]">              total   used   free   shared  buff/cache  available</p>
+    <p class="text-[#94a3b8]">Mem:          16384   8192   2048    512      6144       7680</p>
+    <p class="text-[#22c55e] mt-3">$ ssh 172.28.60.132 "df -h"</p>
+    <p class="text-[#94a3b8]">Filesystem      Size  Used Avail Use% Mounted on</p>
+    <p class="text-[#94a3b8]">/dev/sda1        50G   20G   30G  40% /</p>
+    <p class="text-[#22c55e] mt-3">$ ssh 172.28.60.134 "df -h"</p>
+    <p class="text-[#94a3b8]">Filesystem      Size  Used Avail Use% Mounted on</p>
+    <p class="text-[#94a3b8]">/dev/sda1        50G   15G   35G  30% /</p>
+    <p class="text-primary mt-4">✓ 全部 3 台主机执行完成</p>
+    <p class="animate-pulse inline-block w-2 h-4 bg-[#22c55e] align-middle ml-1"></p>
+  </div>
+</div>
+</div>
+
+<!-- ========== PAGE: FILE UPLOAD ========== -->
+<div id="page-fileupload" class="page-content hidden">
+<div class="flex justify-between items-end mb-8">
+  <div><h1 class="text-display-lg font-display-lg text-on-surface">文件传输</h1><p class="text-on-surface-variant font-body-md">配置并分发文件到指定的目标主机群组。</p></div>
+  <button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/10"><span class="material-symbols-outlined">add</span>创建任务</button>
+</div>
+<div class="grid grid-cols-12 gap-6">
+  <section class="col-span-12 lg:col-span-7 bg-surface-container p-6 rounded-xl border border-outline-variant flex flex-col gap-4">
+    <div class="flex items-center gap-2 mb-2"><span class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[12px] font-bold">1</span><h2 class="text-headline-md font-headline-md text-on-surface">选择文件</h2></div>
+    <div class="flex-1 border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-low flex flex-col items-center justify-center p-8 text-center hover:border-primary/50 transition-colors group cursor-pointer min-h-[180px]">
+      <div class="w-16 h-16 rounded-full bg-surface-container-highest flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><span class="material-symbols-outlined text-primary text-[32px]">cloud_upload</span></div>
+      <p class="text-on-surface font-bold mb-1">点击或拖拽文件至此区域</p>
+      <p class="text-on-surface-variant text-label-mono">支持多文件选择，单文件最大限制 2GB</p>
+    </div>
+    <div class="flex justify-between items-center mt-2"><span class="text-on-surface-variant text-label-mono">未选择任何文件</span><button class="text-error flex items-center gap-1 hover:bg-error-container/20 px-3 py-1.5 rounded-lg transition-colors font-label-mono"><span class="material-symbols-outlined text-[18px]">delete_sweep</span>清空文件</button></div>
+  </section>
+  <section class="col-span-12 lg:col-span-5 bg-surface-container p-6 rounded-xl border border-outline-variant">
+    <div class="flex items-center gap-2 mb-6"><span class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[12px] font-bold">2</span><h2 class="text-headline-md font-headline-md text-on-surface">目标路径</h2></div>
+    <div class="space-y-4">
+      <label class="block"><span class="text-label-mono text-on-surface-variant uppercase mb-2 block">存放目录</span>
+        <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant">folder_open</span><input class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-code-sm" placeholder="/opt/app/config/" type="text"/></div>
+      </label>
+      <div class="bg-secondary-container/10 border border-secondary-container/20 p-3 rounded-lg flex gap-3"><span class="material-symbols-outlined text-secondary">info</span><p class="text-on-surface-variant text-body-md">请确保路径在目标主机上具有写入权限。</p></div>
+    </div>
+  </section>
+  <section class="col-span-12 lg:col-span-6 bg-surface-container p-6 rounded-xl border border-outline-variant">
+    <div class="flex items-center gap-2 mb-6"><span class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[12px] font-bold">3</span><h2 class="text-headline-md font-headline-md text-on-surface">配置选项</h2></div>
+    <div class="grid grid-cols-2 gap-8">
+      <div><span class="text-label-mono text-on-surface-variant uppercase mb-4 block">文件冲突处理</span>
+        <div class="space-y-3">
+          <label class="flex items-center gap-3 cursor-pointer"><input class="w-4 h-4 text-primary bg-surface-dim border-outline-variant focus:ring-primary" name="conflict" type="radio"/><span class="text-on-surface">直接覆盖</span></label>
+          <label class="flex items-center gap-3 cursor-pointer"><input class="w-4 h-4 text-primary bg-surface-dim border-outline-variant focus:ring-primary" name="conflict" type="radio"/><span class="text-on-surface">跳过同名文件</span></label>
+          <label class="flex items-center gap-3 cursor-pointer"><input checked class="w-4 h-4 text-primary bg-surface-dim border-outline-variant focus:ring-primary" name="conflict" type="radio"/><span class="text-primary font-bold">备份后覆盖</span></label>
+        </div>
+      </div>
+      <div><span class="text-label-mono text-on-surface-variant uppercase mb-4 block">路径不存在时</span>
+        <div class="space-y-3">
+          <label class="flex items-center gap-3 cursor-pointer"><input class="w-4 h-4 text-primary bg-surface-dim border-outline-variant focus:ring-primary" name="path_exist" type="radio"/><span class="text-on-surface">自动创建目录</span></label>
+          <label class="flex items-center gap-3 cursor-pointer"><input checked class="w-4 h-4 text-primary bg-surface-dim border-outline-variant focus:ring-primary" name="path_exist" type="radio"/><span class="text-primary font-bold">报错中止</span></label>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="col-span-12 lg:col-span-6 bg-surface-container p-6 rounded-xl border border-outline-variant flex flex-col">
+    <div class="flex items-center justify-between mb-6"><div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[12px] font-bold">4</span><h2 class="text-headline-md font-headline-md text-on-surface">选择目标主机</h2></div><button class="bg-surface-container-highest text-on-surface px-3 py-1.5 rounded-lg text-label-mono border border-outline-variant hover:bg-surface-bright transition-colors">从列表选择</button></div>
+    <div class="flex-1 bg-surface-container-low rounded-xl border border-outline-variant p-4 flex flex-col items-center justify-center text-on-surface-variant min-h-[120px]"><span class="material-symbols-outlined text-[48px] mb-2 opacity-20">dns</span><p class="font-body-md italic opacity-60">未选择任何目标主机</p></div>
+  </section>
+</div>
+<div class="mt-8 flex justify-end gap-4 border-t border-outline-variant pt-6">
+  <button class="px-8 py-3 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-highest border border-outline-variant transition-all">取消</button>
+  <button id="upload-submit-btn" onclick="startUpload()" class="bg-primary text-on-primary px-10 py-3 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 shadow-xl shadow-primary/20"><span class="material-symbols-outlined">rocket_launch</span>开始上传</button>
+</div>
+<!-- Upload Progress Bar -->
+<div id="upload-progress-section" class="mt-4 hidden">
+  <div class="flex justify-between text-label-mono text-on-surface-variant mb-1"><span>上传进度</span><span id="upload-pct-text">0%</span></div>
+  <div class="h-3 w-full bg-surface-container-highest rounded-full overflow-hidden"><div id="upload-progress-bar" class="h-full bg-primary rounded-full transition-all duration-300" style="width:0%"></div></div>
+</div>
+<!-- Transfer History -->
+<section class="mt-6 bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden">
+  <div class="px-6 py-4 bg-surface-container-high border-b border-outline-variant">
+    <h3 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-primary">history</span>传输历史</h3>
+  </div>
+  <div class="p-4">
+    <div id="upload-history-list" class="space-y-2 text-body-md text-on-surface-variant">
+      <p class="italic opacity-60">暂无传输记录</p>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- ========== PAGE: PROJECT TASKS ========== -->
+<div id="page-project-tasks" class="page-content hidden">
+<div class="flex justify-between items-end mb-8">
+  <div><h1 class="text-display-lg font-display-lg text-on-surface">工程任务</h1><p class="text-on-surface-variant text-body-md">配置与编排自动化工程任务流。</p></div>
+  <button class="bg-primary hover:opacity-90 text-on-primary font-bold px-6 py-2.5 rounded-lg transition-all flex items-center gap-2"><span class="material-symbols-outlined">add</span>新建工程</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <!-- Task Card 1 -->
+  <div class="bg-surface-container-low border border-outline-variant rounded-2xl overflow-hidden hover:border-primary/30 transition-all">
+    <div class="p-6 border-b border-outline-variant bg-surface-container-high">
+      <div class="flex items-center justify-between mb-2"><h3 class="font-bold text-lg text-on-surface">日常巡检</h3><span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-label-mono border border-primary/20">ACTIVE</span></div>
+      <p class="text-body-md text-on-surface-variant">每日自动巡检系统状态、磁盘空间及服务健康检查</p>
+    </div>
+    <div class="p-6 space-y-3">
+      <div class="flex items-center gap-3 p-3 bg-surface-container-highest rounded-lg"><div class="w-7 h-7 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">1</div><div><p class="text-body-md font-bold">系统状态检查</p><p class="text-[10px] text-on-surface-variant">命令执行: uptime, df -h, free -m</p></div><span class="ml-auto text-primary"><span class="material-symbols-outlined text-[18px]">check_circle</span></span></div>
+      <div class="flex items-center gap-3 p-3 bg-surface-container-highest rounded-lg"><div class="w-7 h-7 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">2</div><div><p class="text-body-md font-bold">服务健康检查</p><p class="text-[10px] text-on-surface-variant">脚本执行: health_check.sh</p></div><span class="ml-auto text-primary"><span class="material-symbols-outlined text-[18px]">check_circle</span></span></div>
+      <div class="flex items-center gap-3 p-3 bg-surface-container-highest rounded-lg"><div class="w-7 h-7 rounded-lg bg-secondary/20 text-secondary flex items-center justify-center font-bold text-xs">3</div><div><p class="text-body-md font-bold">生成巡检报告</p><p class="text-[10px] text-on-surface-variant">脚本执行: gen_report.py</p></div><span class="ml-auto text-on-surface-variant"><span class="material-symbols-outlined text-[18px]">pending</span></span></div>
+    </div>
+    <div class="px-6 pb-4"><div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full w-[66%]"></div></div><p class="text-label-mono text-on-surface-variant mt-1">2/3 步骤完成</p></div>
+  </div>
+  <!-- Task Card 2 -->
+  <div class="bg-surface-container-low border border-outline-variant rounded-2xl overflow-hidden hover:border-primary/30 transition-all">
+    <div class="p-6 border-b border-outline-variant bg-surface-container-high">
+      <div class="flex items-center justify-between mb-2"><h3 class="font-bold text-lg text-on-surface">安全补丁部署</h3><span class="px-2 py-0.5 bg-tertiary/10 text-tertiary text-[10px] rounded font-label-mono border border-tertiary/20">PENDING</span></div>
+      <p class="text-body-md text-on-surface-variant">批量部署CVE安全补丁到生产环境</p>
+    </div>
+    <div class="p-6 space-y-3">
+      <div class="flex items-center gap-3 p-3 bg-surface-container-highest rounded-lg"><div class="w-7 h-7 rounded-lg bg-tertiary/20 text-tertiary flex items-center justify-center font-bold text-xs">1</div><div><p class="text-body-md font-bold">备份系统</p><p class="text-[10px] text-on-surface-variant">脚本执行: backup_sys.sh</p></div><span class="ml-auto text-on-surface-variant"><span class="material-symbols-outlined text-[18px]">pending</span></span></div>
+      <div class="flex items-center gap-3 p-3 bg-surface-container-highest rounded-lg"><div class="w-7 h-7 rounded-lg bg-tertiary/20 text-tertiary flex items-center justify-center font-bold text-xs">2</div><div><p class="text-body-md font-bold">应用补丁</p><p class="text-[10px] text-on-surface-variant">脚本执行: CVE-2026-31431-patch</p></div><span class="ml-auto text-on-surface-variant"><span class="material-symbols-outlined text-[18px]">pending</span></span></div>
+      <div class="flex items-center gap-3 p-3 bg-surface-container-highest rounded-lg"><div class="w-7 h-7 rounded-lg bg-tertiary/20 text-tertiary flex items-center justify-center font-bold text-xs">3</div><div><p class="text-body-md font-bold">验证重启</p><p class="text-[10px] text-on-surface-variant">命令执行: reboot && verify</p></div><span class="ml-auto text-on-surface-variant"><span class="material-symbols-outlined text-[18px]">pending</span></span></div>
+    </div>
+    <div class="px-6 pb-4"><div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-tertiary rounded-full w-0"></div></div><p class="text-label-mono text-on-surface-variant mt-1">0/3 步骤完成</p></div>
+  </div>
+  <!-- Task Card 3 -->
+  <div class="bg-surface-container-low border border-outline-variant rounded-2xl overflow-hidden hover:border-primary/30 transition-all">
+    <div class="p-6 border-b border-outline-variant bg-surface-container-high">
+      <div class="flex items-center justify-between mb-2"><h3 class="font-bold text-lg text-on-surface">test 3</h3><span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-label-mono border border-primary/20">COMPLETED</span></div>
+      <p class="text-body-md text-on-surface-variant">测试工程任务</p>
+    </div>
+    <div class="p-6 space-y-3">
+      <div class="flex items-center gap-3 p-3 bg-surface-container-highest rounded-lg"><div class="w-7 h-7 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">1</div><div><p class="text-body-md font-bold">date</p><p class="text-[10px] text-on-surface-variant">命令执行</p></div><span class="ml-auto text-primary"><span class="material-symbols-outlined text-[18px]">check_circle</span></span></div>
+      <div class="flex items-center gap-3 p-3 bg-surface-container-highest rounded-lg"><div class="w-7 h-7 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">2</div><div><p class="text-body-md font-bold">计划任务</p><p class="text-[10px] text-on-surface-variant">脚本执行</p></div><span class="ml-auto text-primary"><span class="material-symbols-outlined text-[18px]">check_circle</span></span></div>
+      <div class="flex items-center gap-3 p-3 bg-surface-container-highest rounded-lg"><div class="w-7 h-7 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">3</div><div><p class="text-body-md font-bold">date2</p><p class="text-[10px] text-on-surface-variant">命令执行 (依赖: 步骤1)</p></div><span class="ml-auto text-primary"><span class="material-symbols-outlined text-[18px]">check_circle</span></span></div>
+    </div>
+    <div class="px-6 pb-4"><div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full w-full"></div></div><p class="text-label-mono text-primary mt-1">3/3 步骤完成</p></div>
+  </div>
+</div>
+</div>
+
+<!-- ========== PAGE: SCHEDULED TASKS ========== -->
+<div id="page-scheduled" class="page-content hidden">
+<div class="flex justify-between items-end mb-8">
+  <div><h1 class="text-display-lg font-display-lg text-on-surface">任务调度</h1><p class="text-on-surface-variant text-body-md">管理定时任务的执行计划与调度策略。</p></div>
+  <button class="bg-primary hover:opacity-90 text-on-primary font-bold px-6 py-2.5 rounded-lg transition-all flex items-center gap-2"><span class="material-symbols-outlined">add</span>新建调度</button>
+</div>
+<div class="bg-surface-container-low border border-outline-variant rounded-2xl overflow-hidden shadow-2xl">
+  <table class="w-full text-left border-collapse">
+    <thead><tr class="bg-surface-container-high border-b border-outline-variant">
+      <th class="py-4 px-6 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">任务名称</th>
+      <th class="py-4 px-6 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">关联类型</th>
+      <th class="py-4 px-6 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">Cron 表达式</th>
+      <th class="py-4 px-6 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">下次执行</th>
+      <th class="py-4 px-6 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">状态</th>
+      <th class="py-4 px-6 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider text-right">操作</th>
+    </tr></thead>
+    <tbody class="divide-y divide-outline-variant/30">
+      <tr class="hover:bg-surface-container-highest transition-colors">
+        <td class="py-4 px-6"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">schedule</span><span class="text-body-md font-bold">每日巡检</span></div></td>
+        <td class="py-4 px-6"><span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] rounded font-label-mono uppercase">工程任务</span></td>
+        <td class="py-4 px-6 font-code-sm text-code-sm text-on-surface">0 8 * * *</td>
+        <td class="py-4 px-6 text-body-md text-on-surface-variant">2026/07/16 08:00</td>
+        <td class="py-4 px-6"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"/><div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface-variant after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:after:bg-on-primary"></div></label></td>
+        <td class="py-4 px-6 text-right"><div class="flex justify-end gap-2"><button class="p-2 hover:bg-primary/10 text-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">play_arrow</span></button><button class="p-2 hover:bg-tertiary/10 text-tertiary rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button><button class="p-2 hover:bg-error/10 text-error rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button></div></td>
+      </tr>
+      <tr class="hover:bg-surface-container-highest transition-colors">
+        <td class="py-4 px-6"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-secondary">schedule</span><span class="text-body-md font-bold">数据库备份</span></div></td>
+        <td class="py-4 px-6"><span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-label-mono uppercase">脚本执行</span></td>
+        <td class="py-4 px-6 font-code-sm text-code-sm text-on-surface">0 2 * * *</td>
+        <td class="py-4 px-6 text-body-md text-on-surface-variant">2026/07/16 02:00</td>
+        <td class="py-4 px-6"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"/><div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface-variant after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:after:bg-on-primary"></div></label></td>
+        <td class="py-4 px-6 text-right"><div class="flex justify-end gap-2"><button class="p-2 hover:bg-primary/10 text-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">play_arrow</span></button><button class="p-2 hover:bg-tertiary/10 text-tertiary rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button><button class="p-2 hover:bg-error/10 text-error rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button></div></td>
+      </tr>
+      <tr class="hover:bg-surface-container-highest transition-colors">
+        <td class="py-4 px-6"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-tertiary">schedule</span><span class="text-body-md font-bold">日志清理</span></div></td>
+        <td class="py-4 px-6"><span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-label-mono uppercase">脚本执行</span></td>
+        <td class="py-4 px-6 font-code-sm text-code-sm text-on-surface">0 3 * * 0</td>
+        <td class="py-4 px-6 text-body-md text-on-surface-variant">2026/07/19 03:00</td>
+        <td class="py-4 px-6"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer"/><div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface-variant after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:after:bg-on-primary"></div></label></td>
+        <td class="py-4 px-6 text-right"><div class="flex justify-end gap-2"><button class="p-2 hover:bg-primary/10 text-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">play_arrow</span></button><button class="p-2 hover:bg-tertiary/10 text-tertiary rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button><button class="p-2 hover:bg-error/10 text-error rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button></div></td>
+      </tr>
+      <tr class="hover:bg-surface-container-highest transition-colors">
+        <td class="py-4 px-6"><div class="flex items-center gap-3"><span class="material-symbols-outlined text-on-surface-variant">schedule</span><span class="text-body-md font-bold">安全扫描</span></div></td>
+        <td class="py-4 px-6"><span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] rounded font-label-mono uppercase">工程任务</span></td>
+        <td class="py-4 px-6 font-code-sm text-code-sm text-on-surface">0 1 1 * *</td>
+        <td class="py-4 px-6 text-body-md text-on-surface-variant">2026/08/01 01:00</td>
+        <td class="py-4 px-6"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"/><div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface-variant after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:after:bg-on-primary"></div></label></td>
+        <td class="py-4 px-6 text-right"><div class="flex justify-end gap-2"><button class="p-2 hover:bg-primary/10 text-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">play_arrow</span></button><button class="p-2 hover:bg-tertiary/10 text-tertiary rounded-lg"><span class="material-symbols-outlined text-[20px]">edit</span></button><button class="p-2 hover:bg-error/10 text-error rounded-lg"><span class="material-symbols-outlined text-[20px]">delete</span></button></div></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- ========== PAGE: TASK HISTORY ========== -->
+<div id="page-history" class="page-content hidden">
+<div class="flex justify-between items-end mb-8">
+  <div><h1 class="text-display-lg font-display-lg text-on-surface">任务记录</h1><p class="text-on-surface-variant text-body-md">查看历史任务执行记录与详细日志。</p></div>
+  <button class="px-4 py-2 border border-outline-variant hover:bg-surface-container-highest text-on-surface rounded-lg text-body-md font-body-md transition-all flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">download</span>导出记录</button>
+</div>
+<!-- Filter Toolbar -->
+<div class="bg-surface-container rounded-xl p-4 border border-outline-variant mb-6 flex flex-wrap gap-4 items-center">
+  <div class="flex gap-4 flex-1 min-w-[300px]">
+    <input type="date" class="bg-surface-dim border border-outline-variant rounded-lg px-4 py-2 text-body-md focus:border-primary outline-none text-on-surface" value="2026-07-01"/>
+    <span class="self-center text-on-surface-variant">~</span>
+    <input type="date" class="bg-surface-dim border border-outline-variant rounded-lg px-4 py-2 text-body-md focus:border-primary outline-none text-on-surface" value="2026-07-15"/>
+  </div>
+  <select class="bg-surface-dim border border-outline-variant rounded-lg px-4 py-2 appearance-none text-body-md focus:border-primary outline-none text-on-surface-variant"><option>全部状态</option><option>成功</option><option>失败</option><option>执行中</option></select>
+  <select class="bg-surface-dim border border-outline-variant rounded-lg px-4 py-2 appearance-none text-body-md focus:border-primary outline-none text-on-surface-variant"><option>全部类型</option><option>脚本执行</option><option>命令执行</option><option>文件传输</option><option>工程任务</option></select>
+  <div class="relative"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span><input class="bg-surface-dim border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-body-md focus:border-primary outline-none w-[200px]" placeholder="搜索脚本名..." type="text"/></div>
+</div>
+<!-- History Table -->
+<div class="bg-surface-container-low border border-outline-variant rounded-2xl overflow-hidden shadow-2xl">
+  <table class="w-full text-left border-collapse">
+    <thead><tr class="bg-surface-container-high border-b border-outline-variant">
+      <th class="py-4 px-6 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">任务名称</th>
+      <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">类型</th>
+      <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">目标主机</th>
+      <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">开始时间</th>
+      <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">耗时</th>
+      <th class="py-4 px-4 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider">结果</th>
+      <th class="py-4 px-6 text-label-mono font-label-mono text-on-surface-variant uppercase tracking-wider text-right">操作</th>
+    </tr></thead>
+    <tbody class="divide-y divide-outline-variant/30" id="history-tbody">
+      <tr class="hover:bg-surface-container-highest transition-colors cursor-pointer" onclick="toggleLog(this)">
+        <td class="py-4 px-6 text-body-md font-bold">cron.sh</td>
+        <td class="py-4 px-4"><span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-label-mono uppercase">脚本执行</span></td>
+        <td class="py-4 px-4 text-body-md">2 台</td>
+        <td class="py-4 px-4 text-label-mono text-on-surface-variant">2026/07/15 00:46</td>
+        <td class="py-4 px-4 text-label-mono text-on-surface-variant">00:12</td>
+        <td class="py-4 px-4"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>2/2 成功</span></td>
+        <td class="py-4 px-6 text-right"><button class="p-2 hover:bg-primary/10 text-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">expand_more</span></button></td>
+      </tr>
+      <tr class="log-detail hidden"><td colspan="7" class="px-6 py-4 bg-surface-container-lowest">
+        <div class="bg-black rounded-lg p-4 font-code-sm text-code-sm text-[#e2e8f0] max-h-[200px] overflow-y-auto custom-scrollbar">
+          <p>[00:46:21] 开始执行任务: cron.sh_20260715_004607</p>
+          <p>[00:46:26] 172.28.62.157 - 开始执行...</p>
+          <p class="text-primary">[00:46:29] 172.28.62.157 - ✓ 执行成功 (耗时: 743ms)</p>
+          <p>[00:46:30] 172.28.210.116 - 开始执行...</p>
+          <p class="text-primary">[00:46:33] 172.28.210.116 - ✓ 执行成功 (耗时: 1.2s)</p>
+          <p>[00:46:33] 任务完成 | 总计: 2, 成功: 2, 失败: 0</p>
+        </div>
+      </td></tr>
+      <tr class="hover:bg-surface-container-highest transition-colors cursor-pointer" onclick="toggleLog(this)">
+        <td class="py-4 px-6 text-body-md font-bold">backup_db.sh</td>
+        <td class="py-4 px-4"><span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-label-mono uppercase">脚本执行</span></td>
+        <td class="py-4 px-4 text-body-md">1 台</td>
+        <td class="py-4 px-4 text-label-mono text-on-surface-variant">2026/07/14 02:00</td>
+        <td class="py-4 px-4 text-label-mono text-on-surface-variant">05:32</td>
+        <td class="py-4 px-4"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>1/1 成功</span></td>
+        <td class="py-4 px-6 text-right"><button class="p-2 hover:bg-primary/10 text-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">expand_more</span></button></td>
+      </tr>
+      <tr class="log-detail hidden"><td colspan="7" class="px-6 py-4 bg-surface-container-lowest">
+        <div class="bg-black rounded-lg p-4 font-code-sm text-code-sm text-[#e2e8f0]"><p>[02:00:01] 开始执行: backup_db.sh</p><p class="text-primary">[02:05:33] 172.28.60.132 - ✓ 备份完成 (耗时: 5m32s)</p></div>
+      </td></tr>
+      <tr class="hover:bg-surface-container-highest transition-colors cursor-pointer" onclick="toggleLog(this)">
+        <td class="py-4 px-6 text-body-md font-bold">日常巡检</td>
+        <td class="py-4 px-4"><span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] rounded font-label-mono uppercase">工程任务</span></td>
+        <td class="py-4 px-4 text-body-md">5 台</td>
+        <td class="py-4 px-4 text-label-mono text-on-surface-variant">2026/07/14 08:00</td>
+        <td class="py-4 px-4 text-label-mono text-on-surface-variant">12:45</td>
+        <td class="py-4 px-4"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error/10 text-error border border-error/20 text-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-error"></span>4/5 成功, 1失败</span></td>
+        <td class="py-4 px-6 text-right"><button class="p-2 hover:bg-primary/10 text-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">expand_more</span></button></td>
+      </tr>
+      <tr class="log-detail hidden"><td colspan="7" class="px-6 py-4 bg-surface-container-lowest">
+        <div class="bg-black rounded-lg p-4 font-code-sm text-code-sm text-[#e2e8f0]"><p>[08:00:01] 开始工程任务: 日常巡检</p><p class="text-primary">[08:02:15] 步骤1: 系统状态检查 - 5/5 成功</p><p class="text-primary">[08:08:30] 步骤2: 服务健康检查 - 5/5 成功</p><p class="text-error">[08:12:45] 步骤3: 生成巡检报告 - 4/5 成功, 172.28.25.209 失败(连接超时)</p></div>
+      </td></tr>
+      <tr class="hover:bg-surface-container-highest transition-colors cursor-pointer" onclick="toggleLog(this)">
+        <td class="py-4 px-6 text-body-md font-bold">df -h</td>
+        <td class="py-4 px-4"><span class="px-2 py-0.5 bg-tertiary/10 text-tertiary text-[10px] rounded font-label-mono uppercase">命令执行</span></td>
+        <td class="py-4 px-4 text-body-md">3 台</td>
+        <td class="py-4 px-4 text-label-mono text-on-surface-variant">2026/07/13 14:22</td>
+        <td class="py-4 px-4 text-label-mono text-on-surface-variant">00:08</td>
+        <td class="py-4 px-4"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>3/3 成功</span></td>
+        <td class="py-4 px-6 text-right"><button class="p-2 hover:bg-primary/10 text-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">expand_more</span></button></td>
+      </tr>
+      <tr class="log-detail hidden"><td colspan="7" class="px-6 py-4 bg-surface-container-lowest">
+        <div class="bg-black rounded-lg p-4 font-code-sm text-code-sm text-[#e2e8f0]"><p>[14:22:01] 执行命令: df -h</p><p class="text-primary">[14:22:09] 3 台主机全部执行成功</p></div>
+      </td></tr>
+    </tbody>
+  </table>
+  <div class="bg-surface-container-high border-t border-outline-variant px-6 py-4 flex justify-between items-center">
+    <p class="text-body-md text-on-surface-variant">Showing <span class="text-on-surface font-bold">1-4</span> of <span class="text-on-surface font-bold">156</span> records</p>
+    <div class="flex items-center gap-2">
+      <button class="w-10 h-10 rounded-lg bg-primary text-on-primary-container font-bold text-body-md">1</button>
+      <button class="w-10 h-10 rounded-lg hover:bg-surface-container-highest text-on-surface text-body-md transition-colors">2</button>
+      <button class="w-10 h-10 rounded-lg hover:bg-surface-container-highest text-on-surface text-body-md transition-colors">3</button>
+      <button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button>
+    </div>
+  </div>
+</div>
+</div>
+
+</main>
+
+<!-- ====== FOOTER ====== -->
+<footer class="fixed bottom-0 left-sidebar-width right-0 h-8 bg-surface-container-lowest border-t border-outline-variant px-gutter flex items-center justify-between z-30">
+  <div class="flex items-center gap-6">
+    <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span><span class="text-label-mono text-on-surface-variant text-[10px] uppercase">系统运行正常</span></div>
+    <span class="text-label-mono text-on-surface-variant text-[10px]">连接节点: HK-EDGE-01</span>
+  </div>
+  <div class="text-label-mono text-on-surface-variant text-[10px]">SSH Tools Box v1.260309.0</div>
+</footer>
+
+<!-- ====== MODAL CONTAINER ====== -->
+<div id="modal-overlay" class="fixed inset-0 bg-black/60 z-[100] hidden items-center justify-center" style="display:none;" onclick="if(event.target===this)hideModal()">
+  <div class="bg-surface-container-low border border-outline-variant rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto custom-scrollbar" id="modal-box">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
+      <h3 class="text-headline-md font-headline-md text-on-surface" id="modal-title">Modal</h3>
+      <button onclick="hideModal()" class="p-2 hover:bg-surface-container-highest rounded-lg text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="p-6" id="modal-content"></div>
+    <div class="px-6 pb-4 flex justify-end gap-3" id="modal-actions"></div>
+  </div>
+</div>
+<!-- ====== TOAST CONTAINER ====== -->
+<div id="toast-container" class="fixed top-20 right-6 z-[200] flex flex-col gap-2"></div>
+
+<!-- ====== FULL APP JS ====== -->
+<script>
+// ===================== MOCK DATA =====================
+const mockData = {
+  hosts: generateHosts(),
+  scripts: generateScripts(),
+  categories: ['系统检查','服务管理','网络测试','数据备份','日志管理'],
+  taskHistory: generateTaskHistory(),
+  projectTasks: generateProjectTasks(),
+  scheduledTasks: generateScheduledTasks()
+};
+
+function generateHosts() {
+  const names = ['Web应用服务器-01','Web应用服务器-02','数据库集群-主节点','数据库集群-从节点','消息队列服务-01',
+    '消息队列服务-02','缓存服务-Redis-01','缓存服务-Redis-02','网关服务-主','网关服务-备',
+    '监控平台-Prometheus','监控平台-Grafana','日志服务-采集节点','日志服务-存储节点','调度中心-Master',
+    '调度中心-Worker','配置中心-Nacos','注册中心-Eureka','API网关-Kong','负载均衡-Nginx-01',
+    '负载均衡-Nginx-02','DNS解析服务','跳板机-堡垒','代码仓库-GitLab','CI/CD-Jenkins',
+    '容器平台-K8s-Master','容器平台-K8s-Node1','容器平台-K8s-Node2','镜像仓库-Harbor','灰度发布网关',
+    '短信网关服务','邮件通知服务','报表生成服务','数据分析平台','合规审计系统',
+    '双活切换控制器','灾备同步服务','SSL证书管理','密钥管理系统','时间同步-NTP',
+    '网络流量分析','入侵检测-IDS','堡垒机-审计','VPN网关','防火墙管理',
+    '搜索引擎-ES','文件存储-MinIO','应用服务器-03','应用服务器-04','备份服务器'];
+  const apps = ['app-web','app-web','app-db','app-db','app-mq','app-mq','app-cache','app-cache','app-gateway','app-gateway',
+    'app-monitor','app-monitor','app-log','app-log','app-scheduler','app-scheduler','app-config','app-registry','app-gateway','app-lb',
+    'app-lb','app-dns','app-bastion','app-devops','app-devops','app-k8s','app-k8s','app-k8s','app-registry','app-release',
+    'app-notify','app-notify','app-report','app-analytics','app-audit','app-ha','app-dr','app-cert','app-kms','app-ntp',
+    'app-network','app-security','app-audit','app-vpn','app-firewall','app-search','app-storage','app-web','app-web','app-backup'];
+  const dcs = ['A区机房','B区机房','C区机房'];
+  const envs = ['生产','仿真','测试','灾备'];
+  const owners = ['张三','李四','王五','赵六','钱七','孙八','周九','吴十'];
+  const statuses = ['online','online','online','online','offline','unknown'];
+  const oses = ['CentOS 7.9','Ubuntu 22.04','RHEL 8.6','CentOS 8.5','Ubuntu 20.04'];
+  const ipPrefixes = ['192.168.1.','192.168.2.','10.0.1.'];
+  const hosts = [];
+  for (let i = 0; i < 50; i++) {
+    const prefix = ipPrefixes[i % 3];
+    const ip = prefix + (Math.floor(Math.random()*254)+1);
+    const st = statuses[i % statuses.length];
+    hosts.push({
+      id: i+1, ip, name: names[i], app: apps[i],
+      datacenter: dcs[i % 3], env: envs[i % 4], owner: owners[i % owners.length],
+      port: [22,22,22,2222,8022][i%5], status: st, os: oses[i % oses.length],
+      created: `2026/0${(i%9)+1}/${String((i%28)+1).padStart(2,'0')} ${String(i%24).padStart(2,'0')}:${String(i%60).padStart(2,'0')}`
+    });
+  }
+  return hosts;
+}
+
+function generateScripts() {
+  const cats = ['系统检查','服务管理','网络测试','数据备份','日志管理'];
+  const items = [
+    {n:'check_disk.sh',d:'检查磁盘空间使用率',c:'#!/bin/bash\ndf -h | awk \'{print $5" "$6}\' | grep -v Use'},
+    {n:'check_cpu.sh',d:'检查CPU负载及使用率',c:'#!/bin/bash\nuptime\necho "---"\ntop -bn1 | head -20'},
+    {n:'check_memory.sh',d:'检查内存使用情况',c:'#!/bin/bash\nfree -m\necho "---"\ncat /proc/meminfo | head -5'},
+    {n:'check_network.sh',d:'网络连通性检测',c:'#!/bin/bash\nping -c 4 $1\ntraceroute $1'},
+    {n:'check_ports.sh',d:'端口开放状态检测',c:'#!/bin/bash\nnetstat -tlnp | grep -E "LISTEN"'},
+    {n:'check_process.sh',d:'进程状态检查',c:'#!/bin/bash\nps aux --sort=-%mem | head -20'},
+    {n:'restart_service.sh',d:'重启指定系统服务',c:'#!/bin/bash\nsystemctl restart $1\nsystemctl status $1'},
+    {n:'stop_service.sh',d:'停止指定服务',c:'#!/bin/bash\nsystemctl stop $1\necho "Service $1 stopped"'},
+    {n:'start_service.sh',d:'启动指定服务',c:'#!/bin/bash\nsystemctl start $1\nsystemctl status $1'},
+    {n:'nginx_reload.sh',d:'Nginx配置重载',c:'#!/bin/bash\nnginx -t && nginx -s reload'},
+    {n:'wzq_cgi_restart.sh',d:'重启cgi服务组件',c:'#!/bin/bash\n/opt/wzq/bin/restart_cgi.sh\necho "CGI restarted"'},
+    {n:'wzq-jieru-stop.sh',d:'关闭接入层服务',c:'#!/bin/bash\n/opt/wzq/bin/stop_jieru.sh\necho "接入层服务已关闭"'},
+    {n:'tomcat_restart.sh',d:'Tomcat服务重启',c:'#!/bin/bash\n/opt/tomcat/bin/shutdown.sh\nsleep 3\n/opt/tomcat/bin/startup.sh'},
+    {n:'health_check.sh',d:'服务健康检查脚本',c:'#!/bin/bash\ncurl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health'},
+    {n:'deploy_war.sh',d:'WAR包部署脚本',c:'#!/bin/bash\ncp $1 /opt/tomcat/webapps/\nsystemctl restart tomcat'},
+    {n:'ping_test.sh',d:'批量Ping连通性测试',c:'#!/bin/bash\nfor host in "$@"; do\n  ping -c 2 -W 3 $host\ndone'},
+    {n:'tcp_test.sh',d:'TCP端口连通性测试',c:'#!/bin/bash\nnc -zv $1 $2 -w 5'},
+    {n:'dns_test.sh',d:'DNS解析测试',c:'#!/bin/bash\ndig $1\nnslookup $1'},
+    {n:'backup_db.sh',d:'数据库每日备份',c:'#!/bin/bash\nBACKUP_DIR=/data/backup/db\nmysqldump -u root -p$PASS --all-databases | gzip > $BACKUP_DIR/db_$(date +%Y%m%d).sql.gz'},
+    {n:'backup_config.sh',d:'配置文件备份',c:'#!/bin/bash\ntar -czf /data/backup/config_$(date +%Y%m%d).tar.gz /etc/nginx /etc/mysql'},
+    {n:'backup_logs.sh',d:'日志归档备份',c:'#!/bin/bash\ntar -czf /data/backup/logs_$(date +%Y%m%d).tar.gz /var/log/app/'},
+    {n:'backup_sys.sh',d:'系统全量备份',c:'#!/bin/bash\nrsync -avz --exclude=/proc --exclude=/tmp / /data/backup/sys/'},
+    {n:'rsync_sync.sh',d:'文件同步脚本',c:'#!/bin/bash\nrsync -avz --delete $1 $2'},
+    {n:'cleanup_logs.sh',d:'清理过期日志',c:'#!/bin/bash\nfind /var/log -name "*.log" -mtime +30 -delete\necho "Logs older than 30 days removed"'},
+    {n:'rotate_logs.sh',d:'日志轮转脚本',c:'#!/bin/bash\nlogrotate /etc/logrotate.d/app\necho "Log rotation complete"'},
+    {n:'analyze_logs.sh',d:'日志分析统计',c:'#!/bin/bash\nawk \'{print $1}\' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -20'},
+    {n:'tail_error.sh',d:'实时错误日志监控',c:'#!/bin/bash\ntail -f /var/log/app/error.log | grep --color "ERROR\\|FATAL"'},
+    {n:'CVE-2026-31431-patch.sh',d:'紧急安全漏洞补丁',c:'#!/bin/bash\necho "Applying CVE-2026-31431 patch..."\nyum update -y openssl\nsystemctl restart nginx'},
+    {n:'cron.sh',d:'查看计划任务列表',c:'#!/bin/bash\ncrontab -l\necho "---"\nls /etc/cron.d/'},
+    {n:'gen_report.py',d:'生成巡检报告',c:'#!/usr/bin/env python3\nimport json\nprint("Generating inspection report...")\n# Report generation logic'}
+  ];
+  return items.map((it,i) => ({
+    id: i+1, name: it.n, category: cats[i%5], description: it.d, 
+    tags: [['架构: X86','生产'],['安全补丁'],['自动化','WZQ'],['Shell','系统'],['Python','报告']][i%5],
+    content: it.c,
+    created: `2026/0${(i%9)+1}/${String((i%28)+1).padStart(2,'0')} ${String(i%24).padStart(2,'0')}:${String(i%60).padStart(2,'0')}`,
+    updated: `2026/0${Math.min((i%9)+2,9)}/${String((i%28)+1).padStart(2,'0')}`
+  }));
+}
+
+function generateTaskHistory() {
+  const scripts = ['cron.sh','backup_db.sh','check_disk.sh','health_check.sh','cleanup_logs.sh','nginx_reload.sh','check_cpu.sh','ping_test.sh','backup_config.sh','deploy_war.sh'];
+  const types = ['脚本执行','脚本执行','脚本执行','命令执行','工程任务','文件传输'];
+  const executors = ['张三','李四','王五','赵六','系统定时'];
+  const items = [];
+  for (let i = 0; i < 20; i++) {
+    const hc = Math.floor(Math.random()*8)+1;
+    const sc = Math.floor(Math.random()*hc)+1;
+    const fc = hc - sc;
+    const st = fc===0?'success':(sc>fc?'partial':'failed');
+    const mins = Math.floor(Math.random()*30);
+    const secs = Math.floor(Math.random()*60);
+    items.push({
+      id: i+1, scriptName: scripts[i%scripts.length], type: types[i%types.length],
+      hostCount: hc, successCount: sc, failCount: fc, status: st,
+      startTime: `2026/07/${String(15-Math.floor(i/2)).padStart(2,'0')} ${String((i*3)%24).padStart(2,'0')}:${String((i*7)%60).padStart(2,'0')}`,
+      duration: `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`,
+      executor: executors[i%executors.length]
+    });
+  }
+  return items;
+}
+
+function generateProjectTasks() {
+  return [
+    {id:1,name:'日常巡检',description:'每日自动巡检系统状态、磁盘空间及服务健康检查',status:'running',progress:66,
+      steps:[{name:'系统状态检查',type:'命令执行',detail:'uptime, df -h, free -m',done:true},{name:'服务健康检查',type:'脚本执行',detail:'health_check.sh',done:true},{name:'生成巡检报告',type:'脚本执行',detail:'gen_report.py',done:false}]},
+    {id:2,name:'安全补丁部署',description:'批量部署CVE安全补丁到生产环境',status:'pending',progress:0,
+      steps:[{name:'备份系统',type:'脚本执行',detail:'backup_sys.sh',done:false},{name:'应用补丁',type:'脚本执行',detail:'CVE-2026-31431-patch',done:false},{name:'验证重启',type:'命令执行',detail:'reboot && verify',done:false}]},
+    {id:3,name:'数据库迁移',description:'MySQL 5.7升级至8.0并迁移数据',status:'completed',progress:100,
+      steps:[{name:'备份旧库',type:'脚本执行',detail:'backup_db.sh',done:true},{name:'安装新版',type:'命令执行',detail:'yum install mysql8',done:true},{name:'数据迁移',type:'脚本执行',detail:'migrate.py',done:true},{name:'验证数据',type:'命令执行',detail:'checksum verify',done:true}]},
+    {id:4,name:'容器化改造',description:'将传统应用部署到K8s集群',status:'pending',progress:0,
+      steps:[{name:'编写Dockerfile',type:'手动',detail:'Dockerfile',done:false},{name:'构建镜像',type:'命令执行',detail:'docker build',done:false},{name:'部署到K8s',type:'命令执行',detail:'kubectl apply',done:false}]},
+    {id:5,name:'网络割接演练',description:'主备机房网络切换演练',status:'running',progress:33,
+      steps:[{name:'DNS切换',type:'命令执行',detail:'nsupdate',done:true},{name:'流量验证',type:'脚本执行',detail:'traffic_check.sh',done:false},{name:'回切验证',type:'命令执行',detail:'nsupdate rollback',done:false}]}
+  ];
+}
+
+function generateScheduledTasks() {
+  return [
+    {id:1,name:'每日巡检',type:'工程任务',scriptName:'日常巡检',cron:'0 8 * * *',enabled:true,lastRun:'2026/07/15 08:00',nextRun:'2026/07/16 08:00',status:'正常'},
+    {id:2,name:'数据库备份',type:'脚本执行',scriptName:'backup_db.sh',cron:'0 2 * * *',enabled:true,lastRun:'2026/07/15 02:00',nextRun:'2026/07/16 02:00',status:'正常'},
+    {id:3,name:'日志清理',type:'脚本执行',scriptName:'cleanup_logs.sh',cron:'0 3 * * 0',enabled:false,lastRun:'2026/07/12 03:00',nextRun:'2026/07/19 03:00',status:'已暂停'},
+    {id:4,name:'安全扫描',type:'工程任务',scriptName:'安全扫描任务',cron:'0 1 1 * *',enabled:true,lastRun:'2026/07/01 01:00',nextRun:'2026/08/01 01:00',status:'正常'},
+    {id:5,name:'磁盘检查',type:'脚本执行',scriptName:'check_disk.sh',cron:'*/30 * * * *',enabled:true,lastRun:'2026/07/15 14:30',nextRun:'2026/07/15 15:00',status:'正常'},
+    {id:6,name:'配置备份',type:'脚本执行',scriptName:'backup_config.sh',cron:'0 22 * * 5',enabled:true,lastRun:'2026/07/11 22:00',nextRun:'2026/07/18 22:00',status:'正常'},
+    {id:7,name:'健康检查',type:'脚本执行',scriptName:'health_check.sh',cron:'*/10 * * * *',enabled:true,lastRun:'2026/07/15 14:50',nextRun:'2026/07/15 15:00',status:'正常'},
+    {id:8,name:'周报生成',type:'脚本执行',scriptName:'gen_report.py',cron:'0 9 * * 1',enabled:false,lastRun:'2026/07/08 09:00',nextRun:'2026/07/15 09:00',status:'已暂停'}
+  ];
+}
+
+// ===================== UI COMPONENTS =====================
+function showModal(title, content, onConfirm) {
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-content').innerHTML = content;
+  const actions = document.getElementById('modal-actions');
+  actions.innerHTML = '';
+  if (onConfirm) {
+    actions.innerHTML = `<button onclick="hideModal()" class="px-6 py-2 border border-outline-variant hover:bg-surface-container-highest text-on-surface rounded-lg text-body-md transition-all">取消</button>
+      <button id="modal-confirm-btn" class="px-6 py-2 bg-primary hover:opacity-90 text-on-primary-container rounded-lg text-body-md font-bold transition-all">确认</button>`;
+    document.getElementById('modal-confirm-btn').addEventListener('click', () => { onConfirm(); hideModal(); });
+  } else {
+    actions.innerHTML = `<button onclick="hideModal()" class="px-6 py-2 bg-primary hover:opacity-90 text-on-primary-container rounded-lg text-body-md font-bold transition-all">关闭</button>`;
+  }
+  overlay.style.display = 'flex';
+  overlay.classList.remove('hidden');
+}
+
+function hideModal() {
+  const overlay = document.getElementById('modal-overlay');
+  overlay.style.display = 'none';
+  overlay.classList.add('hidden');
+}
+
+function showToast(message, type='success') {
+  const container = document.getElementById('toast-container');
+  const colors = { success:'bg-primary/90 text-on-primary-container', error:'bg-error/90 text-on-error', warning:'bg-tertiary/90 text-on-tertiary', info:'bg-secondary-container/90 text-on-secondary-container' };
+  const icons = { success:'check_circle', error:'error', warning:'warning', info:'info' };
+  const toast = document.createElement('div');
+  toast.className = `${colors[type]||colors.info} px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-body-md font-body-md animate-[fadeIn_0.3s_ease] min-w-[280px]`;
+  toast.innerHTML = `<span class="material-symbols-outlined">${icons[type]||icons.info}</span><span>${message}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity='0'; toast.style.transition='opacity 0.3s'; setTimeout(()=>toast.remove(),300); }, 3000);
+}
+
+function showConfirm(message, onConfirm) {
+  showModal('确认操作', `<p class="text-body-md text-on-surface">${message}</p>`, onConfirm);
+}
+
+// ===================== NAVIGATION =====================
+function switchPage(pageId, navEl) {
+  document.querySelectorAll('.page-content').forEach(el => { el.classList.add('hidden'); el.style.opacity='0'; });
+  const target = document.getElementById(pageId);
+  target.classList.remove('hidden');
+  setTimeout(() => { target.style.transition='opacity 0.3s'; target.style.opacity='1'; }, 10);
+  document.querySelectorAll('#main-nav .nav-link').forEach(a => {
+    a.classList.remove('active'); a.classList.add('text-on-surface-variant');
+    a.style.borderBottom = ''; a.style.fontWeight = '';
+  });
+  if (navEl) { navEl.classList.add('active'); navEl.classList.remove('text-on-surface-variant'); navEl.style.borderBottom='2px solid #4edea3'; navEl.style.fontWeight='bold'; }
+  updateSidebarStats();
+  if (pageId==='page-hosts') renderHostTable();
+  if (pageId==='page-scripts') renderScriptList();
+  if (pageId==='page-history') renderHistoryTable();
+  if (pageId==='page-scheduled') renderScheduledTable();
+  if (pageId==='page-project-tasks') renderProjectTasks();
+  if (pageId==='page-task-exec') initTaskExecPage();
+  if (pageId==='page-commands') initCommandPage();
+  if (pageId==='page-fileupload') initFileUpload();
+}
+
+function updateSidebarStats() {
+  const stats = document.querySelectorAll('.mb-auto .grid .bg-surface-container-highest p:nth-child(2)');
+  if (stats.length >= 4) {
+    stats[0].textContent = mockData.hosts.length;
+    stats[1].textContent = mockData.scripts.length;
+    stats[2].textContent = mockData.projectTasks.length;
+    const successCount = mockData.taskHistory.filter(t=>t.status==='success').length;
+    stats[3].textContent = Math.round(successCount/mockData.taskHistory.length*100)+'%';
+  }
+}
+
+function toggleLog(row) {
+  const detail = row.nextElementSibling;
+  if (detail && detail.classList.contains('log-detail')) {
+    detail.classList.toggle('hidden');
+    const btn = row.querySelector('.material-symbols-outlined');
+    if (btn) btn.textContent = detail.classList.contains('hidden') ? 'expand_more' : 'expand_less';
+  }
+}
+
+// ===================== HOST MANAGEMENT =====================
+let hostState = { page:1, perPage:10, search:'', dc:'', env:'', owner:'', sortKey:'id', sortDir:'asc', selected:new Set() };
+
+function getFilteredHosts() {
+  let data = [...mockData.hosts];
+  if (hostState.search) {
+    const s = hostState.search.toLowerCase();
+    data = data.filter(h => h.ip.includes(s)||h.name.toLowerCase().includes(s)||h.app.toLowerCase().includes(s)||h.owner.includes(s));
+  }
+  if (hostState.dc) data = data.filter(h=>h.datacenter===hostState.dc);
+  if (hostState.env) data = data.filter(h=>h.env===hostState.env);
+  if (hostState.owner) data = data.filter(h=>h.owner===hostState.owner);
+  data.sort((a,b) => {
+    let va=a[hostState.sortKey], vb=b[hostState.sortKey];
+    if (typeof va==='number') return hostState.sortDir==='asc'?va-vb:vb-va;
+    return hostState.sortDir==='asc'?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
+  });
+  return data;
+}
+
+function renderHostTable() {
+  const filtered = getFilteredHosts();
+  const totalPages = Math.max(1, Math.ceil(filtered.length/hostState.perPage));
+  if (hostState.page>totalPages) hostState.page=totalPages;
+  const start = (hostState.page-1)*hostState.perPage;
+  const pageData = filtered.slice(start, start+hostState.perPage);
+  const tbody = document.querySelector('#page-hosts tbody');
+  const statusMap = { online:{cls:'bg-primary/10 text-primary border-primary/20',dot:'bg-primary shadow-[0_0_8px_rgba(78,222,163,0.6)]',label:'Online'}, offline:{cls:'bg-error/10 text-error border-error/20',dot:'bg-error shadow-[0_0_8px_rgba(255,180,171,0.6)]',label:'Offline'}, unknown:{cls:'bg-surface-container-highest text-on-surface-variant border-outline-variant',dot:'bg-on-surface-variant',label:'Unknown'} };
+  tbody.innerHTML = pageData.map(h => {
+    const st = statusMap[h.status]||statusMap.unknown;
+    const checked = hostState.selected.has(h.id)?'checked':'';
+    return `<tr class="hover:bg-surface-container-highest transition-colors group" data-id="${h.id}">
+      <td class="py-4 px-6"><input class="rounded border-outline text-primary focus:ring-primary bg-surface host-cb" type="checkbox" ${checked} onchange="toggleHostSelect(${h.id},this.checked)"/></td>
+      <td class="py-4 px-4 font-code-sm text-code-sm text-secondary">${h.ip}</td>
+      <td class="py-4 px-4 text-body-md font-body-md">${h.name}</td>
+      <td class="py-4 px-4 text-center"><span class="bg-surface-container-highest px-2 py-0.5 rounded text-code-sm font-code-sm border border-outline-variant">${h.port}</span></td>
+      <td class="py-4 px-4 text-body-md font-body-md">${h.owner}</td>
+      <td class="py-4 px-4 text-body-md font-body-md text-on-surface-variant">${h.env} · ${h.datacenter}</td>
+      <td class="py-4 px-4"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${st.cls} border text-label-mono font-label-mono"><span class="w-1.5 h-1.5 rounded-full ${st.dot}"></span>${st.label}</span></td>
+      <td class="py-4 px-6 text-right"><div class="flex justify-end gap-2">
+        <button class="p-2 hover:bg-secondary/10 text-secondary transition-colors rounded-lg" title="连接测试" onclick="testConnection(${h.id})"><span class="material-symbols-outlined text-[20px]">terminal</span></button>
+        <button class="p-2 hover:bg-tertiary/10 text-tertiary transition-colors rounded-lg" title="编辑" onclick="editHost(${h.id})"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+        <button class="p-2 hover:bg-error/10 text-error transition-colors rounded-lg" title="删除" onclick="deleteHost(${h.id})"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+      </div></td></tr>`;
+  }).join('');
+  const footer = document.querySelector('#page-hosts .bg-surface-container-high.border-t');
+  if (footer) {
+    footer.innerHTML = `<p class="text-body-md font-body-md text-on-surface-variant">Showing <span class="text-on-surface font-bold">${start+1}-${Math.min(start+hostState.perPage,filtered.length)}</span> of <span class="text-on-surface font-bold">${filtered.length}</span> records</p>
+      <div class="flex items-center gap-2">
+        <button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors ${hostState.page<=1?'opacity-30':''}" onclick="hostPageNav(${hostState.page-1})" ${hostState.page<=1?'disabled':''}><span class="material-symbols-outlined text-[20px]">chevron_left</span></button>
+        ${Array.from({length:Math.min(totalPages,7)},(_,i)=>`<button class="w-10 h-10 rounded-lg ${hostState.page===i+1?'bg-primary text-on-primary-container font-bold':'hover:bg-surface-container-highest text-on-surface'} text-body-md transition-colors" onclick="hostPageNav(${i+1})">${i+1}</button>`).join('')}
+        <button class="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors ${hostState.page>=totalPages?'opacity-30':''}" onclick="hostPageNav(${hostState.page+1})" ${hostState.page>=totalPages?'disabled':''}><span class="material-symbols-outlined text-[20px]">chevron_right</span></button>
+      </div>`;
+  }
+  const selectAll = document.querySelector('#page-hosts thead input[type=checkbox]');
+  if (selectAll) selectAll.onchange = function() { pageData.forEach(h => { if(this.checked) hostState.selected.add(h.id); else hostState.selected.delete(h.id); }); renderHostTable(); };
+}
+
+function hostPageNav(p) { hostState.page=p; renderHostTable(); }
+function toggleHostSelect(id, checked) { checked?hostState.selected.add(id):hostState.selected.delete(id); }
+
+function testConnection(id) {
+  const host = mockData.hosts.find(h=>h.id===id);
+  if (!host) return;
+  showToast(`正在测试 ${host.ip} 连接...`, 'info');
+  setTimeout(() => {
+    const ok = Math.random()>0.3;
+    if (ok) { showToast(`${host.ip} 连接成功 (${Math.floor(Math.random()*200+50)}ms)`, 'success'); host.status='online'; }
+    else { showToast(`${host.ip} 连接失败: Connection timeout`, 'error'); host.status='offline'; }
+    renderHostTable();
+  }, 1000+Math.random()*1500);
+}
+
+function editHost(id) {
+  const h = mockData.hosts.find(x=>x.id===id);
+  if (!h) return;
+  showModal('编辑主机', `<div class="space-y-4">
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">IP地址</span><input id="edit-ip" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" value="${h.ip}"/></label>
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">系统名称</span><input id="edit-name" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" value="${h.name}"/></label>
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">负责人</span><input id="edit-owner" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" value="${h.owner}"/></label>
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">端口</span><input id="edit-port" type="number" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" value="${h.port}"/></label>
+  </div>`, () => {
+    h.ip=document.getElementById('edit-ip').value; h.name=document.getElementById('edit-name').value;
+    h.owner=document.getElementById('edit-owner').value; h.port=parseInt(document.getElementById('edit-port').value)||22;
+    renderHostTable(); showToast('主机信息已更新');
+  });
+}
+
+function deleteHost(id) {
+  showConfirm('确定要删除该主机吗？此操作不可恢复。', () => {
+    mockData.hosts = mockData.hosts.filter(h=>h.id!==id);
+    hostState.selected.delete(id); renderHostTable(); showToast('主机已删除','success');
+  });
+}
+
+function addHost() {
+  showModal('添加主机', `<div class="space-y-4">
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">IP地址 *</span><input id="add-ip" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" placeholder="192.168.x.x"/></label>
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">系统名称 *</span><input id="add-name" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" placeholder="系统名称"/></label>
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">应用名</span><input id="add-app" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" placeholder="应用名称"/></label>
+    <div class="grid grid-cols-2 gap-4">
+      <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">机房</span><select id="add-dc" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface"><option>A区机房</option><option>B区机房</option><option>C区机房</option></select></label>
+      <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">环境</span><select id="add-env" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface"><option>生产</option><option>仿真</option><option>测试</option><option>灾备</option></select></label>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">负责人</span><input id="add-owner" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" value="张三"/></label>
+      <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">端口</span><input id="add-port" type="number" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" value="22"/></label>
+    </div>
+  </div>`, () => {
+    const ip = document.getElementById('add-ip').value.trim();
+    const name = document.getElementById('add-name').value.trim();
+    if (!ip||!name) { showToast('请填写必填字段','error'); return; }
+    const newId = Math.max(...mockData.hosts.map(h=>h.id))+1;
+    mockData.hosts.unshift({id:newId,ip,name,app:document.getElementById('add-app').value||'未分类',
+      datacenter:document.getElementById('add-dc').value,env:document.getElementById('add-env').value,
+      owner:document.getElementById('add-owner').value,port:parseInt(document.getElementById('add-port').value)||22,
+      status:'unknown',os:'CentOS 7.9',created:new Date().toISOString().slice(0,16).replace('T',' ').replace(/-/g,'/')});
+    renderHostTable(); showToast(`主机 ${ip} 已添加`);
+  });
+}
+
+function batchDeleteHosts() {
+  if (hostState.selected.size===0) { showToast('请先选择主机','warning'); return; }
+  showConfirm(`确定要删除选中的 ${hostState.selected.size} 台主机吗？`, () => {
+    mockData.hosts = mockData.hosts.filter(h=>!hostState.selected.has(h.id));
+    hostState.selected.clear(); renderHostTable(); showToast('批量删除成功');
+  });
+}
+
+// ===================== SCRIPT MANAGEMENT =====================
+let scriptState = { category:'全部', search:'' };
+
+function renderScriptList() {
+  let data = [...mockData.scripts];
+  if (scriptState.category!=='全部') data = data.filter(s=>s.category===scriptState.category);
+  if (scriptState.search) { const s=scriptState.search.toLowerCase(); data=data.filter(x=>x.name.toLowerCase().includes(s)||x.description.includes(s)); }
+  const tbody = document.querySelector('#page-scripts tbody');
+  const iconMap = {'系统检查':'search','服务管理':'settings_power','网络测试':'wifi','数据备份':'cloud_upload','日志管理':'article'};
+  tbody.innerHTML = data.map(s => `<tr class="hover:bg-surface-container-highest transition-colors">
+    <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center"><span class="material-symbols-outlined text-primary text-sm">${iconMap[s.category]||'code'}</span></div><span class="text-body-md font-bold text-primary cursor-pointer hover:underline" onclick="viewScript(${s.id})">${s.name}</span></div></td>
+    <td class="px-6 py-4 text-body-md text-on-surface-variant">${s.description}</td>
+    <td class="px-6 py-4"><div class="flex flex-wrap gap-2">${s.tags.map(t=>`<span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] rounded font-label-mono uppercase">${t}</span>`).join('')}</div></td>
+    <td class="px-6 py-4 text-label-mono text-on-surface-variant">${s.created}</td>
+    <td class="px-6 py-4"><div class="flex justify-end gap-2"><button class="p-1.5 hover:bg-primary/20 text-primary rounded" onclick="viewScript(${s.id})"><span class="material-symbols-outlined text-sm">visibility</span></button><button class="p-1.5 hover:bg-error/20 text-error rounded" onclick="deleteScript(${s.id})"><span class="material-symbols-outlined text-sm">delete</span></button></div></td>
+  </tr>`).join('');
+  // Update counts
+  const cats = {};
+  mockData.scripts.forEach(s => { cats[s.category]=(cats[s.category]||0)+1; });
+  const dirNav = document.getElementById('script-category-tree');
+  if (dirNav) {
+    dirNav.innerHTML = `<a class="flex items-center justify-between px-4 py-2 ${scriptState.category==='全部'?'bg-primary/10 text-primary':'text-on-surface-variant hover:bg-surface-container-highest'} transition-colors group cursor-pointer" onclick="filterScriptCat('全部')">
+      <div class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">folder_open</span><span class="text-body-md font-medium">全部脚本</span></div><span class="text-[10px] font-label-mono bg-primary/20 px-1.5 rounded">${mockData.scripts.length}</span></a>
+      <div class="pl-4">${mockData.categories.map(c=>`<a class="flex items-center justify-between px-4 py-2 ${scriptState.category===c?'bg-primary/10 text-primary':'text-on-surface-variant hover:bg-surface-container-highest'} transition-colors group cursor-pointer" onclick="filterScriptCat('${c}')"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-outline">folder</span><span class="text-body-md">${c}</span></div><div class="flex items-center gap-1"><span class="text-[10px] font-label-mono opacity-50">${cats[c]||0}</span><span class="hidden group-hover:flex items-center gap-0.5 ml-1"><button class="p-0.5 hover:bg-primary/20 text-on-surface-variant hover:text-primary rounded" onclick="event.stopPropagation();renameCategory('${c}')" title="重命名"><span class="material-symbols-outlined text-[14px]">edit</span></button><button class="p-0.5 hover:bg-error/20 text-on-surface-variant hover:text-error rounded" onclick="event.stopPropagation();deleteCategory('${c}')" title="删除"><span class="material-symbols-outlined text-[14px]">delete</span></button></span></div></a>`).join('')}</div>`;
+  }
+  const footer = document.querySelector('#page-scripts .flex-1 .bg-surface-container-low');
+  if (footer) footer.innerHTML = `<span class="text-body-md text-on-surface-variant">显示 1 到 ${data.length} 条，共 ${data.length} 条</span>`;
+}
+
+function filterScriptCat(cat) { scriptState.category=cat; renderScriptList(); }
+function viewScript(id) {
+  const s = mockData.scripts.find(x=>x.id===id);
+  if (!s) return;
+  showModal(s.name, `<p class="text-body-md text-on-surface-variant mb-4">${s.description}</p>
+    <div class="bg-black rounded-lg p-4 font-code-sm text-code-sm text-[#e2e8f0] max-h-[300px] overflow-y-auto custom-scrollbar whitespace-pre">${escapeHtml(s.content)}</div>`, null);
+}
+function deleteScript(id) {
+  showConfirm('确定要删除该脚本吗？', () => { mockData.scripts=mockData.scripts.filter(s=>s.id!==id); renderScriptList(); showToast('脚本已删除'); });
+}
+function escapeHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function addScript() {
+  showModal('添加脚本', `<div class="space-y-4">
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">脚本名称</span><input id="add-sn" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" placeholder="script_name.sh"/></label>
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">分类</span><select id="add-sc" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface"><option>系统检查</option><option>服务管理</option><option>网络测试</option><option>数据备份</option><option>日志管理</option></select></label>
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">描述</span><input id="add-sd" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface" placeholder="脚本描述"/></label>
+    <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">脚本内容</span><textarea id="add-scontent" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface font-code-sm min-h-[100px]" placeholder="#!/bin/bash"></textarea></label>
+  </div>`, () => {
+    const name = document.getElementById('add-sn').value.trim();
+    if (!name) { showToast('请填写脚本名称','error'); return; }
+    const newId = Math.max(...mockData.scripts.map(s=>s.id))+1;
+    mockData.scripts.push({id:newId,name,category:document.getElementById('add-sc').value,description:document.getElementById('add-sd').value,tags:['Shell'],content:document.getElementById('add-scontent').value||'#!/bin/bash',created:new Date().toISOString().slice(0,16).replace('T',' ').replace(/-/g,'/'),updated:new Date().toISOString().slice(0,10).replace(/-/g,'/')});
+    renderScriptList(); showToast('脚本已添加');
+  });
+}
+
+function addCategory() {
+  const name = prompt('请输入新目录名称：');
+  if (!name || !name.trim()) return;
+  if (mockData.categories.includes(name.trim())) { showToast('该目录已存在','warning'); return; }
+  mockData.categories.push(name.trim());
+  renderScriptList();
+  showToast(`目录「${name.trim()}」已创建`);
+}
+
+function renameCategory(oldName) {
+  const newName = prompt(`重命名目录「${oldName}」：`, oldName);
+  if (!newName || !newName.trim() || newName.trim()===oldName) return;
+  if (mockData.categories.includes(newName.trim())) { showToast('该目录名已存在','warning'); return; }
+  const idx = mockData.categories.indexOf(oldName);
+  if (idx!==-1) mockData.categories[idx] = newName.trim();
+  mockData.scripts.forEach(s => { if(s.category===oldName) s.category=newName.trim(); });
+  if (scriptState.category===oldName) scriptState.category=newName.trim();
+  renderScriptList();
+  showToast(`目录已重命名为「${newName.trim()}」`);
+}
+
+function deleteCategory(name) {
+  if (!confirm(`确定要删除目录「${name}」吗？\n该目录下的脚本将归入"未分类"。`)) return;
+  mockData.categories = mockData.categories.filter(c=>c!==name);
+  mockData.scripts.forEach(s => { if(s.category===name) s.category='未分类'; });
+  if (scriptState.category===name) scriptState.category='全部';
+  renderScriptList();
+  showToast(`目录「${name}」已删除`,'success');
+}
+
+// ===================== TASK EXECUTION =====================
+let execState = { running:false, interval:null, progress:0, selectedHosts:new Set([1,2]), selectedScript:0 };
+
+function initTaskExecPage() {
+  const sel = document.querySelector('#page-task-exec select');
+  if (sel) {
+    sel.innerHTML = mockData.scripts.map((s,i)=>`<option value="${i}">${s.name} - ${s.description}</option>`).join('');
+    sel.onchange = function() { execState.selectedScript=parseInt(this.value); };
+  }
+  renderExecHostSelector();
+  resetExecMonitor();
+}
+
+function renderExecHostSelector() {
+  const container = document.querySelector('#page-task-exec .bg-surface-container-lowest');
+  if (!container) return;
+  container.innerHTML = mockData.hosts.filter(h=>execState.selectedHosts.has(h.id)).map(h =>
+    `<div class="bg-primary/10 border border-primary/30 text-primary px-3 py-1 rounded-full flex items-center gap-2 text-label-mono">${h.ip} <button onclick="removeExecHost(${h.id})"><span class="material-symbols-outlined text-[14px]">close</span></button></div>`
+  ).join('') || '<span class="text-on-surface-variant text-label-mono">请选择主机</span>';
+  const countEl = document.querySelector('#page-task-exec .text-primary.font-bold');
+  if (countEl) countEl.textContent = execState.selectedHosts.size;
+}
+
+function removeExecHost(id) { execState.selectedHosts.delete(id); renderExecHostSelector(); }
+
+function showHostPickerForExec() {
+  const hostList = mockData.hosts.map(h => `<label class="flex items-center gap-3 p-2 bg-surface-container-highest rounded-lg cursor-pointer hover:bg-surface-bright"><input type="checkbox" class="exec-host-pick rounded border-outline text-primary bg-surface" data-id="${h.id}" ${execState.selectedHosts.has(h.id)?'checked':''}/><span class="text-body-md">${h.ip}</span><span class="text-label-mono text-on-surface-variant ml-auto">${h.name}</span></label>`).join('');
+  showModal('选择目标主机', `<div class="max-h-[400px] overflow-y-auto custom-scrollbar space-y-2">${hostList}</div>`, () => {
+    execState.selectedHosts.clear();
+    document.querySelectorAll('.exec-host-pick:checked').forEach(cb => execState.selectedHosts.add(parseInt(cb.dataset.id)));
+    renderExecHostSelector(); showToast(`已选择 ${execState.selectedHosts.size} 台主机`);
+  });
+}
+
+function resetExecMonitor() {
+  const section = document.querySelector('#page-task-exec section:last-child');
+  if (!section) return;
+  const progressBar = section.querySelector('.h-3 .h-full');
+  if (progressBar) { progressBar.style.width='0%'; progressBar.className='h-full bg-primary rounded-full transition-all duration-200'; }
+  const pct = section.querySelector('.text-on-surface.font-bold');
+  if (pct) pct.textContent='0%';
+  const statusEl = section.querySelector('.text-label-mono.font-label-mono.text-primary');
+  if (statusEl) { statusEl.textContent='IDLE'; statusEl.previousElementSibling.className='w-3 h-3 rounded-full bg-on-surface-variant'; }
+  const terminal = document.querySelector('#exec-log-view .space-y-1\\.5');
+  if (terminal) terminal.innerHTML = '<p class="text-on-surface-variant">等待执行...</p>';
+  const resultTbody = document.getElementById('exec-result-tbody');
+  if (resultTbody) resultTbody.innerHTML = '';
+  const resultView = document.getElementById('exec-result-view');
+  if (resultView) resultView.classList.add('hidden');
+  const logView = document.getElementById('exec-log-view');
+  if (logView) logView.classList.remove('hidden');
+  switchExecMode('log');
+  execResults = [];
+  const stats = section.querySelectorAll('.grid .text-headline-md.font-bold');
+  if (stats.length>=4) { stats[0].textContent='0'; stats[1].textContent='0'; stats[2].textContent='0'; stats[3].textContent='00:00'; }
+}
+
+function startExecution() {
+  if (execState.running) { showToast('任务正在执行中','warning'); return; }
+  if (execState.selectedHosts.size===0) { showToast('请选择目标主机','warning'); return; }
+  execState.running=true; execState.progress=0;
+  execResults = [];
+  const hosts = mockData.hosts.filter(h=>execState.selectedHosts.has(h.id));
+  const script = mockData.scripts[execState.selectedScript]||mockData.scripts[0];
+  const section = document.querySelector('#page-task-exec section:last-child');
+  const progressBar = section.querySelector('.h-3 .h-full');
+  const pctEl = section.querySelector('.text-on-surface.font-bold');
+  const statusLabel = section.querySelector('.text-label-mono.font-label-mono');
+  const statusDot = statusLabel?.previousElementSibling;
+  const terminal = document.querySelector('#exec-log-view .space-y-1\\.5');
+  const statEls = section.querySelectorAll('.grid .text-headline-md.font-bold');
+  switchExecMode('log');
+  if (statusLabel) { statusLabel.textContent='RUNNING'; statusLabel.className='text-label-mono font-label-mono text-tertiary'; }
+  if (statusDot) statusDot.className='w-3 h-3 rounded-full bg-tertiary animate-pulse';
+  terminal.innerHTML = `<p class="text-on-surface-variant">[${timeNow()}] 开始执行任务: <span class="text-primary">${script.name}</span></p>`;
+  let idx=0; let successC=0; let failC=0; const total=hosts.length; const startTime=Date.now();
+  execState.interval = setInterval(() => {
+    if (idx<total) {
+      const h = hosts[idx];
+      const ok = Math.random()>0.2;
+      const ms = Math.floor(Math.random()*2000+200);
+      if (ok) successC++; else failC++;
+      const durStr = ms>=1000 ? (ms/1000).toFixed(1)+'s' : ms+'ms';
+      execResults.push({ip:h.ip, ok, duration:durStr, summary:ok?`[${timeNowFull()}] [${h.ip}] ✓ 执行成功 (耗时 ${durStr})`:`[${timeNowFull()}] [${h.ip}] ✗ 执行失败 (Connection refused)`});
+      terminal.innerHTML += `<p class="text-on-surface-variant">[${timeNow()}] <span class="text-secondary">${h.ip}</span> - ${ok?`<span class="text-primary font-bold">✓ 执行成功</span> (耗时: ${ms}ms)`:`<span class="text-error font-bold">✗ 执行失败</span> (Connection refused)`}</p>`;
+      idx++;
+      execState.progress = Math.round(idx/total*100);
+      if (progressBar) progressBar.style.width=execState.progress+'%';
+      if (pctEl) pctEl.textContent=execState.progress+'%';
+      if (statEls.length>=4) { statEls[0].textContent=total; statEls[1].textContent=successC; statEls[2].textContent=failC; const elapsed=Math.floor((Date.now()-startTime)/1000); statEls[3].textContent=`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`; }
+      terminal.parentElement.scrollTop = terminal.parentElement.scrollHeight;
+    } else {
+      clearInterval(execState.interval); execState.running=false;
+      terminal.innerHTML += `<p class="text-on-surface-variant">[${timeNow()}] 任务执行完成 | 总计: ${total} 台, 成功: ${successC} 台, 失败: ${failC} 台</p><p class="animate-pulse inline-block w-2 h-4 bg-primary align-middle ml-1"></p>`;
+      if (statusLabel) { statusLabel.textContent='COMPLETED'; statusLabel.className='text-label-mono font-label-mono text-primary'; }
+      if (statusDot) statusDot.className='w-3 h-3 rounded-full bg-primary animate-pulse';
+      showToast(`执行完成: ${successC}/${total} 成功`, failC>0?'warning':'success');
+      renderExecResults(execResults);
+      // Add to history
+      mockData.taskHistory.unshift({id:mockData.taskHistory.length+1,scriptName:script.name,type:'脚本执行',hostCount:total,successCount:successC,failCount:failC,status:failC===0?'success':'partial',startTime:new Date().toISOString().slice(0,16).replace('T',' ').replace(/-/g,'/'),duration:`00:${String(Math.floor((Date.now()-startTime)/1000)).padStart(2,'0')}`,executor:'当前用户'});
+    }
+  }, 800);
+}
+
+function stopExecution() {
+  if (!execState.running) return;
+  clearInterval(execState.interval); execState.running=false;
+  renderExecResults(execResults);
+  const section = document.querySelector('#page-task-exec section:last-child');
+  const statusLabel = section.querySelector('.text-label-mono.font-label-mono');
+  if (statusLabel) { statusLabel.textContent='STOPPED'; statusLabel.className='text-label-mono font-label-mono text-error'; }
+  showToast('任务已停止','warning');
+}
+
+function timeNow() { const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`; }
+function timeNowFull() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${timeNow()}`; }
+
+// ===================== EXEC/COMMAND MODE SWITCHING =====================
+let execResults = [];
+let cmdResults = [];
+
+function switchExecMode(mode) {
+  const logView = document.getElementById('exec-log-view');
+  const resultView = document.getElementById('exec-result-view');
+  const tabs = document.querySelectorAll('.exec-mode-tab');
+  if (mode==='result') {
+    logView.classList.add('hidden');
+    resultView.classList.remove('hidden');
+    tabs.forEach(t => { t.className = t.dataset.mode==='result' ? 'exec-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all bg-primary text-on-primary-container' : 'exec-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all text-on-surface-variant hover:text-on-surface'; });
+  } else {
+    resultView.classList.add('hidden');
+    logView.classList.remove('hidden');
+    tabs.forEach(t => { t.className = t.dataset.mode==='log' ? 'exec-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all bg-primary text-on-primary-container' : 'exec-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all text-on-surface-variant hover:text-on-surface'; });
+  }
+}
+
+function switchCmdMode(mode) {
+  const logView = document.getElementById('cmd-log-view');
+  const resultView = document.getElementById('cmd-result-view');
+  const tabs = document.querySelectorAll('.cmd-mode-tab');
+  if (mode==='result') {
+    logView.classList.add('hidden');
+    resultView.classList.remove('hidden');
+    tabs.forEach(t => { t.className = t.dataset.mode==='result' ? 'cmd-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all bg-primary text-on-primary-container' : 'cmd-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all text-on-surface-variant hover:text-on-surface'; });
+  } else {
+    resultView.classList.add('hidden');
+    logView.classList.remove('hidden');
+    tabs.forEach(t => { t.className = t.dataset.mode==='log' ? 'cmd-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all bg-primary text-on-primary-container' : 'cmd-mode-tab px-4 py-2 rounded-md text-label-mono font-label-mono transition-all text-on-surface-variant hover:text-on-surface'; });
+  }
+}
+
+function renderExecResults(results) {
+  const tbody = document.getElementById('exec-result-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = results.map(r => `<tr class="hover:bg-surface-container-highest transition-colors">
+    <td class="px-6 py-3 font-code-sm text-code-sm text-secondary">${r.ip}</td>
+    <td class="px-6 py-3"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${r.ok?'bg-primary/10 text-primary border-primary/20':'bg-error/10 text-error border-error/20'} border text-label-mono font-label-mono"><span class="w-1.5 h-1.5 rounded-full ${r.ok?'bg-primary':'bg-error'}"></span>${r.ok?'成功':'失败'}</span></td>
+    <td class="px-6 py-3 text-label-mono text-on-surface-variant">${r.duration}</td>
+    <td class="px-6 py-3 text-body-md text-on-surface-variant">${r.summary}</td>
+  </tr>`).join('');
+}
+
+function renderCmdResults(results) {
+  const tbody = document.getElementById('cmd-result-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = results.map(r => `<tr class="hover:bg-surface-container-highest transition-colors">
+    <td class="px-6 py-3 font-code-sm text-code-sm text-secondary">${r.ip}</td>
+    <td class="px-6 py-3"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${r.ok?'bg-primary/10 text-primary border-primary/20':'bg-error/10 text-error border-error/20'} border text-label-mono font-label-mono"><span class="w-1.5 h-1.5 rounded-full ${r.ok?'bg-primary':'bg-error'}"></span>${r.ok?'成功':'失败'}</span></td>
+    <td class="px-6 py-3 text-label-mono text-on-surface-variant">${r.duration}</td>
+    <td class="px-6 py-3 text-body-md text-on-surface-variant">${r.summary}</td>
+  </tr>`).join('');
+}
+
+// ===================== COMMAND EXECUTION =====================
+function initCommandPage() {
+  const hostList = document.querySelector('#page-commands .space-y-2');
+  if (hostList) {
+    hostList.innerHTML = mockData.hosts.slice(0,10).map(h => `<label class="flex items-center gap-3 p-2 bg-surface-container-highest rounded-lg cursor-pointer"><input type="checkbox" class="cmd-host-cb rounded border-outline text-primary bg-surface" data-ip="${h.ip}" ${h.status==='online'?'checked':''}/><span class="text-body-md">${h.ip}</span><span class="ml-auto text-label-mono ${h.status==='online'?'text-primary':'text-error'}">${h.status==='online'?'Online':'Offline'}</span></label>`).join('');
+    const label = document.querySelector('#page-commands label.block .text-label-mono');
+    const updateCount = () => { const c=document.querySelectorAll('.cmd-host-cb:checked').length; if(label) label.textContent=`目标主机 (已选 ${c})`; };
+    hostList.addEventListener('change', updateCount);
+    updateCount();
+  }
+}
+
+function executeCommand() {
+  const textarea = document.querySelector('#page-commands textarea');
+  const cmd = textarea?textarea.value.trim():'';
+  if (!cmd) { showToast('请输入命令','warning'); return; }
+  const hosts = Array.from(document.querySelectorAll('.cmd-host-cb:checked')).map(cb=>cb.dataset.ip);
+  if (hosts.length===0) { showToast('请选择目标主机','warning'); return; }
+  const terminal = document.querySelector('#cmd-log-view .p-6');
+  if (!terminal) return;
+  terminal.innerHTML = '';
+  cmdResults = [];
+  switchCmdMode('log');
+  const commands = cmd.split('\n').filter(c=>c.trim());
+  const outputs = {
+    'df -h': ['Filesystem      Size  Used Avail Use% Mounted on','/dev/sda1        50G   32G   18G  64% /','/dev/sdb1       200G  120G   80G  60% /data'],
+    'free -m': ['              total   used   free   shared  buff/cache  available','Mem:          16384   8192   2048    512      6144       7680','Swap:          4096    128   3968'],
+    'uptime': [' 14:32:15 up 156 days,  3:22,  2 users,  load average: 0.52, 0.48, 0.45'],
+    'whoami': ['root'],
+    'hostname': ['prod-server-01'],
+    'date': [new Date().toString()],
+    'ps aux': ['USER       PID %CPU %MEM    VSZ   RSS TTY  STAT START   TIME COMMAND','root         1  0.0  0.1  19356  2340 ?    Ss   Jan01   0:05 /sbin/init','root       456  0.5  2.1 1524832 85620 ?   Sl   Jan01  12:34 /usr/bin/java'],
+    'ls -la': ['total 48','drwxr-xr-x  6 root root 4096 Jul 15 10:00 .','drwxr-xr-x 12 root root 4096 Jan  1 00:00 ..','-rw-r--r--  1 root root  220 Jan  1 00:00 .bash_logout','drwxr-xr-x  2 root root 4096 Jul 15 10:00 config'],
+    'systemctl status nginx': ['● nginx.service - A high performance web server','   Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled)','   Active: active (running) since Mon 2026-01-01 00:00:00 CST; 195 days ago']
+  };
+  let allLines = [];
+  hosts.forEach(ip => {
+    const hostStart = Date.now();
+    commands.forEach(c => {
+      allLines.push({type:'cmd', text:`$ ssh ${ip} "${c}"`});
+      const out = outputs[c.trim()] || [`[output from ${ip}] Command executed successfully`];
+      out.forEach(line => allLines.push({type:'out', text:line}));
+      allLines.push({type:'blank', text:''});
+    });
+    const hostMs = Math.floor(Math.random()*1500+300);
+    const durStr = hostMs>=1000 ? (hostMs/1000).toFixed(1)+'s' : hostMs+'ms';
+    cmdResults.push({ip, ok:true, duration:durStr, summary:`[${timeNowFull()}] [${ip}] ✓ 执行成功 (耗时 ${durStr})`});
+  });
+  allLines.push({type:'done', text:`✓ 全部 ${hosts.length} 台主机执行完成`});
+  let lineIdx = 0;
+  const typeInterval = setInterval(() => {
+    if (lineIdx < allLines.length) {
+      const line = allLines[lineIdx];
+      const p = document.createElement('p');
+      if (line.type==='cmd') p.className='text-[#22c55e]'+(lineIdx>0?' mt-3':'');
+      else if (line.type==='out') p.className='text-[#94a3b8]';
+      else if (line.type==='done') p.className='text-primary mt-4';
+      else p.className='';
+      p.textContent = line.text;
+      terminal.appendChild(p);
+      terminal.scrollTop = terminal.scrollHeight;
+      lineIdx++;
+    } else {
+      clearInterval(typeInterval);
+      const cursor = document.createElement('p');
+      cursor.className = 'animate-pulse inline-block w-2 h-4 bg-[#22c55e] align-middle ml-1';
+      terminal.appendChild(cursor);
+      renderCmdResults(cmdResults);
+    }
+  }, 150);
+}
+
+// ===================== FILE TRANSFER =====================
+let fileTransferState = { files:[], history:[] };
+
+function initFileUpload() {
+  const dropZone = document.querySelector('#page-fileupload .border-dashed');
+  if (dropZone) {
+    dropZone.onclick = () => simulateFileSelect();
+  }
+}
+
+function simulateFileSelect() {
+  const fakeFiles = ['config.yaml (2.3KB)','app.jar (45.2MB)','nginx.conf (1.8KB)','deploy.sh (3.5KB)','data.csv (12.1MB)'];
+  const pick = fakeFiles[Math.floor(Math.random()*fakeFiles.length)];
+  fileTransferState.files.push({name:pick, progress:0});
+  updateFileList();
+  showToast(`已选择文件: ${pick}`,'info');
+}
+
+function updateFileList() {
+  const info = document.querySelector('#page-fileupload .text-on-surface-variant.text-label-mono');
+  if (info && fileTransferState.files.length>0) {
+    info.textContent = `已选择 ${fileTransferState.files.length} 个文件`;
+  }
+}
+
+function startUpload() {
+  if (fileTransferState.files.length===0) { showToast('请先选择文件','warning'); return; }
+  const btn = document.getElementById('upload-submit-btn');
+  if (btn && btn.disabled) return;
+  const progressSection = document.getElementById('upload-progress-section');
+  const progressBar = document.getElementById('upload-progress-bar');
+  const pctText = document.getElementById('upload-pct-text');
+  const historyList = document.getElementById('upload-history-list');
+  // Disable button
+  if (btn) { btn.disabled=true; btn.innerHTML='<span class="material-symbols-outlined animate-spin">hourglass_empty</span>上传中...'; btn.classList.add('opacity-50','cursor-not-allowed'); }
+  // Show progress
+  if (progressSection) progressSection.classList.remove('hidden');
+  let progress = 0;
+  const totalFiles = fileTransferState.files.length;
+  const startTime = Date.now();
+  const interval = setInterval(() => {
+    progress += Math.floor(Math.random()*8)+3;
+    if (progress >= 100) progress = 100;
+    if (progressBar) progressBar.style.width = progress+'%';
+    if (pctText) pctText.textContent = progress+'%';
+    if (progress >= 100) {
+      clearInterval(interval);
+      const elapsed = ((Date.now()-startTime)/1000).toFixed(1);
+      // Restore button
+      if (btn) { btn.disabled=false; btn.innerHTML='<span class="material-symbols-outlined">rocket_launch</span>开始上传'; btn.classList.remove('opacity-50','cursor-not-allowed'); }
+      showToast('上传完成','success');
+      // Add history records
+      if (historyList) {
+        const placeholder = historyList.querySelector('.italic');
+        if (placeholder) placeholder.remove();
+        fileTransferState.files.forEach(f => {
+          const record = document.createElement('div');
+          record.className = 'flex items-center justify-between p-3 bg-surface-container-highest rounded-lg';
+          record.innerHTML = `<div class="flex items-center gap-3"><span class="material-symbols-outlined text-primary text-sm">check_circle</span><span class="text-body-md text-on-surface">${f.name}</span></div><div class="flex items-center gap-4"><span class="text-label-mono text-on-surface-variant">${new Date().toLocaleTimeString()}</span><span class="text-label-mono text-primary">成功 (${elapsed}s)</span></div>`;
+          historyList.prepend(record);
+        });
+      }
+      fileTransferState.files = [];
+      updateFileList();
+      // Hide progress after a delay
+      setTimeout(() => { if(progressSection) progressSection.classList.add('hidden'); if(progressBar) progressBar.style.width='0%'; if(pctText) pctText.textContent='0%'; }, 2000);
+    }
+  }, 100);
+}
+
+// ===================== PROJECT TASKS =====================
+function renderProjectTasks() {
+  const container = document.querySelector('#page-project-tasks .grid');
+  if (!container) return;
+  container.innerHTML = mockData.projectTasks.map(task => {
+    const statusColors = {pending:'bg-tertiary/10 text-tertiary border-tertiary/20',running:'bg-secondary-container/20 text-secondary border-secondary-container/20',completed:'bg-primary/10 text-primary border-primary/20'};
+    const statusLabels = {pending:'PENDING',running:'RUNNING',completed:'COMPLETED'};
+    const stepColor = task.status==='pending'?'bg-tertiary/20 text-tertiary':'bg-primary/20 text-primary';
+    const barColor = task.status==='pending'?'bg-tertiary':'bg-primary';
+    return `<div class="bg-surface-container-low border border-outline-variant rounded-2xl overflow-hidden hover:border-primary/30 transition-all">
+      <div class="p-6 border-b border-outline-variant bg-surface-container-high">
+        <div class="flex items-center justify-between mb-2"><h3 class="font-bold text-lg text-on-surface">${task.name}</h3><span class="px-2 py-0.5 ${statusColors[task.status]} text-[10px] rounded font-label-mono border">${statusLabels[task.status]}</span></div>
+        <p class="text-body-md text-on-surface-variant">${task.description}</p>
+      </div>
+      <div class="p-6 space-y-3">${task.steps.map((step,si) => `<div class="flex items-center gap-3 p-3 bg-surface-container-highest rounded-lg">
+        <div class="w-7 h-7 rounded-lg ${step.done?'bg-primary/20 text-primary':stepColor} flex items-center justify-center font-bold text-xs">${si+1}</div>
+        <div><p class="text-body-md font-bold">${step.name}</p><p class="text-[10px] text-on-surface-variant">${step.type}: ${step.detail}</p></div>
+        <span class="ml-auto ${step.done?'text-primary':'text-on-surface-variant'}"><span class="material-symbols-outlined text-[18px]">${step.done?'check_circle':'pending'}</span></span>
+      </div>`).join('')}</div>
+      <div class="px-6 pb-4">
+        <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full ${barColor} rounded-full transition-all duration-500" style="width:${task.progress}%"></div></div>
+        <div class="flex justify-between items-center mt-1">
+          <p class="text-label-mono ${task.status==='completed'?'text-primary':'text-on-surface-variant'}">${task.steps.filter(s=>s.done).length}/${task.steps.length} 步骤完成</p>
+          ${task.status!=='completed'?`<button class="px-3 py-1 bg-primary/10 text-primary rounded-lg text-label-mono hover:bg-primary/20 transition-colors" onclick="runProjectTask(${task.id})">执行</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function runProjectTask(id) {
+  const task = mockData.projectTasks.find(t=>t.id===id);
+  if (!task) return;
+  showToast(`开始执行工程任务: ${task.name}`,'info');
+  task.status='running';
+  let stepIdx = task.steps.findIndex(s=>!s.done);
+  if (stepIdx===-1) stepIdx=0;
+  const runStep = () => {
+    if (stepIdx>=task.steps.length) {
+      task.status='completed'; task.progress=100;
+      renderProjectTasks(); showToast(`工程任务 ${task.name} 执行完成`,'success'); return;
+    }
+    task.steps[stepIdx].done=true;
+    task.progress = Math.round((stepIdx+1)/task.steps.length*100);
+    renderProjectTasks();
+    stepIdx++;
+    setTimeout(runStep, 1200);
+  };
+  setTimeout(runStep, 500);
+}
+
+// ===================== SCHEDULED TASKS =====================
+function renderScheduledTable() {
+  const tbody = document.querySelector('#page-scheduled tbody');
+  if (!tbody) return;
+  const typeColors = {'工程任务':'bg-secondary/10 text-secondary','脚本执行':'bg-primary/10 text-primary'};
+  tbody.innerHTML = mockData.scheduledTasks.map(st => `<tr class="hover:bg-surface-container-highest transition-colors">
+    <td class="py-4 px-6"><div class="flex items-center gap-3"><span class="material-symbols-outlined ${st.enabled?'text-primary':'text-on-surface-variant'}">schedule</span><span class="text-body-md font-bold">${st.name}</span></div></td>
+    <td class="py-4 px-6"><span class="px-2 py-0.5 ${typeColors[st.type]||'bg-outline-variant/30 text-on-surface-variant'} text-[10px] rounded font-label-mono uppercase">${st.type}</span></td>
+    <td class="py-4 px-6 font-code-sm text-code-sm text-on-surface">${st.cron}</td>
+    <td class="py-4 px-6 text-body-md text-on-surface-variant">${st.nextRun}</td>
+    <td class="py-4 px-6"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" ${st.enabled?'checked':''} class="sr-only peer" onchange="toggleScheduled(${st.id},this.checked)"/><div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface-variant after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:after:bg-on-primary"></div></label></td>
+    <td class="py-4 px-6 text-right"><div class="flex justify-end gap-2"><button class="p-2 hover:bg-primary/10 text-primary rounded-lg" onclick="runScheduledNow(${st.id})" title="立即执行"><span class="material-symbols-outlined text-[20px]">play_arrow</span></button><button class="p-2 hover:bg-error/10 text-error rounded-lg" onclick="deleteScheduled(${st.id})" title="删除"><span class="material-symbols-outlined text-[20px]">delete</span></button></div></td>
+  </tr>`).join('');
+}
+
+function toggleScheduled(id, enabled) {
+  const st = mockData.scheduledTasks.find(x=>x.id===id);
+  if (st) { st.enabled=enabled; st.status=enabled?'正常':'已暂停'; showToast(`${st.name} 已${enabled?'启用':'禁用'}`); }
+}
+
+function runScheduledNow(id) {
+  const st = mockData.scheduledTasks.find(x=>x.id===id);
+  if (st) { showToast(`立即执行: ${st.name}`,'info'); st.lastRun=new Date().toISOString().slice(0,16).replace('T',' ').replace(/-/g,'/'); renderScheduledTable(); }
+}
+
+function deleteScheduled(id) {
+  showConfirm('确定要删除该定时任务吗？', () => {
+    mockData.scheduledTasks=mockData.scheduledTasks.filter(x=>x.id!==id);
+    renderScheduledTable(); showToast('定时任务已删除');
+  });
+}
+
+// ===================== TASK HISTORY =====================
+let historyState = { search:'', status:'', type:'' };
+
+function renderHistoryTable() {
+  let data = [...mockData.taskHistory];
+  if (historyState.search) { const s=historyState.search.toLowerCase(); data=data.filter(h=>h.scriptName.toLowerCase().includes(s)); }
+  if (historyState.status) data=data.filter(h=>h.status===historyState.status);
+  if (historyState.type) data=data.filter(h=>h.type===historyState.type);
+  const tbody = document.getElementById('history-tbody');
+  if (!tbody) return;
+  const statusRender = (h) => {
+    if (h.status==='success') return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>${h.successCount}/${h.hostCount} 成功</span>`;
+    if (h.status==='partial') return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/20 text-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>${h.successCount}/${h.hostCount} 成功, ${h.failCount}失败</span>`;
+    return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error/10 text-error border border-error/20 text-label-mono"><span class="w-1.5 h-1.5 rounded-full bg-error"></span>失败</span>`;
+  };
+  const typeColors = {'脚本执行':'bg-primary/10 text-primary','命令执行':'bg-tertiary/10 text-tertiary','工程任务':'bg-secondary/10 text-secondary','文件传输':'bg-outline-variant/30 text-on-surface-variant'};
+  tbody.innerHTML = data.map(h => `<tr class="hover:bg-surface-container-highest transition-colors cursor-pointer" onclick="toggleLog(this)">
+    <td class="py-4 px-6 text-body-md font-bold">${h.scriptName}</td>
+    <td class="py-4 px-4"><span class="px-2 py-0.5 ${typeColors[h.type]||''} text-[10px] rounded font-label-mono uppercase">${h.type}</span></td>
+    <td class="py-4 px-4 text-body-md">${h.hostCount} 台</td>
+    <td class="py-4 px-4 text-label-mono text-on-surface-variant">${h.startTime}</td>
+    <td class="py-4 px-4 text-label-mono text-on-surface-variant">${h.duration}</td>
+    <td class="py-4 px-4">${statusRender(h)}</td>
+    <td class="py-4 px-6 text-right"><button class="p-2 hover:bg-primary/10 text-primary rounded-lg"><span class="material-symbols-outlined text-[20px]">expand_more</span></button></td>
+  </tr><tr class="log-detail hidden"><td colspan="7" class="px-6 py-4 bg-surface-container-lowest">
+    <div class="bg-black rounded-lg p-4 font-code-sm text-code-sm text-[#e2e8f0] max-h-[200px] overflow-y-auto custom-scrollbar">
+      <p>[${h.startTime}] 开始执行: ${h.scriptName}</p>
+      <p class="${h.failCount===0?'text-primary':'text-error'}">[${h.startTime}] 执行完成 | 总计: ${h.hostCount}, 成功: ${h.successCount}, 失败: ${h.failCount}</p>
+      <p class="text-on-surface-variant">执行人: ${h.executor}</p>
+    </div></td></tr>`).join('');
+  const footer = document.querySelector('#page-history .bg-surface-container-high.border-t');
+  if (footer) footer.innerHTML = `<p class="text-body-md text-on-surface-variant">Showing <span class="text-on-surface font-bold">1-${data.length}</span> of <span class="text-on-surface font-bold">${data.length}</span> records</p>`;
+}
+
+function exportHistory() {
+  let data = [...mockData.taskHistory];
+  let csv = '\uFEFF任务名称,类型,目标主机数,成功数,失败数,状态,开始时间,耗时,执行人\n';
+  data.forEach(h => { csv += `${h.scriptName},${h.type},${h.hostCount},${h.successCount},${h.failCount},${h.status},${h.startTime},${h.duration},${h.executor}\n`; });
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`task_history_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('导出成功','success');
+}
+
+// ===================== EVENT BINDINGS =====================
+document.addEventListener('DOMContentLoaded', () => {
+  // Host page
+  const hostSearch = document.querySelector('#page-hosts input[type=text]');
+  if (hostSearch) hostSearch.addEventListener('input', function() { hostState.search=this.value; hostState.page=1; renderHostTable(); });
+  const hostSelects = document.querySelectorAll('#page-hosts select');
+  if (hostSelects[0]) hostSelects[0].addEventListener('change', function() { hostState.dc=this.value==='全部机房'?'':this.value; hostState.page=1; renderHostTable(); });
+  if (hostSelects[1]) hostSelects[1].addEventListener('change', function() { hostState.env=this.value==='全部环境'?'':this.value; hostState.page=1; renderHostTable(); });
+  if (hostSelects[2]) hostSelects[2].addEventListener('change', function() { hostState.owner=this.value==='全部负责人'?'':this.value; hostState.page=1; renderHostTable(); });
+  const resetBtn = document.querySelector('#page-hosts button.bg-surface-container-highest');
+  if (resetBtn && resetBtn.textContent.includes('Reset')) resetBtn.addEventListener('click', () => { hostState={page:1,perPage:10,search:'',dc:'',env:'',owner:'',sortKey:'id',sortDir:'asc',selected:new Set()}; if(hostSearch) hostSearch.value=''; hostSelects.forEach(s=>s.selectedIndex=0); renderHostTable(); showToast('筛选已重置'); });
+  const addHostBtn = document.querySelector('#page-hosts .bg-primary');
+  if (addHostBtn && addHostBtn.textContent.includes('Add Host')) addHostBtn.addEventListener('click', addHost);
+  const refreshBtn = document.querySelector('#page-hosts button .material-symbols-outlined');
+  if (refreshBtn && refreshBtn.textContent==='refresh') refreshBtn.closest('button').addEventListener('click', () => { renderHostTable(); showToast('列表已刷新'); });
+
+  // Host table sort
+  document.querySelectorAll('#page-hosts thead th').forEach((th,i) => {
+    const keys = ['','ip','name','port','owner','env','status',''];
+    if (keys[i]) { th.style.cursor='pointer'; th.addEventListener('click', () => { if(hostState.sortKey===keys[i]) hostState.sortDir=hostState.sortDir==='asc'?'desc':'asc'; else { hostState.sortKey=keys[i]; hostState.sortDir='asc'; } renderHostTable(); }); }
+  });
+
+  // Script page
+  renderScriptList();
+  const dirFilter = document.querySelector('#page-scripts .w-\\[240px\\] input[type=text]');
+  if (dirFilter) dirFilter.addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    const items = document.querySelectorAll('#script-category-tree > div > a, #script-category-tree > a');
+    items.forEach(a => { a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none'; });
+  });
+  const scriptSearch = document.querySelector('#page-scripts .flex-1 input[type=text]');
+  if (scriptSearch) scriptSearch.addEventListener('input', function() { scriptState.search=this.value; renderScriptList(); });
+  const addScriptBtn = document.querySelector('#page-scripts .bg-primary');
+  if (addScriptBtn && addScriptBtn.textContent.includes('添加脚本')) addScriptBtn.addEventListener('click', addScript);
+  const scriptRefreshBtn = document.querySelector('#page-scripts button .material-symbols-outlined');
+  if (scriptRefreshBtn && scriptRefreshBtn.textContent==='refresh') scriptRefreshBtn.closest('button').addEventListener('click', () => { renderScriptList(); showToast('已刷新'); });
+
+  // Task exec page
+  const execBtn = document.querySelector('#page-task-exec .bg-primary');
+  if (execBtn && execBtn.textContent.includes('开始执行')) execBtn.addEventListener('click', startExecution);
+  const stopExecBtn = document.querySelector('#page-task-exec .bg-surface-container-highest');
+  if (stopExecBtn && stopExecBtn.textContent.includes('取消')) stopExecBtn.addEventListener('click', stopExecution);
+  const hostPickerBtn = document.querySelector('#page-task-exec button');
+  if (hostPickerBtn && hostPickerBtn.textContent.includes('从主机管理选择')) hostPickerBtn.addEventListener('click', showHostPickerForExec);
+  const clearHostBtn = document.querySelectorAll('#page-task-exec button');
+  clearHostBtn.forEach(btn => { if (btn.textContent.includes('清空选择')) btn.addEventListener('click', () => { execState.selectedHosts.clear(); renderExecHostSelector(); }); });
+
+  // Command page
+  const cmdExecBtn = document.querySelector('#page-commands .bg-primary');
+  if (cmdExecBtn && cmdExecBtn.textContent.includes('执行命令')) cmdExecBtn.addEventListener('click', executeCommand);
+
+  // File upload (onclick already bound in HTML)
+  const createUploadBtn = document.querySelector('#page-fileupload button .material-symbols-outlined');
+  if (createUploadBtn && createUploadBtn.textContent==='add') createUploadBtn.closest('button').addEventListener('click', simulateFileSelect);
+
+  // History page
+  const exportBtn = document.querySelector('#page-history button .material-symbols-outlined');
+  if (exportBtn && exportBtn.textContent==='download') exportBtn.closest('button').addEventListener('click', exportHistory);
+  const historySearch = document.querySelector('#page-history input[type=text]');
+  if (historySearch) historySearch.addEventListener('input', function() { historyState.search=this.value; renderHistoryTable(); });
+  const historySelects = document.querySelectorAll('#page-history select');
+  if (historySelects[0]) historySelects[0].addEventListener('change', function() { const map={'全部状态':'','成功':'success','失败':'failed','执行中':'running'}; historyState.status=map[this.value]||''; renderHistoryTable(); });
+  if (historySelects[1]) historySelects[1].addEventListener('change', function() { const map={'全部类型':'','脚本执行':'脚本执行','命令执行':'命令执行','文件传输':'文件传输','工程任务':'工程任务'}; historyState.type=map[this.value]||''; renderHistoryTable(); });
+
+  // Scheduled page - new task button
+  const newSchedBtn = document.querySelector('#page-scheduled .bg-primary');
+  if (newSchedBtn && newSchedBtn.textContent.includes('新建调度')) newSchedBtn.addEventListener('click', () => {
+    showModal('新建定时任务', `<div class="space-y-4">
+      <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">任务名称</span><input id="new-st-name" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface"/></label>
+      <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">Cron 表达式</span><input id="new-st-cron" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface font-code-sm" placeholder="0 * * * *"/></label>
+      <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">关联脚本</span><select id="new-st-script" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface">${mockData.scripts.map(s=>`<option>${s.name}</option>`).join('')}</select></label>
+    </div>`, () => {
+      const name = document.getElementById('new-st-name').value.trim();
+      if (!name) { showToast('请填写任务名称','error'); return; }
+      const newId = Math.max(...mockData.scheduledTasks.map(s=>s.id))+1;
+      mockData.scheduledTasks.push({id:newId,name,type:'脚本执行',scriptName:document.getElementById('new-st-script').value,cron:document.getElementById('new-st-cron').value||'0 * * * *',enabled:true,lastRun:'-',nextRun:'计算中...',status:'正常'});
+      renderScheduledTable(); showToast('定时任务已创建');
+    });
+  });
+
+  // Project task new button
+  const newProjBtn = document.querySelector('#page-project-tasks .bg-primary');
+  if (newProjBtn && newProjBtn.textContent.includes('新建工程')) newProjBtn.addEventListener('click', () => {
+    showModal('新建工程任务', `<div class="space-y-4">
+      <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">任务名称</span><input id="new-pt-name" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface"/></label>
+      <label class="block"><span class="text-label-mono text-on-surface-variant block mb-1">描述</span><textarea id="new-pt-desc" class="w-full bg-surface-container-highest border border-outline-variant rounded-lg px-4 py-2 text-on-surface min-h-[80px]"></textarea></label>
+    </div>`, () => {
+      const name = document.getElementById('new-pt-name').value.trim();
+      if (!name) { showToast('请填写任务名称','error'); return; }
+      const newId = Math.max(...mockData.projectTasks.map(t=>t.id))+1;
+      mockData.projectTasks.push({id:newId,name,description:document.getElementById('new-pt-desc').value||'新工程任务',status:'pending',progress:0,steps:[{name:'步骤1',type:'命令执行',detail:'待配置',done:false}]});
+      renderProjectTasks(); showToast('工程任务已创建');
+    });
+  });
+
+  // Initial render
+  renderHostTable();
+  updateSidebarStats();
+
+  // Sidebar quick operations
+  const sidebarLinks = document.querySelectorAll('aside a');
+  sidebarLinks.forEach(link => {
+    if (link.textContent.includes('导入Excel')) link.addEventListener('click', (e) => { e.preventDefault(); showToast('Excel导入功能 - 已选择文件后开始导入','info'); });
+    if (link.textContent.includes('导出Excel')) link.addEventListener('click', (e) => { e.preventDefault(); exportHostsExcel(); });
+    if (link.textContent.includes('批量测试')) link.addEventListener('click', (e) => { e.preventDefault(); const navLinks = document.querySelectorAll('#main-nav .nav-link'); navLinks[2].click(); switchPage('page-task-exec', navLinks[2]); });
+    if (link.textContent.includes('系统日志')) link.addEventListener('click', (e) => { e.preventDefault(); showToast('系统日志查看功能','info'); });
+    if (link.textContent.includes('技术支持')) link.addEventListener('click', (e) => { e.preventDefault(); showToast('技术支持: support@sshtoolsbox.com','info'); });
+  });
+});
+
+function exportHostsExcel() {
+  let csv = '\uFEFFIP地址,系统名称,应用,机房,环境,负责人,端口,状态,操作系统,创建时间\n';
+  mockData.hosts.forEach(h => { csv += `${h.ip},${h.name},${h.app},${h.datacenter},${h.env},${h.owner},${h.port},${h.status},${h.os},${h.created}\n`; });
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`hosts_export_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast(`已导出 ${mockData.hosts.length} 台主机数据`,'success');
+}
+</script>
+</body>
+</html>
