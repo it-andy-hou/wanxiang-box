@@ -130,6 +130,10 @@ on:
       - 'v*'            # 推送 v 开头的 tag 触发
   workflow_dispatch:    # 支持网页手动触发
 
+# 必须显式授权写权限，否则 electron-builder 创建 GitHub Release 时报 403
+permissions:
+  contents: write
+
 jobs:
   build-mac:
     runs-on: macos-latest
@@ -287,7 +291,29 @@ git push
   - 原生依赖（如 cpu-features）编译失败 → 加 `rm -rf node_modules/cpu-features` 步骤
   - `npm install` 网络超时 → 重跑即可（job 页面右上角 Re-run failed jobs）
 
-### 7.4 私有仓库额度不够用
+### 7.4 打包成功但报 `403 Resource not accessible by integration`
+
+**现象**：dmg 构建成功，最后上传 Release 时报 403，日志含 `Resource not accessible by integration`。
+
+**原因**：GitHub Actions 的 `GITHUB_TOKEN` 默认只有只读权限，electron-builder 在 tag 触发时会自动创建 Release 并上传产物，需要写权限。
+
+**修复**：在工作流 yml 中添加：
+
+```yaml
+permissions:
+  contents: write
+```
+
+然后删除旧 tag 并重新推送以触发重新构建：
+
+```powershell
+git tag -d v1.0.0
+git push origin :refs/tags/v1.0.0
+git tag v1.0.0
+git push --tags
+```
+
+### 7.5 私有仓库额度不够用
 
 GitHub 免费账户私有仓库 2000 分钟/月，macOS 按 10 倍计。用量查看：**Settings → Billing → Usage**。超出后可将仓库转 Public（开源），Actions 即免费不限量——前提是代码中没有敏感信息。
 
