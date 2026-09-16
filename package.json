@@ -25,7 +25,7 @@
     "name": "侯金刚",
     "email": "andy@hi-andy.com"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "devDependencies": {
     "electron": "^27.0.0",

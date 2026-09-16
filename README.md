@@ -109,7 +109,7 @@ chmod +x build-mac.sh && ./build-mac.sh
 
 ## 许可证
 
-UNLICENSED（私有项目，保留所有权利）
+[MIT License](LICENSE) © 2026 侯金刚（andy@hi-andy.com）
 
 ---
 
