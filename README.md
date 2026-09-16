@@ -1,166 +1,114 @@
-# SSH工具箱
+# 万象匣 (WanXiang Box)
 
-SSH工具箱是一个基于Electron开发的跨平台桌面应用程序，专为批量SSH主机管理和脚本执行而设计。
+万象匣是一款基于 Electron 开发的跨平台运维自动化管控平台，专注于批量 SSH 主机管理、脚本批量执行与工程化任务编排。
 
-## 🚀 功能特性
+## 功能特性
 
-### 第一周完成的功能
-- ✅ **Electron项目初始化** - 完整的项目结构和依赖配置
-- ✅ **基础UI框架搭建** - 响应式界面布局和组件系统
-- ✅ **数据库设计和初始化** - SQLite数据库结构和数据模型
-- ✅ **基础配置管理** - 灵活的配置系统和用户自定义设置
+- **主机管理** — 主机增删改查、标签分类、Excel/CSV 批量导入导出、批量连接测试、Ping 探测
+- **脚本管理** — 在线编辑器、目录树分类、参数模板化、快捷面板、语法高亮
+- **任务执行** — 批量并发执行、实时进度监控、并发数/超时自定义、支持 sudo
+- **工程任务** — 多步骤任务编排（脚本 + 文件上传混合）、定时执行、Webhook 通知（企业微信）
+- **文件传输** — 批量文件上传、冲突策略（覆盖/备份/跳过）、断点进度反馈
+- **执行历史** — 详细执行日志、结果筛选分析、CSV/JSON 导出
+- **数据备份** — 自动定时备份、全量导入导出、自定义备份目录
+- **仪表盘** — 主机统计、今日执行次数、成功率、待办任务一览
 
-### 计划功能（后续开发）
-- 🔄 **主机管理模块** - 支持SSH主机的增删改查、分组管理
-- 🔄 **脚本管理模块** - 在线编辑器、版本控制、脚本模板
-- 🔄 **任务执行模块** - 批量执行、并发控制、实时监控
-- 🔄 **执行历史记录** - 详细的执行日志和结果分析
+## 技术栈
 
-## 📁 项目结构
+- **Electron 27** — 跨平台桌面应用框架（Windows / macOS / Linux）
+- **Node.js 18+** — 运行环境
+- **node-ssh (ssh2)** — SSH 连接与 SFTP 传输
+- **JSON 文件数据库** — 轻量级本地数据存储（无需外部数据库）
+- **xlsx / csv-parser** — Excel 与 CSV 导入导出
+
+## 项目结构
 
 ```
 ssh_tools_box/
 ├── src/
-│   ├── main/                 # Electron主进程
-│   │   └── main.js          # 主进程入口文件
-│   ├── renderer/            # 渲染进程（前端）
+│   ├── main/                # Electron 主进程
+│   │   ├── main.js          # 主进程入口 + IPC 通信
+│   │   ├── sshService.js    # SSH 连接/命令/文件传输服务
+│   │   ├── taskExecutor.js  # 任务执行引擎
+│   │   ├── projectTaskExecutor.js  # 工程任务执行器
+│   │   ├── taskScheduler.js # 定时任务调度器
+│   │   ├── backupService.js # 数据备份服务
+│   │   └── wechatNotifier.js# 企业微信通知
+│   ├── renderer/            # 渲染进程（前端界面）
 │   │   ├── index.html       # 主界面
-│   │   ├── css/             # 样式文件
-│   │   │   ├── main.css     # 主样式
-│   │   │   └── components.css # 组件样式
-│   │   ├── js/              # JavaScript文件
-│   │   │   ├── app.js       # 主应用逻辑
-│   │   │   ├── utils.js     # 工具函数
-│   │   │   └── components.js # UI组件库
-│   │   └── assets/          # 静态资源
-│   ├── database/            # 数据库相关
-│   │   ├── init.js          # 数据库初始化
-│   │   └── models.js        # 数据模型
+│   │   ├── css/             # 样式（tokens 化设计系统）
+│   │   ├── js/              # 页面逻辑与服务层
+│   │   └── lib/             # 第三方库（highlight.js / mermaid）
+│   ├── database/            # 数据层（JSON 数据库 + 模型）
 │   └── config/              # 配置管理
-│       └── config.js        # 配置系统
-├── www/                     # 原有Web版本（保留）
-├── docs/                    # 文档
-├── package.json             # 项目配置
-└── README.md               # 项目说明
+├── .github/workflows/       # GitHub Actions 自动打包
+├── docs/                    # 项目文档
+├── build.bat                # Windows 一键打包
+├── build-mac.sh             # macOS 一键打包（需在 Mac 上运行）
+└── package.json
 ```
 
-## 🛠️ 技术栈
-
-- **Electron**: 跨平台桌面应用框架
-- **SQLite**: 轻量级本地数据库
-- **Node.js**: 后端运行环境
-- **HTML/CSS/JavaScript**: 前端技术栈
-
-## 📋 依赖说明
-
-### 核心依赖
-- `electron`: Electron框架
-- `sqlite3`: SQLite数据库驱动
-- `node-ssh`: SSH连接库
-- `csv-parser` & `csv-writer`: CSV文件处理
-
-### 开发依赖
-- `electron-builder`: 应用打包工具
-
-## 🚀 快速开始
+## 快速开始
 
 ### 环境要求
-- Node.js 18+
-- npm 或 yarn
 
-### 安装依赖
+- Node.js 18+
+- npm
+
+### 安装与启动
+
 ```bash
 npm install
+npm run dev        # 开发模式（自动打开 DevTools）
+npm start          # 正常启动
 ```
 
-### 启动开发环境
-```bash
-npm run dev
-```
+### 打包
 
-### 构建应用
+**Windows（本机直接打包）：**
+
+双击 `build.bat`，或执行：
+
 ```bash
 npm run build
 ```
 
-## 📊 开发进度
+产物：`dist/` 目录下的 zip 与免安装目录。
 
-### 阶段一：基础框架搭建 ✅ 已完成
-- [x] Electron项目初始化
-- [x] 基础UI框架搭建  
-- [x] 数据库设计和初始化
-- [x] 基础配置管理
-- [x] 主界面布局开发
-- [x] 导航菜单实现
-- [x] 基础组件库开发
-- [x] 项目结构优化
+**macOS（云端自动打包，无需 Mac 实机）：**
 
-### 阶段二：主机管理模块开发 🔄
-- [ ] 主机信息CRUD操作
-- [ ] 自动SSH免密配置
-- [ ] 主机信息自动收集
-- [ ] CSV批量导入导出
+```bash
+git tag v1.x.x && git push --tags
+```
 
-### 阶段三：脚本管理模块开发 ⏳
-- [ ] 脚本资源管理系统
-- [ ] 在线编辑器开发
-- [ ] 脚本参数模板化
-- [ ] 版本控制和备份
+GitHub Actions 自动构建 x64 + arm64 两个 dmg，完成后在仓库 Actions 页面下载。详见 [GitHub 托管与跨平台自动打包指南](docs/GitHub托管与跨平台自动打包指南.md)。
 
-### 阶段四：任务执行模块开发 ⏳
-- [ ] 批量执行引擎
-- [ ] 并发控制和监控
-- [ ] 实时进度显示
-- [ ] 错误处理机制
+**macOS（有 Mac 实机）：**
 
-### 阶段五：集成测试和优化 ⏳
-- [ ] 功能集成测试
-- [ ] 性能测试和优化
-- [ ] UI/UX优化
-- [ ] 打包和部署
+```bash
+chmod +x build-mac.sh && ./build-mac.sh
+```
 
-## 💡 设计亮点
+## 数据存储
 
-1. **模块化架构**: 清晰的代码组织结构，便于维护和扩展
-2. **响应式UI**: 现代化的界面设计，支持多种屏幕尺寸
-3. **灵活配置**: 丰富的配置选项，满足不同用户需求
-4. **数据持久化**: SQLite数据库确保数据安全和性能
-5. **跨平台支持**: 基于Electron，支持Windows、macOS、Linux
+用户数据保存在系统应用数据目录（Windows: `%APPDATA%/万象匣`，macOS: `~/Library/Application Support/万象匣`），包括：
 
-## 🔧 开发注意事项
+- `data/database.json` — 主机、脚本、任务等全部业务数据
+- `ssh_keys/` — 自动生成的默认 SSH 密钥对
+- `task_logs/` — 任务执行日志
+- 备份目录（可在设置中自定义）
 
-1. **依赖安装问题**: 如遇到网络问题，可使用国内镜像源：
-   ```bash
-   npm config set registry https://registry.npmmirror.com
-   ```
+## 文档
 
-2. **数据库初始化**: 首次运行时会自动创建数据库和表结构
+- [GitHub 托管与跨平台自动打包指南](docs/GitHub托管与跨平台自动打包指南.md)
+- [需求文档](docs/requirements/)
+- [Bug 修复记录](docs/bugfixes/)
 
-3. **配置文件**: 用户配置保存在系统用户目录下的应用数据文件夹中
+## 许可证
 
-## 📝 变更日志
-
-### v1.0.0 (2025-09-23)
-- ✅ 完成Electron项目初始化
-- ✅ 实现基础UI框架和组件系统
-- ✅ 建立SQLite数据库结构
-- ✅ 创建配置管理系统
-- ✅ 搭建完整的项目架构
-- ✅ 实现响应式布局和导航系统
-- ✅ 扩展UI组件库（Toast、对话框、进度条等）
-- ✅ 建立服务层架构（主机服务、脚本服务）
-
-## 🤝 贡献指南
-
-欢迎提交Issue和Pull Request来帮助改进项目。
-
-## 📄 许可证
-
-MIT License
+UNLICENSED（私有项目，保留所有权利）
 
 ---
 
-**开发团队**: SSH工具箱开发小组  
-**当前版本**: v1.0.0  
-**最后更新**: 2025-09-23  
-**项目状态**: 阶段一已完成，进入阶段二开发
+**作者**: 侯金刚 (andy@hi-andy.com)
+**仓库**: https://github.com/it-andy-hou/wanxiang-box
