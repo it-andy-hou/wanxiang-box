@@ -1,0 +1,73 @@
+# ============================================================
+# 万象匣 - 全平台自动打包工作流 (macOS / Windows / Linux)
+# 触发方式：
+#   1. 推送 v* 开头的 tag（如 git tag v1.0.0 && git push --tags）
+#   2. 在 GitHub 网页 Actions 页面手动点击 "Run workflow"
+# 产物：
+#   - macOS: x64 (Intel) + arm64 (Apple Silicon) dmg
+#   - Windows: zip
+#   - Linux: AppImage
+# ============================================================
+name: Build All Platforms
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# 必须显式授权写权限，否则 electron-builder 创建 GitHub Release 时会报 403
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            script: build:mac
+            artifact: wanxiang-box-mac
+            files: |
+              dist/*.dmg
+              dist/*.zip
+          - os: windows-latest
+            script: build:win
+            artifact: wanxiang-box-win
+            files: dist/*.zip
+          - os: ubuntu-latest
+            script: build:linux
+            artifact: wanxiang-box-linux
+            files: dist/*.AppImage
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: 安装依赖
+        run: npm install
+
+      # macOS 上移除可选原生依赖 cpu-features（避免编译失败）
+      - name: 移除可选原生依赖 cpu-features
+        if: runner.os == 'macOS'
+        run: rm -rf node_modules/cpu-features
+
+      - name: 打包
+        run: npm run ${{ matrix.script }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 上传打包产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.files }}
+          retention-days: 30

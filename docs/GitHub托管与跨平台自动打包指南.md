@@ -31,14 +31,14 @@ GitHub 仓库（私有仓库即可，Actions 免费额度足够）
 GitHub Actions 云端构建机（macos-latest / windows-latest / ubuntu-latest）
     │
     ▼
-Artifacts（构建产物，dmg / zip / exe，保留 30 天）
+Artifacts（构建产物，dmg / zip / AppImage，保留 30 天）
 ```
 
 **核心结论**：
 
 - **不需要开源**。私有仓库一样能用 Actions（免费账户每月 2000 分钟，macOS 机器按 10 倍计费 ≈ 200 分钟/月，一次打包约 10~15 分钟，个人使用足够）。
 - **dmg 只能在 macOS 上打包**（依赖 macOS 的 hdiutil 工具链），Windows 机器无法产出 dmg，所以 Mac 包交给 GitHub 的云端 Mac 机器打。
-- Windows 包可以继续本地用 `build.bat` 打，也可以在 Actions 里加 `windows-latest` job 云端打。
+- **三平台云端打包**：工作流采用矩阵（matrix）方案，`macos-latest` / `windows-latest` / `ubuntu-latest` 三个 runner 并行构建，一次触发同时产出 mac dmg、win zip、linux AppImage。Windows 包也可以继续本地用 `build.bat` 打。
 
 ---
 
@@ -119,10 +119,12 @@ Thumbs.db
 *.sh text eol=lf
 ```
 
-### 3.3 GitHub Actions 工作流 `.github/workflows/build-mac.yml`
+### 3.3 GitHub Actions 工作流 `.github/workflows/build-all.yml`
+
+采用矩阵（matrix）方案，一个工作流文件同时覆盖三平台并行打包：
 
 ```yaml
-name: Build macOS
+name: Build All Platforms
 
 on:
   push:
@@ -135,8 +137,27 @@ permissions:
   contents: write
 
 jobs:
-  build-mac:
-    runs-on: macos-latest
+  build:
+    strategy:
+      fail-fast: false   # 单个平台失败不取消其他平台
+      matrix:
+        include:
+          - os: macos-latest
+            script: build:mac
+            artifact: my-app-mac
+            files: |
+              dist/*.dmg
+              dist/*.zip
+          - os: windows-latest
+            script: build:win
+            artifact: my-app-win
+            files: dist/*.zip
+          - os: ubuntu-latest
+            script: build:linux
+            artifact: my-app-linux
+            files: dist/*.AppImage
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: 检出代码
@@ -150,23 +171,31 @@ jobs:
       - name: 安装依赖
         run: npm install
 
-      - name: 移除可选原生依赖 cpu-features   # Electron+ssh2 项目特有，其他项目可删
+      # Electron+ssh2 项目特有，其他项目可删；仅 macOS 需要
+      - name: 移除可选原生依赖 cpu-features
+        if: runner.os == 'macOS'
         run: rm -rf node_modules/cpu-features
 
-      - name: 打包 macOS (dmg, x64 + arm64)
-        run: npm run build:mac
+      - name: 打包
+        run: npm run ${{ matrix.script }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # 无需手动创建，Actions 自动注入
 
       - name: 上传打包产物
         uses: actions/upload-artifact@v4
         with:
-          name: my-app-mac
-          path: |
-            dist/*.dmg
-            dist/*.zip
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.files }}
           retention-days: 30
 ```
+
+**三平台产物一览**：
+
+| 平台 | Runner | 产物格式 | Artifact 名称 |
+|------|--------|---------|---------------|
+| macOS | macos-latest | dmg × 2（x64 + arm64） | my-app-mac |
+| Windows | windows-latest | zip | my-app-win |
+| Linux | ubuntu-latest | AppImage | my-app-linux |
 
 ### 3.4 package.json 需要的配置（Electron 项目）
 
@@ -175,6 +204,7 @@ jobs:
   "scripts": {
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
     "build:linux": "electron-builder --linux"
   },
   "build": {
@@ -247,7 +277,7 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 
 **方式 B：网页手动触发**
 
-GitHub 仓库页 → **Actions** 标签 → 左侧选 **Build macOS** → 右侧 **Run workflow** 按钮。
+GitHub 仓库页 → **Actions** 标签 → 左侧选 **Build All Platforms** → 右侧 **Run workflow** 按钮。
 
 ---
 
@@ -255,8 +285,8 @@ GitHub 仓库页 → **Actions** 标签 → 左侧选 **Build macOS** → 右侧
 
 1. 打开 `https://github.com/<用户名>/<仓库名>/actions`
 2. 点进对应的那次运行记录（黄色圆点=运行中，绿色勾=成功，红色叉=失败）
-3. 页面底部 **Artifacts** 区域下载压缩包
-4. 约 10~15 分钟构建完成
+3. 页面底部 **Artifacts** 区域下载压缩包，三个平台的产物分别对应 `*-mac` / `*-win` / `*-linux` 三个 Artifact
+4. 约 10~15 分钟构建完成（三平台并行，总时长取决于最慢的平台）
 
 **Mac 用户首次打开未签名应用**：右键应用图标 → 打开 → 再点「打开」确认（绕过 Gatekeeper 警告，只需一次）。
 
