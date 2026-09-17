@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用指南 — 万象匣 WanXiang Box</title>
+<meta name="description" content="万象匣使用指南：安装、快速上手、功能说明、配置与常见问题。">
+<link rel="icon" type="image/png" href="./assets/logo.png">
+<style>
+  :root {
+    --canvas: #f8fafc;
+    --card: #ffffff;
+    --subtle: #f1f5f9;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --heading: #0f172a;
+    --body: #334155;
+    --muted: #64748b;
+    --faint: #94a3b8;
+    --primary: #0284c7;
+    --primary-hover: #0369a1;
+    --primary-glow: rgba(2, 132, 199, 0.12);
+    --mono: "JetBrains Mono", SF Mono, Consolas, monospace;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--canvas);
+    color: var(--body);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { color: var(--primary-hover); }
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav { display: flex; align-items: center; height: 56px; gap: 24px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--heading); font-size: 16px; }
+  .brand img { width: 28px; height: 28px; border-radius: 6px; }
+  .nav-links { display: flex; gap: 20px; margin-left: auto; }
+  .nav-links a { color: var(--muted); font-size: 13px; font-weight: 500; }
+  .nav-links a:hover { color: var(--heading); }
+  .nav-links a.active { color: var(--primary); }
+  .nav-cta {
+    margin-left: 8px; display: inline-flex; align-items: center; gap: 6px;
+    background: var(--primary); color: #fff; border-radius: 5px;
+    padding: 7px 14px; font-size: 13px; font-weight: 500;
+    box-shadow: 0 1px 2px 0 rgba(2, 132, 199, 0.2);
+    transition: background .15s;
+  }
+  .nav-cta:hover { background: var(--primary-hover); color: #fff; }
+
+  /* ---------- Page head ---------- */
+  .page-head { padding: 56px 0 32px; text-align: center; }
+  .page-head h1 { font-size: 30px; font-weight: 700; color: var(--heading); letter-spacing: -0.02em; }
+  .page-head p { margin-top: 10px; color: var(--muted); font-size: 14px; }
+
+  /* ---------- Doc layout ---------- */
+  .doc { display: grid; grid-template-columns: 200px 1fr; gap: 32px; padding-bottom: 72px; }
+  @media (max-width: 800px) { .doc { grid-template-columns: 1fr; } .toc { display: none; } }
+  .toc { position: sticky; top: 80px; align-self: start; }
+  .toc a {
+    display: block; padding: 7px 12px; border-radius: 6px;
+    font-size: 13px; color: var(--muted); font-weight: 500;
+  }
+  .toc a:hover { background: var(--subtle); color: var(--heading); }
+
+  .doc-section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 28px 32px; margin-bottom: 24px;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    scroll-margin-top: 72px;
+  }
+  .doc-section h2 { font-size: 19px; font-weight: 600; color: var(--heading); letter-spacing: -0.01em; margin-bottom: 6px; }
+  .doc-section > p.desc { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  .doc-section h3 { font-size: 14px; font-weight: 600; color: var(--heading); margin: 20px 0 8px; }
+  .doc-section p { font-size: 13px; margin: 6px 0; }
+  .doc-section ul, .doc-section ol { margin: 8px 0 8px 20px; font-size: 13px; }
+  .doc-section li { margin: 4px 0; }
+  .doc-section code {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--subtle); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 6px; color: var(--heading);
+  }
+  pre {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+    background: #0f172a; color: #e2e8f0;
+    border-radius: var(--radius-md); padding: 14px 18px;
+    margin: 10px 0; overflow-x: auto;
+  }
+  pre .c { color: #64748b; }
+  .callout {
+    border: 1px solid #bae6fd; background: #f0f9ff; color: #075985;
+    border-radius: var(--radius-md); padding: 12px 16px; font-size: 13px; margin: 12px 0;
+  }
+  .callout.warn { border-color: #fef08a; background: #fefce8; color: #a16207; }
+
+  .os-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 12px; }
+  @media (max-width: 760px) { .os-grid { grid-template-columns: 1fr; } }
+  .os-card { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 18px; }
+  .os-card h4 { font-size: 13px; font-weight: 600; color: var(--heading); margin-bottom: 8px; }
+  .os-card p, .os-card li { font-size: 12.5px; color: var(--muted); }
+  .os-card ol { margin-left: 18px; }
+
+  details {
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    margin: 10px 0; overflow: hidden;
+  }
+  details summary {
+    cursor: pointer; padding: 12px 16px; font-size: 13px; font-weight: 600;
+    color: var(--heading); background: var(--subtle); list-style: none;
+    display: flex; align-items: center; gap: 8px;
+  }
+  details summary::before { content: "›"; color: var(--primary); font-weight: 700; transition: transform .15s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  details .answer { padding: 12px 16px; font-size: 13px; color: var(--body); }
+  details .answer p { margin: 6px 0; }
+
+  footer { border-top: 1px solid var(--border); padding: 32px 0; }
+  .footer-inner { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--faint); }
+  .footer-inner .spacer { flex: 1; }
+  .footer-inner a { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container nav">
+    <a class="brand" href="./index.html">
+      <img src="./assets/logo.png" alt="万象匣 logo">
+      万象匣 <span style="font-weight:400;color:var(--faint);font-size:13px;">WanXiang Box</span>
+    </a>
+    <nav class="nav-links">
+      <a href="./index.html">首页</a>
+      <a href="./guide.html" class="active">使用指南</a>
+      <a href="./changelog.html">更新记录</a>
+      <a href="./demo/" target="_blank" rel="noopener">在线体验</a>
+    </nav>
+    <a class="nav-cta" href="https://github.com/it-andy-hou/wanxiang-box" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.73.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .3.2.66.8.55A10.99 10.99 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+      GitHub
+    </a>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <div class="page-head">
+      <h1>使用指南</h1>
+      <p>从安装到批量运维，十分钟上手万象匣</p>
+    </div>
+
+    <div class="doc">
+      <nav class="toc">
+        <a href="#install">下载与安装</a>
+        <a href="#quickstart">快速上手</a>
+        <a href="#features">功能使用</a>
+        <a href="#config">配置说明</a>
+        <a href="#faq">常见问题</a>
+      </nav>
+
+      <div class="doc-body">
+
+        <!-- 下载与安装 -->
+        <section class="doc-section" id="install">
+          <h2>下载与安装</h2>
+          <p class="desc">所有安装包均发布在 <a href="https://github.com/it-andy-hou/wanxiang-box/releases" target="_blank" rel="noopener">GitHub Releases</a>，免安装、解压即用，无需外部数据库。</p>
+          <div class="os-grid">
+            <div class="os-card">
+              <h4>Windows</h4>
+              <ol>
+                <li>下载 <code>万象匣-x.x.x-win.zip</code></li>
+                <li>解压到任意目录</li>
+                <li>双击 <code>万象匣.exe</code> 运行</li>
+              </ol>
+            </div>
+            <div class="os-card">
+              <h4>macOS（Intel / Apple Silicon）</h4>
+              <ol>
+                <li>按芯片下载 x64 或 arm64 的 <code>.dmg</code></li>
+                <li>拖入「应用程序」文件夹</li>
+                <li>首次打开若被拦截，见下方<a href="#faq">常见问题</a></li>
+              </ol>
+            </div>
+            <div class="os-card">
+              <h4>Linux</h4>
+              <ol>
+                <li>下载 <code>.AppImage</code></li>
+                <li><code>chmod +x *.AppImage</code></li>
+                <li>双击或命令行运行</li>
+              </ol>
+            </div>
+          </div>
+          <div class="callout warn">
+            macOS 首次打开提示「无法验证开发者」或「已损坏」时，在终端执行 <code>xattr -cr /Applications/万象匣.app</code> 后即可正常打开。
+          </div>
+        </section>
+
+        <!-- 快速上手 -->
+        <section class="doc-section" id="quickstart">
+          <h2>快速上手</h2>
+          <p class="desc">三步完成一次批量运维操作。</p>
+          <h3>第 1 步：导入主机</h3>
+          <ul>
+            <li>进入「主机管理」→「添加主机」，支持单台录入或批量录入模式；</li>
+            <li>也可以通过「导入 Excel」按模板批量导入（IP、端口、用户名、密码、机房、环境、负责人等）；</li>
+            <li>导入后使用「批量连接测试」（Ping / SSH 两种方式）验证主机可达性，状态自动回写。</li>
+          </ul>
+          <h3>第 2 步：准备脚本</h3>
+          <ul>
+            <li>进入「脚本管理」在线编写 Shell 脚本，支持目录分类与参数模板化；</li>
+            <li>常用脚本可加入「快捷面板」，执行时一键选取。</li>
+          </ul>
+          <h3>第 3 步：批量执行</h3>
+          <ul>
+            <li>进入「脚本执行」，选择脚本与目标主机（支持按系统、应用、机房、环境、负责人筛选）；</li>
+            <li>点击执行后实时查看每台主机的进度与输出；</li>
+            <li>执行结果自动归档到「任务记录」，可导出 CSV / JSON 报告。</li>
+          </ul>
+        </section>
+
+        <!-- 功能使用 -->
+        <section class="doc-section" id="features">
+          <h2>功能使用</h2>
+          <p class="desc">各核心模块的使用要点。</p>
+          <h3>主机管理</h3>
+          <p>主机增删改查、标签分类、批量修改、Excel/CSV 导入导出、批量 Ping / SSH 连接测试、批量采集主机信息（CPU / 内存 / 磁盘 / OS）。</p>
+          <h3>脚本执行 / 命令执行</h3>
+          <p>脚本执行面向已沉淀的脚本资产；命令执行面向临时性命令。两者均支持并发执行、实时输出、sudo 提权，并发数与超时时间可在全局设置中调整。</p>
+          <h3>工程任务</h3>
+          <p>将「脚本 + 命令 + 文件上传」编排为多步骤工程，支持步骤依赖与拖拽排序。采用严格失败即停策略：任一步骤失败，整个工程立即中止。支持定时执行与企业微信 Webhook 结果通知。</p>
+          <h3>文件上传</h3>
+          <p>批量 SFTP 上传文件到多台主机，支持冲突策略（覆盖 / 备份 / 跳过）与目标目录自动创建。</p>
+          <h3>任务调度</h3>
+          <p>为脚本任务或工程任务设定未来执行时间，到点自动触发，调度列表支持调整时间与立即执行。</p>
+          <h3>任务记录</h3>
+          <p>全部执行历史按任务归档，可查看每台主机的 stdout / stderr / 退出码，支持筛选分析与导出。</p>
+        </section>
+
+        <!-- 配置说明 -->
+        <section class="doc-section" id="config">
+          <h2>配置说明</h2>
+          <p class="desc">点击软件右上角齿轮图标进入全局设置。</p>
+          <h3>执行参数</h3>
+          <ul>
+            <li><strong>默认并发数</strong>：1 ~ 20，批量执行时同时连接的主机数量；</li>
+            <li><strong>默认超时</strong>：最低 10 秒，单台主机执行超时后自动判定失败。</li>
+          </ul>
+          <h3>SSH 密钥</h3>
+          <ul>
+            <li>首次启动自动生成 4096 位默认密钥对，存放于数据目录 <code>ssh_keys/</code>；</li>
+            <li>可在设置中查看公钥、重新生成密钥，并将公钥一键配置到目标主机实现免密登录。</li>
+          </ul>
+          <h3>数据备份</h3>
+          <ul>
+            <li>手动「导出全量数据」生成 JSON 备份文件，用于换机迁移；</li>
+            <li>每日定时备份可自定义时间与保留份数，备份目录可更改；</li>
+            <li>导入备份前会强制自动备份当前数据，导入后应用自动重启。</li>
+          </ul>
+          <h3>数据存储位置</h3>
+          <pre><span class="c"># Windows</span>
+%APPDATA%\万象匣\
+<span class="c"># macOS</span>
+~/Library/Application Support/万象匣/
+<span class="c"># 目录内容</span>
+data/database.json   <span class="c"># 主机、脚本、任务等全部业务数据</span>
+ssh_keys/            <span class="c"># 默认 SSH 密钥对</span>
+task_logs/           <span class="c"># 任务执行日志</span>
+backups/             <span class="c"># 自动备份</span></pre>
+        </section>
+
+        <!-- 常见问题 -->
+        <section class="doc-section" id="faq">
+          <h2>常见问题</h2>
+          <p class="desc">使用中遇到问题先看这里。</p>
+
+          <details open>
+            <summary>macOS 提示「无法打开，因为无法验证开发者」或「已损坏」？</summary>
+            <div class="answer">
+              <p>应用未做 Apple 开发者签名公证，会被 Gatekeeper 拦截，两种解决方式：</p>
+              <p>1. 系统设置 → 隐私与安全性 → 找到拦截记录 → 点击「仍要打开」；</p>
+              <p>2. 终端执行：<code>xattr -cr /Applications/万象匣.app</code> 清除隔离属性后重新打开。</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>从旧版「SSH工具箱」升级，数据会丢失吗？</summary>
+            <div class="answer">
+              <p>不会。新版首次启动时会自动检测旧版数据目录并完成迁移（数据库、任务日志、SSH 密钥、配置全部保留），无需手动操作。</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>SSH 连接测试失败怎么排查？</summary>
+            <div class="answer">
+              <p>按顺序检查：</p>
+              <p>1. 主机 IP 与端口（默认 22）是否正确，能否 Ping 通；</p>
+              <p>2. 用户名密码是否正确（注意密码中的特殊字符）；</p>
+              <p>3. 目标主机 sshd 服务是否运行、防火墙是否放行；</p>
+              <p>4. 若使用密钥登录，确认公钥已写入目标主机的 <code>~/.ssh/authorized_keys</code>。</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>批量执行时如何提升速度？</summary>
+            <div class="answer">
+              <p>在右上角齿轮 → 全局设置中调大「默认并发数」（最大 20）。注意并发过高会加重本机与目标主机负载，生产环境建议从 5 ~ 10 开始。</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>需要 root 权限的命令怎么执行？</summary>
+            <div class="answer">
+              <p>执行时勾选「使用 sudo」，软件会使用主机登录密码自动完成 sudo 提权，无需在脚本中手写密码。</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>换电脑了，数据怎么迁移？</summary>
+            <div class="answer">
+              <p>旧电脑：右上角齿轮 → 数据备份 →「导出全量数据」得到 JSON 备份文件；新电脑：同一入口「导入全量数据」选择该文件，导入后应用自动重启即完成迁移。</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>如何获取新版本？</summary>
+            <div class="answer">
+              <p>软件启动时会自动检测 GitHub Releases 上的最新版本，发现新版会弹窗提醒，点击即可前往下载页。也可以随时访问官网<a href="./changelog.html">更新记录</a>查看版本变化。</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>如何配置企业微信通知？</summary>
+            <div class="answer">
+              <p>在工程任务中填入企业微信群的 Webhook 地址，工程执行完成或失败时会自动推送结果摘要到群里。可先用「测试 Webhook」按钮验证连通性。</p>
+            </div>
+          </details>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="container footer-inner">
+    <span>© 2026 侯金刚 · 万象匣 (WanXiang Box)</span>
+    <span class="spacer"></span>
+    <a href="./changelog.html">更新记录</a>
+    <a href="mailto:andy@hi-andy.com">andy@hi-andy.com</a>
+    <a href="https://github.com/it-andy-hou/wanxiang-box" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</footer>
+
+</body>
+</html>

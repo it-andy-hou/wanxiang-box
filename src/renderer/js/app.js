@@ -93,7 +93,10 @@ class SSHToolsApp {
             
             // 加载全局执行设置并应用到页面
             await this.loadGlobalExecutionSettings();
-                        
+
+            // 启动后延迟静默检查新版本（不阻塞初始化，失败不影响使用）
+            setTimeout(() => this.checkForUpdate(), 3000);
+
             this.isInitialized = true;
             Utils.notify.success('应用初始化成功');
             this.updateStatus('就绪');
@@ -183,6 +186,9 @@ class SSHToolsApp {
         
         // 设置按钮事件
         Utils.on('#settingsBtn', 'click', () => this.showSettings());
+
+        // GitHub 仓库入口按钮
+        Utils.on('#githubBtn', 'click', () => this.openGithub());
         
         // 状态显示不再支持点击（已改为普通文本）
         // Utils.on('#statusMessage', 'click', () => this.pingAllHosts());
@@ -1149,6 +1155,109 @@ class SSHToolsApp {
         } catch (error) {
             console.error('获取应用版本失败:', error);
         }
+    }
+
+    // 打开 GitHub 项目仓库（有新版时打开对应 Release 页）
+    async openGithub() {
+        if (!window.require) return;
+        try {
+            const { ipcRenderer } = window.require('electron');
+            const url = (this._updateInfo && this._updateInfo.hasUpdate)
+                ? this._updateInfo.releaseUrl
+                : 'https://github.com/it-andy-hou/wanxiang-box';
+            await ipcRenderer.invoke('open-external', url);
+        } catch (error) {
+            console.error('打开 GitHub 链接失败:', error);
+        }
+    }
+
+    // 静默检查新版本：有新版时点亮 GitHub 图标红点并弹出提醒
+    async checkForUpdate() {
+        if (!window.require) return;
+        try {
+            const { ipcRenderer } = window.require('electron');
+            const result = await ipcRenderer.invoke('check-for-update');
+            if (!result || !result.success || !result.hasUpdate) return;
+
+            this._updateInfo = result;
+
+            const badge = Utils.$('#updateBadge');
+            if (badge) badge.style.display = '';
+            const githubBtn = Utils.$('#githubBtn');
+            if (githubBtn) githubBtn.title = `发现新版本 v${result.latestVersion}（当前 v${result.currentVersion}），点击前往下载`;
+
+            this.showUpdateModal(result);
+        } catch (error) {
+            console.warn('检查更新失败（静默忽略）:', error && error.message);
+        }
+    }
+
+    // 新版本提醒弹窗
+    showUpdateModal(info) {
+        const existingModal = document.getElementById('updateModal');
+        if (existingModal) existingModal.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'updateModal';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--surface-overlay); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        `;
+
+        const notesHtml = info.releaseNotes
+            ? `<div style="
+                margin-top: 14px; background: var(--canvas-base); border: 1px solid var(--border-default);
+                border-radius: 8px; padding: 12px 16px; font-size: 12px; color: var(--text-muted);
+                max-height: 180px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6;
+                font-family: var(--font-ui);
+              "></div>`
+            : '';
+
+        modal.innerHTML = `
+            <div style="
+                background: var(--surface-float); border: 1px solid var(--border-default); border-radius: 12px;
+                padding: 28px 32px; max-width: 480px; width: 90%; color: var(--text-body);
+                box-shadow: var(--shadow-modal); position: relative; font-family: var(--font-ui);
+            ">
+                <button id="updateCloseBtn" style="
+                    position: absolute; top: 14px; right: 18px;
+                    background: none; border: none; color: var(--text-faint);
+                    font-size: 22px; cursor: pointer; line-height: 1;
+                " title="关闭">&times;</button>
+
+                <div style="font-size: 16px; font-weight: 600; color: var(--text-heading);">发现新版本</div>
+                <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">
+                    当前版本 <span style="font-family: var(--font-mono); color: var(--text-body);">v${info.currentVersion}</span>
+                    &nbsp;→&nbsp;
+                    最新版本 <span style="font-family: var(--font-mono); color: var(--primary); font-weight: 600;">v${info.latestVersion}</span>
+                </div>
+                ${notesHtml}
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button id="updateLaterBtn" class="btn btn-secondary">暂不提醒</button>
+                    <button id="updateDownloadBtn" class="btn btn-primary">前往下载</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // 发布说明使用 textContent 注入，避免 Release 备注中的 HTML 被解析
+        if (info.releaseNotes) {
+            const notesEl = modal.querySelector('div[style*="white-space: pre-wrap"]');
+            if (notesEl) notesEl.textContent = info.releaseNotes;
+        }
+
+        const closeModal = () => modal.remove();
+        modal.querySelector('#updateCloseBtn').addEventListener('click', closeModal);
+        modal.querySelector('#updateLaterBtn').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+        modal.querySelector('#updateDownloadBtn').addEventListener('click', async () => {
+            closeModal();
+            if (window.require) {
+                const { ipcRenderer } = window.require('electron');
+                await ipcRenderer.invoke('open-external', info.releaseUrl);
+            }
+        });
     }
     
     searchHosts(keyword) {

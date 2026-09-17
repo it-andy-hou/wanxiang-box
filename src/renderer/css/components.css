@@ -57,6 +57,23 @@
     font-size: 14px;
 }
 
+/* 头部 GitHub 按钮：新版本提醒红点 */
+#githubBtn {
+    position: relative;
+}
+
+#githubBtn .update-badge {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--status-critical-fg);
+    border: 1.5px solid var(--surface-card);
+    pointer-events: none;
+}
+
 /* 按钮颜色：primary = Electric Sky，其余映射语义 token */
 .btn-primary {
     background-color: var(--primary);

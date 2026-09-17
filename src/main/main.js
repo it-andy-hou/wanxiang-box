@@ -639,6 +639,83 @@ ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });
 
+// 打开外部链接（仅允许 http/https 协议，防止 file:// 等危险协议）
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+      return { success: false, message: '非法的链接地址' };
+    }
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    console.error('打开外部链接失败:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// 版本号比较：a > b 返回正数，相等返回 0，a < b 返回负数（按 . 分段数值比较）
+function compareVersions(a, b) {
+  const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+  const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const diff = (pa[i] || 0) - (pb[i] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+// 检查新版本（查询 GitHub Releases 最新发布，8 秒超时，失败静默返回 success: false）
+ipcMain.handle('check-for-update', async () => {
+  const currentVersion = app.getVersion();
+  const releasesPage = 'https://github.com/it-andy-hou/wanxiang-box/releases';
+  return new Promise((resolve) => {
+    const https = require('https');
+    const req = https.get({
+      hostname: 'api.github.com',
+      path: '/repos/it-andy-hou/wanxiang-box/releases/latest',
+      headers: {
+        'User-Agent': 'wanxiang-box-update-checker',
+        'Accept': 'application/vnd.github+json'
+      },
+      timeout: 8000
+    }, (res) => {
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        try {
+          if (res.statusCode !== 200) {
+            return resolve({ success: false, currentVersion, message: `GitHub API 返回 ${res.statusCode}` });
+          }
+          const data = JSON.parse(body);
+          const latestVersion = String(data.tag_name || '').replace(/^v/, '');
+          if (!latestVersion) {
+            return resolve({ success: false, currentVersion, message: '未获取到版本号' });
+          }
+          resolve({
+            success: true,
+            hasUpdate: compareVersions(latestVersion, currentVersion) > 0,
+            currentVersion,
+            latestVersion,
+            releaseUrl: data.html_url || releasesPage,
+            releaseNotes: String(data.body || '').slice(0, 2000),
+            publishedAt: data.published_at || ''
+          });
+        } catch (e) {
+          resolve({ success: false, currentVersion, message: e.message });
+        }
+      });
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      resolve({ success: false, currentVersion, message: '请求超时' });
+    });
+    req.on('error', (e) => {
+      resolve({ success: false, currentVersion, message: e.message });
+    });
+  });
+});
+
 // 获取执行设置（并发数、超时时间）
 ipcMain.handle('get-execution-settings', () => {
   const concurrency = getConfig('execution.defaultConcurrency', 1);
