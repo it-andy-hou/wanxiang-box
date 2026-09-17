@@ -17,6 +17,35 @@
     let activeTagFilter = '';     // 当前激活的标签过滤值
     let pickerHighlightIndex = -1; // 键盘导航高亮索引
 
+    // 分组折叠状态（groupId -> true），localStorage 持久化
+    const GROUP_COLLAPSE_KEY = 'te_script_group_collapsed';
+    let collapsedGroups = loadCollapsedGroups();
+
+    function loadCollapsedGroups() {
+        try {
+            const raw = localStorage.getItem(GROUP_COLLAPSE_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function saveCollapsedGroups() {
+        try {
+            localStorage.setItem(GROUP_COLLAPSE_KEY, JSON.stringify(collapsedGroups));
+        } catch (e) { /* 存储失败不影响交互 */ }
+    }
+
+    // 切换分组折叠状态
+    function toggleGroupCollapse(groupId) {
+        if (collapsedGroups[groupId]) {
+            delete collapsedGroups[groupId];
+        } else {
+            collapsedGroups[groupId] = true;
+        }
+        saveCollapsedGroups();
+    }
+
     // 重置执行参数为全局设置值
     function resetExecutionParamsToGlobal(concurrencyEl, timeoutEl) {
         try {
@@ -112,6 +141,12 @@
         const selectHostsBtn = document.getElementById('selectHostsBtn');
         if (selectHostsBtn) {
             selectHostsBtn.addEventListener('click', showHostSelector);
+        }
+
+        // 已选主机列表：单独移除（事件委托）
+        const selectedHostsList = document.getElementById('selectedHostsList');
+        if (selectedHostsList) {
+            selectedHostsList.addEventListener('click', handleSelectedHostsListClick);
         }
 
         // 清空选择按钮
@@ -415,7 +450,7 @@
                         </div>
                     </div>
                     
-                    <div style="max-height: 400px; overflow-y: auto;">
+                    <div style="max-height: 520px; overflow-y: auto;">
                         <table class="table">
                             <thead>
                                 <tr>
@@ -775,8 +810,21 @@
     async function updateSelectedHostsList() {
         const countSpan = document.getElementById('selectedHostsCount');
         const listDiv = document.getElementById('selectedHostsList');
+        const selectHostsBtn = document.getElementById('selectHostsBtn');
+        const editHint = document.getElementById('teHostEditHint');
         
         if (!countSpan || !listDiv) return;
+
+        // 二次修改入口：已选主机时按钮变为「编辑已选主机」，弹窗会预勾选已有主机，确认后整体替换
+        if (selectHostsBtn) {
+            selectHostsBtn.textContent = selectedHosts.length > 0 ? '编辑已选主机' : '从主机管理选择';
+            selectHostsBtn.title = selectedHosts.length > 0
+                ? '重新打开主机选择窗口（保留已勾选），可增加或取消主机，确认后整体替换'
+                : '打开主机选择窗口';
+        }
+        if (editHint) {
+            editHint.style.display = selectedHosts.length > 0 ? '' : 'none';
+        }
 
         if (selectedHosts.length === 0) {
             countSpan.textContent = '';
@@ -790,12 +838,42 @@
             const hosts = await hostService.loadHosts();
             const selectedHostsData = hosts.filter(h => selectedHosts.includes(h.id));
             
-            listDiv.innerHTML = selectedHostsData.map(host => 
-                `<span class="badge" style="margin: 2px;">${escapeHtml(host.ip)} (${escapeHtml(host.hostname || host.systemName || 'Unknown')})</span>`
-            ).join('');
+            // 表格列表：IP / 应用名称 / 负责人 + 单独删除，按选择顺序展示
+            listDiv.innerHTML = `
+                <table class="table te-host-table">
+                    <thead>
+                        <tr><th>IP地址</th><th>应用名称</th><th>负责人</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        ${selectedHosts.map(id => {
+                            const host = selectedHostsData.find(h => h.id === id);
+                            if (!host) return '';
+                            const appName = host.appName || host.app_name || '-';
+                            return `
+                                <tr data-host-id="${host.id}">
+                                    <td class="te-host-table-ip">${escapeHtml(host.ip)}</td>
+                                    <td title="${escapeHtml(host.systemName || host.system_name || '')}">${escapeHtml(appName)}</td>
+                                    <td>${escapeHtml(host.owner || '-')}</td>
+                                    <td class="te-host-table-action">
+                                        <button type="button" class="te-host-remove-btn" data-host-id="${host.id}" title="移除该主机"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                                    </td>
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>`;
         } catch (error) {
             console.error('更新主机列表失败:', error);
         }
+    }
+
+    // 单独移除一台已选主机（事件委托，绑定一次）
+    function handleSelectedHostsListClick(e) {
+        const removeBtn = e.target.closest('.te-host-remove-btn');
+        if (!removeBtn) return;
+        const hostId = parseInt(removeBtn.dataset.hostId);
+        if (isNaN(hostId)) return;
+        selectedHosts = selectedHosts.filter(id => id !== hostId);
+        updateSelectedHostsList();
     }
 
     // 清空主机选择
@@ -1004,15 +1082,32 @@
     function buildScriptGroups(filtered, showRecent) {
         const groups = [];
 
-        // 最近使用组（仅在无搜索词且无标签过滤时展示，避免重复干扰）
+        // 置顶组（仅在无搜索词且无标签过滤时展示，避免重复干扰）
         const searchInput = document.getElementById('teScriptSearchInput');
         const keyword = searchInput ? searchInput.value : '';
-        if (showRecent && !keyword.trim() && !activeTagFilter && recentScriptIds.length > 0) {
-            const recentScripts = recentScriptIds
-                .map(id => allScripts.find(s => String(s.id) === id))
-                .filter(Boolean);
-            if (recentScripts.length > 0) {
-                groups.push({ id: '__recent__', name: '最近使用', scripts: recentScripts });
+        const showPinned = showRecent && !keyword.trim() && !activeTagFilter;
+        if (showPinned) {
+            // 最近使用组
+            if (recentScriptIds.length > 0) {
+                const recentScripts = recentScriptIds
+                    .map(id => allScripts.find(s => String(s.id) === id))
+                    .filter(Boolean);
+                if (recentScripts.length > 0) {
+                    groups.push({ id: '__recent__', name: '最近使用', scripts: recentScripts });
+                }
+            }
+
+            // 最近添加组（按创建时间倒序取前5）
+            const addedScripts = [...allScripts]
+                .filter(s => s.created_at || s.updated_at)
+                .sort((a, b) => {
+                    const timeA = new Date(a.created_at || a.updated_at || 0).getTime();
+                    const timeB = new Date(b.created_at || b.updated_at || 0).getTime();
+                    return timeB - timeA;
+                })
+                .slice(0, 5);
+            if (addedScripts.length > 0) {
+                groups.push({ id: '__added__', name: '最近添加', scripts: addedScripts });
             }
         }
 
@@ -1073,14 +1168,24 @@
         const selectedId = hidden ? hidden.value : '';
         const groups = buildScriptGroups(filtered, true);
 
+        // 搜索/标签过滤时强制展开所有分组，避免命中结果被折叠隐藏
+        const effectiveCollapsed = hasFilter ? {} : collapsedGroups;
+
         let html = '';
         groups.forEach(group => {
             const isRecent = group.id === '__recent__';
+            const isAdded = group.id === '__added__';
+            const isCollapsed = !!effectiveCollapsed[group.id];
+            const groupIcon = isRecent
+                ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+                : (isAdded
+                    ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
+                    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>');
             html += `
-                <div class="te-script-group-header">
-                    ${isRecent
-                        ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
-                        : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>'}
+                <div class="te-script-group${isCollapsed ? ' is-collapsed' : ''}" data-group-id="${group.id}">
+                <div class="te-script-group-header" title="${isCollapsed ? '点击展开' : '点击折叠'}">
+                    <svg class="te-script-group-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    ${groupIcon}
                     <span>${escapeHtml(group.name)}</span>
                     <span class="te-script-group-count">${group.scripts.length}</span>
                 </div>`;
@@ -1095,26 +1200,42 @@
                         <span class="te-script-time">${formatRelativeTime(script.updated_at)}</span>
                     </div>`;
             });
+            html += `</div>`;
         });
         listEl.innerHTML = html;
 
         applyPickerHighlight();
     }
 
-    // 键盘高亮同步
+    // 键盘高亮同步（忽略已折叠分组内的行）
     function applyPickerHighlight() {
         const listEl = document.getElementById('teScriptList');
         if (!listEl) return;
         listEl.querySelectorAll('.te-script-row.is-highlight').forEach(el => el.classList.remove('is-highlight'));
-        const rows = listEl.querySelectorAll('.te-script-row');
+        const rows = listEl.querySelectorAll('.te-script-group:not(.is-collapsed) .te-script-row');
         if (pickerHighlightIndex >= 0 && pickerHighlightIndex < rows.length) {
             rows[pickerHighlightIndex].classList.add('is-highlight');
             rows[pickerHighlightIndex].scrollIntoView({ block: 'nearest' });
         }
     }
 
-    // 列表点击（事件委托）：标签 chip → toggle 过滤；行 → 选中
+    // 列表点击（事件委托）：分组头 → 折叠/展开；标签 chip → toggle 过滤；行 → 选中
     function handleScriptListClick(e) {
+        const groupHeader = e.target.closest('.te-script-group-header');
+        if (groupHeader) {
+            const keyword = document.getElementById('teScriptSearchInput');
+            // 搜索/标签过滤时强制展开，禁止折叠，避免命中结果被隐藏
+            if (keyword && keyword.value.trim()) return;
+            if (activeTagFilter) return;
+            const groupEl = groupHeader.closest('.te-script-group');
+            if (groupEl) {
+                toggleGroupCollapse(groupEl.dataset.groupId);
+                groupEl.classList.toggle('is-collapsed');
+                groupHeader.title = collapsedGroups[groupEl.dataset.groupId] ? '点击展开' : '点击折叠';
+            }
+            return;
+        }
+
         const tagChip = e.target.closest('.te-script-tag-chip');
         if (tagChip) {
             e.stopPropagation();
@@ -1133,10 +1254,10 @@
         }
     }
 
-    // 搜索框键盘：↑↓ 高亮，Enter 选中，Esc 清空
+    // 搜索框键盘：↑↓ 高亮，Enter 选中，Esc 清空（忽略已折叠分组内的行）
     function handleScriptSearchKeydown(e) {
         const listEl = document.getElementById('teScriptList');
-        const rows = listEl ? listEl.querySelectorAll('.te-script-row') : [];
+        const rows = listEl ? listEl.querySelectorAll('.te-script-group:not(.is-collapsed) .te-script-row') : [];
 
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault();

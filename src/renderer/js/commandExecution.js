@@ -66,6 +66,12 @@
             selectHostsBtn.addEventListener('click', showHostSelector);
         }
 
+        // 已选主机列表：单独移除（事件委托）
+        const selectedHostsList = document.getElementById('selectedCommandHostsList');
+        if (selectedHostsList) {
+            selectedHostsList.addEventListener('click', handleSelectedHostsListClick);
+        }
+
         // 清空选择按钮
         const clearHostsBtn = document.getElementById('clearCommandHostsBtn');
         if (clearHostsBtn) {
@@ -254,7 +260,7 @@
                         </div>
                     </div>
                     
-                    <div style="max-height: 400px; overflow-y: auto;">
+                    <div style="max-height: 520px; overflow-y: auto;">
                         <table class="table">
                             <thead>
                                 <tr>
@@ -614,8 +620,21 @@
     async function updateSelectedHostsList() {
         const countSpan = document.getElementById('selectedCommandHostsCount');
         const listDiv = document.getElementById('selectedCommandHostsList');
+        const selectHostsBtn = document.getElementById('selectCommandHostsBtn');
+        const editHint = document.getElementById('teCommandHostEditHint');
         
         if (!countSpan || !listDiv) return;
+
+        // 二次修改入口：已选主机时按钮变为「编辑已选主机」，弹窗会预勾选已有主机，确认后整体替换
+        if (selectHostsBtn) {
+            selectHostsBtn.textContent = selectedHosts.length > 0 ? '编辑已选主机' : '从主机管理选择';
+            selectHostsBtn.title = selectedHosts.length > 0
+                ? '重新打开主机选择窗口（保留已勾选），可增加或取消主机，确认后整体替换'
+                : '打开主机选择窗口';
+        }
+        if (editHint) {
+            editHint.style.display = selectedHosts.length > 0 ? '' : 'none';
+        }
 
         if (selectedHosts.length === 0) {
             countSpan.textContent = '';
@@ -629,12 +648,42 @@
             const hosts = await hostService.loadHosts();
             const selectedHostsData = hosts.filter(h => selectedHosts.includes(h.id));
             
-            listDiv.innerHTML = selectedHostsData.map(host => 
-                `<span class="badge" style="margin: 2px;">${escapeHtml(host.ip)} (${escapeHtml(host.hostname || host.systemName || 'Unknown')})</span>`
-            ).join('');
+            // 表格列表：IP / 应用名称 / 负责人 + 单独删除，按选择顺序展示
+            listDiv.innerHTML = `
+                <table class="table te-host-table">
+                    <thead>
+                        <tr><th>IP地址</th><th>应用名称</th><th>负责人</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        ${selectedHosts.map(id => {
+                            const host = selectedHostsData.find(h => h.id === id);
+                            if (!host) return '';
+                            const appName = host.appName || host.app_name || '-';
+                            return `
+                                <tr data-host-id="${host.id}">
+                                    <td class="te-host-table-ip">${escapeHtml(host.ip)}</td>
+                                    <td title="${escapeHtml(host.systemName || host.system_name || '')}">${escapeHtml(appName)}</td>
+                                    <td>${escapeHtml(host.owner || '-')}</td>
+                                    <td class="te-host-table-action">
+                                        <button type="button" class="te-host-remove-btn" data-host-id="${host.id}" title="移除该主机"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                                    </td>
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>`;
         } catch (error) {
             console.error('更新主机列表失败:', error);
         }
+    }
+
+    // 单独移除一台已选主机（事件委托，绑定一次）
+    function handleSelectedHostsListClick(e) {
+        const removeBtn = e.target.closest('.te-host-remove-btn');
+        if (!removeBtn) return;
+        const hostId = parseInt(removeBtn.dataset.hostId);
+        if (isNaN(hostId)) return;
+        selectedHosts = selectedHosts.filter(id => id !== hostId);
+        updateSelectedHostsList();
     }
 
     // 清空主机选择

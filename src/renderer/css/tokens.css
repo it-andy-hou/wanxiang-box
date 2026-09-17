@@ -9,6 +9,7 @@
     /* ---- 表面层级 (Surfaces & Elevation) ---- */
     --canvas-base: #f5f6f8;        /* Layer 0 全局底板 */
     --surface-subtle: #f0f1f4;     /* 表头/输入框底 */
+    --surface-hover: #f5f6f8;      /* 悬停态 */
     --surface-card: #ffffff;       /* Layer 1 结构卡片 */
     --surface-float: #ffffff;      /* Layer 2 浮层 */
     --surface-active: #e8eaee;     /* 选中态 */

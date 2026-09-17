@@ -1,6 +1,6 @@
 {
   "name": "wanxiang-box",
-  "version": "1.260912.0",
+  "version": "1.260917.0",
   "description": "万象匣-运维自动化管控平台",
   "main": "src/main/main.js",
   "scripts": {
