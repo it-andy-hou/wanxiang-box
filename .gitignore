@@ -9,8 +9,9 @@ id_rsa.pub
 *.key
 
 # 本地数据与配置（可能包含真实主机密码）
-database/
-config/
+# 注意：必须用 / 前缀锚定根目录，否则会误伤 src/database/ 和 src/config/ 源码目录
+/database/
+/config/
 hosts_export_*.xlsx
 *.zip
 
