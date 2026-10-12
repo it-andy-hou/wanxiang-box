@@ -460,7 +460,7 @@ class SSHToolsApp {
                 // 数据库中真正没有主机
                 emptyIcon = Utils.icon('server', 32);
                 emptyTitle = '暂无主机数据';
-                emptyDesc = '点击右上角「添加主机」按鈕开始添加，或通过 Excel 批量导入';
+                emptyDesc = '点击右上角「添加主机」按钮开始添加，或通过 Excel 批量导入';
             } else {
                 // 有主机，但当前筛选条件下无匹配结果
                 emptyIcon = Utils.icon('search', 32);
@@ -470,7 +470,7 @@ class SSHToolsApp {
 
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="text-center text-muted">
+                    <td colspan="12" class="text-center text-muted">
                         <div class="empty-state">
                             <div class="empty-state-icon">${emptyIcon}</div>
                             <div class="empty-state-title">${emptyTitle}</div>

@@ -273,7 +273,7 @@ body {
 }
 
 /* 各页面表格按真实列数设置最小宽度，确保 1440 默认窗口下无需横向滚动 */
-#hostsTable { min-width: 1180px; }                  /* 主机管理 11 列 */
+#hostsTable { min-width: 1180px; }                  /* 主机管理 12 列（含勾选列） */
 #scriptsTable { min-width: 950px; }                 /* 脚本管理 7 列（含 200px 二级目录栏） */
 #taskHistoryTable { min-width: 1100px; }            /* 脚本执行历史 8 列 */
 #commandTaskHistoryTable { min-width: 950px; }      /* 命令执行历史 7 列 */

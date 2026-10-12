@@ -4,8 +4,8 @@
   "description": "万象匣-运维自动化管控平台",
   "main": "src/main/main.js",
   "scripts": {
-    "start": "chcp 65001 > nul && electron .",
-    "dev": "chcp 65001 > nul && electron . --dev",
+    "start": "node scripts/launch.js",
+    "dev": "node scripts/launch.js --dev",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",

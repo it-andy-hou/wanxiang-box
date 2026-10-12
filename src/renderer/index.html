@@ -766,13 +766,14 @@
                                         <h3>选择目标主机 <span style="color: red;">*</span></h3>
                                     </div>
                                     <div class="file-upload-step-body" style="display: flex; flex-direction: column;">
-                                        <div style="margin-bottom: 0.5rem;">
-                                            <button class="btn btn-secondary" id="selectFileUploadHostsBtn">从主机管理选择</button>
-                                            <button class="btn btn-secondary" id="clearFileUploadHostsBtn">清空选择</button>
-                                            <span id="selectedFileUploadHostsCount" style="margin-left: 1rem; font-weight: bold;"></span>
+                                        <div class="te-host-btns" style="margin-bottom: 0.5rem;">
+                                            <button class="btn btn-secondary btn-sm" id="selectFileUploadHostsBtn">从主机管理选择</button>
+                                            <button class="btn btn-secondary btn-sm" id="clearFileUploadHostsBtn">清空选择</button>
+                                            <span id="selectedFileUploadHostsCount" class="te-host-count"></span>
                                         </div>
-                                        <div id="selectedFileUploadHostsList" style="flex: 1; padding: 0.5rem; background: var(--surface-subtle); border-radius: 6px; min-height: 50px; max-height: 150px; overflow-y: auto;">
-                                            <span style="color: var(--text-muted);">未选择主机</span>
+                                        <div class="te-host-edit-hint" id="teFileUploadHostEditHint" style="display:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> 如需增加或移除主机，点击「编辑已选主机」，确认后整体替换</div>
+                                        <div id="selectedFileUploadHostsList" class="te-host-chips" style="flex: 1;">
+                                            <span class="te-host-empty">未选择主机</span>
                                         </div>
                                     </div>
                                 </section>
@@ -789,8 +790,9 @@
                                                 <input type="number" class="form-control" id="fileUploadTaskConcurrency" value="1" min="1" max="20" step="1" style="height: 34px;">
                                             </div>
                                             <div style="flex: 1;">
-                                                <label for="fileUploadTaskTimeout" style="font-size: 12px; color: var(--text-faint);">超时(秒) ≥ 10</label>
-                                                <input type="number" class="form-control" id="fileUploadTaskTimeout" value="300" min="10" max="3600" step="10" style="height: 34px;">
+                                                <label for="fileUploadTaskTimeout" style="font-size: 12px; color: var(--text-faint);" title="传输 N 秒无进展才判定失败，不限制总时长">停滞超时(秒) ≥ 10</label>
+                                                <input type="number" class="form-control" id="fileUploadTaskTimeout" value="120" min="10" max="3600" step="10" style="height: 34px;">
+                                                <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;">传输 N 秒无进展才判定失败，不限制总时长</div>
                                             </div>
                                         </div>
                                     </div>
@@ -838,6 +840,12 @@
                                                 <div style="font-size: 1.5rem; font-weight: bold;" id="fileUploadExecutionTime">00:00</div>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <!-- 主机传输进度 -->
+                                    <div id="fileUploadHostProgressSection" style="display: none; margin-bottom: 1.5rem;">
+                                        <h4 style="margin-bottom: 0.5rem;">主机传输进度</h4>
+                                        <div id="fileUploadHostProgressList"></div>
                                     </div>
 
                                     <!-- 实时日志 -->

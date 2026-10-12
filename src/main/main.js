@@ -260,6 +260,29 @@ let projectTaskExecutor;
 // 数据备份服务实例
 let backupService;
 
+// 为窗口挂载全局右键菜单：输入框支持 剪切/复制/粘贴/全选，非输入区域选中文本后支持 复制
+function attachContextMenu(win) {
+  win.webContents.on('context-menu', (event, params) => {
+    const template = [];
+
+    if (params.isEditable) {
+      if (params.selectionText) {
+        template.push({ label: '剪切', role: 'cut' });
+        template.push({ label: '复制', role: 'copy' });
+      }
+      template.push({ label: '粘贴', role: 'paste' });
+      template.push({ type: 'separator' });
+      template.push({ label: '全选', role: 'selectAll' });
+    } else if (params.selectionText) {
+      template.push({ label: '复制', role: 'copy' });
+    }
+
+    if (template.length > 0) {
+      Menu.buildFromTemplate(template).popup();
+    }
+  });
+}
+
 function createWindow() {
   // 创建浏览器窗口
   mainWindow = new BrowserWindow({
@@ -280,6 +303,9 @@ function createWindow() {
   // 加载应用的index.html文件
   const indexPath = path.join(__dirname, '../renderer/index.html');
   mainWindow.loadFile(indexPath);
+
+  // 挂载全局右键菜单
+  attachContextMenu(mainWindow);
 
   // 窗口准备好后显示
   mainWindow.once('ready-to-show', () => {
@@ -2394,9 +2420,20 @@ ipcMain.handle('execute-file-upload', async (event, uploadOptions) => {
     
     // 逐个主机上传
     const maxConcurrency = Math.max(1, parseInt(concurrency, 10) || 1);
-    const uploadTimeout = parseInt(timeout, 10) || 300000;
+    // 传输停滞超时（毫秒）：连续 N 毫秒无字节进展才判定失败，不限制总时长
+    const stallTimeout = parseInt(timeout, 10) || 120000;
     let processedCount = 0;
     let cancelled = false;
+
+    // 各主机字节级传输进度（hostId -> 0~1），用于总体进度平滑计算
+    const hostByteProgress = new Map();
+
+    const sendWeightedProgress = () => {
+      let inflight = 0;
+      hostByteProgress.forEach(f => { inflight += f; });
+      const progress = Math.min(99, Math.round(((processedCount + inflight) / totalHosts) * 100));
+      mainWindow.webContents.send('task-progress', { taskId, progress, successCount, failedCount });
+    };
 
     const isUploadCancelled = async () => {
       const latestTask = await TaskModel.findById(taskId);
@@ -2411,14 +2448,29 @@ ipcMain.handle('execute-file-upload', async (event, uploadOptions) => {
       }
       try {
         mainWindow.webContents.send('task-progress', { taskId, log: `[${host.ip}] upload started: ${targetPath}`, logType: 'info' });
+        let lastProgressNotify = 0;
         const result = await sshService.uploadFiles(host, files, targetPath, {
           conflictStrategy: conflictStrategy || 'backup',
           pathCreateStrategy: pathCreateStrategy || 'error',
-          timeout: uploadTimeout,
+          stallTimeout: stallTimeout,
           continueOnError: true,
           shouldCancel: isUploadCancelled,
-          onProgress: (percent) => {
-            mainWindow.webContents.send('task-progress', { taskId, log: `[${host.ip}] upload progress: ${percent}%`, logType: 'info' });
+          onProgress: (p) => {
+            // 节流：500ms 或 100% 时才推送，避免 IPC 刷屏
+            const now = Date.now();
+            if (p.percent < 100 && now - lastProgressNotify < 500) return;
+            lastProgressNotify = now;
+            hostByteProgress.set(host.id, p.percent / 100);
+            mainWindow.webContents.send('task-progress', {
+              taskId,
+              type: 'file-progress',
+              hostIp: host.ip,
+              fileName: p.fileName,
+              percent: p.percent,
+              transferred: p.transferred,
+              total: p.total
+            });
+            sendWeightedProgress();
           }
         });
         if (await isUploadCancelled()) {
@@ -2455,6 +2507,7 @@ ipcMain.handle('execute-file-upload', async (event, uploadOptions) => {
         mainWindow.webContents.send('task-progress', { taskId, log: `[${host.ip}] upload failed: ${error.message}`, logType: 'error', successCount, failedCount });
         await TaskResultModel.create({ task_execution_id: taskId, host_id: host.id, status: 'failed', stdout: '', stderr: error.message, exit_code: -1, error_message: error.message, start_time: new Date().toISOString(), end_time: new Date().toISOString() });
       } finally {
+        hostByteProgress.delete(host.id);
         processedCount++;
         const progress = Math.round((processedCount / totalHosts) * 100);
         mainWindow.webContents.send('task-progress', { taskId, progress, successCount, failedCount });

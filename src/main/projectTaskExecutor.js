@@ -458,7 +458,8 @@ class ProjectTaskExecutor extends EventEmitter {
                 const result = await this.sshService.uploadFiles(host, files, targetPath, {
                     conflictStrategy: conflictStrategy || 'backup',
                     pathCreateStrategy: pathCreateStrategy || 'error',
-                    timeout: (step.timeout || 300) * 1000,
+                    // 传输停滞超时：连续 N 毫秒无字节进展才判定失败，不限制总时长
+                    stallTimeout: (step.timeout || 300) * 1000,
                     // 文件间取消检查：中止后不再开始下一个文件
                     shouldCancel: () => !!this.stopFlags.get(executionId),
                     // 连接建立回调：把传输中的连接登记到总表，支持强制断连

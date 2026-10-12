@@ -1100,7 +1100,7 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
                 port: hostData.port || 22,
                 username: hostData.username,
                 keepaliveInterval: 60000,
-                readyTimeout: options.timeout || 15000,
+                readyTimeout: options.connectTimeout || 15000,
                 // 兼容性配置：支持老旧Linux系统
                 algorithms: this.getCompatibilityAlgorithms(),
             };
@@ -1194,24 +1194,40 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
             // 执行文件上传
             const startTime = Date.now();
             
-            // 使用 Promise.race 为 putFile 添加整体超时保护
-            const uploadTimeout = options.timeout || 600000; // 默认10分钟，因为文件可能很大
-            await Promise.race([
+            // 传输不限制总时长（大文件×慢链路是正常场景），改为停滞看门狗：
+            // step 回调持续刷新活跃时间，连续 stallTimeout 无任何字节进展才判定卡死
+            const stallTimeout = options.stallTimeout || 120000; // 默认2分钟无进展判定失败
+            let lastActivity = Date.now();
+            await new Promise((resolve, reject) => {
+                const watchdog = setInterval(() => {
+                    if (Date.now() - lastActivity > stallTimeout) {
+                        clearInterval(watchdog);
+                        // 主动断开连接，促使 fastPut 回调尽快返回
+                        try { connection.dispose(); } catch (_) {}
+                        reject(new Error(`传输停滞超过 ${Math.round(stallTimeout / 1000)} 秒，判定为失败: ${localPath}`));
+                    }
+                }, 5000);
+
                 connection.putFile(localPath, fullTargetPath, null, {
                     concurrency: 1,
-                    onProgress: (progress) => {
+                    // 注意：node-ssh 的 putFile 第4个参数原样透传给 ssh2 的 fastPut，
+                    // 只支持 step(totalTransferred, chunk, total)，不支持 onProgress
+                    step: (totalTransferred, chunk, total) => {
+                        lastActivity = Date.now();
                         if (options.onProgress) {
-                            const percent = Math.round((progress.transferred / progress.total) * 100);
-                            options.onProgress(percent, progress);
+                            options.onProgress({
+                                fileName,
+                                transferred: totalTransferred,
+                                total,
+                                percent: total > 0 ? Math.round((totalTransferred / total) * 100) : 0
+                            });
                         }
                     }
-                }),
-                new Promise((_, reject) => {
-                    setTimeout(() => {
-                        reject(new Error(`文件上传超时（${uploadTimeout}ms）: ${localPath}`));
-                    }, uploadTimeout);
-                })
-            ]);
+                }).then(
+                    () => { clearInterval(watchdog); resolve(); },
+                    (err) => { clearInterval(watchdog); reject(err); }
+                );
+            });
             
             const duration = Date.now() - startTime;
             

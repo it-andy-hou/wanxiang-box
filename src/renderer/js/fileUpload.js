@@ -9,6 +9,7 @@
     let currentTaskId = null;
     let executionStartTime = null;
     let executionTimer = null;
+    let hostProgressRows = {}; // hostIp -> 主机传输进度行元素引用
 
     // 重置执行参数为全局设置值
     function resetExecutionParamsToGlobal(concurrencyEl, timeoutEl) {
@@ -126,6 +127,12 @@
         const selectHostsBtn = document.getElementById('selectFileUploadHostsBtn');
         if (selectHostsBtn) {
             selectHostsBtn.addEventListener('click', showHostSelector);
+        }
+
+        // 已选主机列表：单独移除（事件委托）
+        const selectedHostsList = document.getElementById('selectedFileUploadHostsList');
+        if (selectedHostsList) {
+            selectedHostsList.addEventListener('click', handleSelectedHostsListClick);
         }
 
         // 清空选择按钮
@@ -407,7 +414,7 @@
                         </div>
                     </div>
                     
-                    <div style="max-height: 400px; overflow-y: auto;">
+                    <div style="max-height: 520px; overflow-y: auto;">
                         <table class="table">
                             <thead>
                                 <tr>
@@ -748,12 +755,25 @@
     async function updateSelectedHostsList() {
         const countSpan = document.getElementById('selectedFileUploadHostsCount');
         const listDiv = document.getElementById('selectedFileUploadHostsList');
+        const selectHostsBtn = document.getElementById('selectFileUploadHostsBtn');
+        const editHint = document.getElementById('teFileUploadHostEditHint');
         
         if (!countSpan || !listDiv) return;
 
+        // 二次修改入口：已选主机时按钮变为「编辑已选主机」，弹窗会预勾选已有主机，确认后整体替换
+        if (selectHostsBtn) {
+            selectHostsBtn.textContent = selectedHosts.length > 0 ? '编辑已选主机' : '从主机管理选择';
+            selectHostsBtn.title = selectedHosts.length > 0
+                ? '重新打开主机选择窗口（保留已勾选），可增加或取消主机，确认后整体替换'
+                : '打开主机选择窗口';
+        }
+        if (editHint) {
+            editHint.style.display = selectedHosts.length > 0 ? '' : 'none';
+        }
+
         if (selectedHosts.length === 0) {
             countSpan.textContent = '';
-            listDiv.innerHTML = '<span style="color: var(--text-muted);">未选择主机</span>';
+            listDiv.innerHTML = '<span class="te-host-empty">未选择主机</span>';
             return;
         }
 
@@ -763,12 +783,42 @@
             const hosts = await hostService.loadHosts();
             const selectedHostsData = hosts.filter(h => selectedHosts.includes(h.id));
             
-            listDiv.innerHTML = selectedHostsData.map(host => 
-                `<span class="badge" style="margin: 2px;">${escapeHtml(host.ip)} (${escapeHtml(host.hostname || host.systemName || 'Unknown')})</span>`
-            ).join('');
+            // 表格列表：IP / 应用名称 / 负责人 + 单独删除，按选择顺序展示
+            listDiv.innerHTML = `
+                <table class="table te-host-table">
+                    <thead>
+                        <tr><th>IP地址</th><th>应用名称</th><th>负责人</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        ${selectedHosts.map(id => {
+                            const host = selectedHostsData.find(h => h.id === id);
+                            if (!host) return '';
+                            const appName = host.appName || host.app_name || '-';
+                            return `
+                                <tr data-host-id="${host.id}">
+                                    <td class="te-host-table-ip">${escapeHtml(host.ip)}</td>
+                                    <td title="${escapeHtml(host.systemName || host.system_name || '')}">${escapeHtml(appName)}</td>
+                                    <td>${escapeHtml(host.owner || '-')}</td>
+                                    <td class="te-host-table-action">
+                                        <button type="button" class="te-host-remove-btn" data-host-id="${host.id}" title="移除该主机"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                                    </td>
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>`;
         } catch (error) {
             console.error('更新主机列表失败:', error);
         }
+    }
+
+    // 单独移除一台已选主机（事件委托，绑定一次）
+    function handleSelectedHostsListClick(e) {
+        const removeBtn = e.target.closest('.te-host-remove-btn');
+        if (!removeBtn) return;
+        const hostId = parseInt(removeBtn.dataset.hostId);
+        if (isNaN(hostId)) return;
+        selectedHosts = selectedHosts.filter(id => id !== hostId);
+        updateSelectedHostsList();
     }
 
     // 清空主机选择
@@ -803,7 +853,7 @@
             const taskConcurrencyInput = document.getElementById('fileUploadTaskConcurrency');
             const taskTimeoutInput = document.getElementById('fileUploadTaskTimeout');
             const concurrency = taskConcurrencyInput ? Math.max(1, parseInt(taskConcurrencyInput.value, 10) || 1) : 1;
-            const timeout = taskTimeoutInput ? Math.max(10000, (parseInt(taskTimeoutInput.value, 10) || 300) * 1000) : 300000;
+            const timeout = taskTimeoutInput ? Math.max(10000, (parseInt(taskTimeoutInput.value, 10) || 120) * 1000) : 120000;
             const conflictStrategy = document.querySelector('input[name="conflictStrategy"]:checked')?.value || 'backup';
             const pathCreateStrategy = document.querySelector('input[name="pathCreateStrategy"]:checked')?.value || 'error';
 
@@ -850,6 +900,13 @@
             document.getElementById('fileUploadFailedCount').textContent = '0';
             document.getElementById('fileUploadOverallProgress').textContent = '0%';
             document.getElementById('fileUploadProgressFill').style.width = '0%';
+
+            // 重置主机传输进度面板
+            hostProgressRows = {};
+            const hostProgressList = document.getElementById('fileUploadHostProgressList');
+            if (hostProgressList) hostProgressList.innerHTML = '';
+            const hostProgressSection = document.getElementById('fileUploadHostProgressSection');
+            if (hostProgressSection) hostProgressSection.style.display = 'none';
 
             // 清空日志
             const logDiv = document.getElementById('fileUploadExecutionLog');
@@ -1092,6 +1149,68 @@
         return div.innerHTML;
     }
 
+    // 字节数格式化
+    function formatBytes(bytes) {
+        if (!bytes || bytes <= 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+        const value = bytes / Math.pow(1024, i);
+        return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[i]}`;
+    }
+
+    // 更新主机传输进度行（不存在则创建，存在则原地刷新）
+    function updateHostProgressRow(data) {
+        const section = document.getElementById('fileUploadHostProgressSection');
+        const list = document.getElementById('fileUploadHostProgressList');
+        if (!section || !list) return;
+        section.style.display = 'block';
+
+        const now = Date.now();
+        let row = hostProgressRows[data.hostIp];
+        if (!row) {
+            const container = document.createElement('div');
+            container.style.cssText = 'margin-bottom: 0.75rem; padding: 0.75rem; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface-card);';
+            container.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem; font-size: 0.875rem;">
+                    <span class="host-ip" style="font-family: var(--font-mono); font-weight: 600;"></span>
+                    <span class="host-detail" style="color: var(--text-muted); font-family: var(--font-mono); font-feature-settings: 'tabular-nums' 1;"></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%;"></div>
+                </div>`;
+            list.appendChild(container);
+            container.querySelector('.host-ip').textContent = data.hostIp;
+            row = {
+                fill: container.querySelector('.progress-fill'),
+                detail: container.querySelector('.host-detail'),
+                lastTransferred: 0,
+                lastTime: now
+            };
+            hostProgressRows[data.hostIp] = row;
+        }
+
+        // 计算瞬时速率
+        let speedText = '';
+        const elapsed = (now - row.lastTime) / 1000;
+        if (elapsed > 0 && data.transferred >= row.lastTransferred) {
+            const speed = (data.transferred - row.lastTransferred) / elapsed;
+            if (speed > 0) speedText = ` · ${formatBytes(speed)}/s`;
+        }
+        row.lastTransferred = data.transferred;
+        row.lastTime = now;
+
+        row.fill.style.width = `${data.percent}%`;
+        row.detail.textContent = `${data.fileName} · ${data.percent}% · ${formatBytes(data.transferred)}/${formatBytes(data.total)}${speedText}`;
+    }
+
+    // 主机上传结束后标记进度行状态
+    function markHostProgressRow(hostIp, status) {
+        const row = hostProgressRows[hostIp];
+        if (!row) return;
+        row.fill.style.width = '100%';
+        row.fill.style.background = status === 'success' ? 'var(--status-healthy-fg)' : 'var(--status-critical-fg)';
+    }
+
     // 显示消息
     function showMessage(message, type = 'info') {
         // 使用项目统一的通知组件，避免原生弹窗
@@ -1126,6 +1245,11 @@
     
     ipcRenderer.on('task-progress', (event, data) => {
         if (!currentTaskId || data.taskId !== currentTaskId) return;
+
+        // 主机级文件传输进度（结构化事件，原地刷新进度行）
+        if (data.type === 'file-progress') {
+            updateHostProgressRow(data);
+        }
         
         // 更新进度显示
         if (data.progress !== undefined) {
@@ -1145,6 +1269,11 @@
         // 追加日志
         if (data.log) {
             appendLog(data.log, data.logType || 'info');
+            // 主机上传成功/失败时标记对应进度行
+            const hostMatch = /^\[([\d.]+)\] upload (success|failed)/.exec(data.log);
+            if (hostMatch) {
+                markHostProgressRow(hostMatch[1], hostMatch[2] === 'success' ? 'success' : 'failed');
+            }
         }
         
         // 任务完成
