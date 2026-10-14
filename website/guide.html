@@ -271,7 +271,7 @@
           </ul>
           <h3>大模型接入（AI 分析）</h3>
           <ul>
-            <li><strong>提供商 / Base URL</strong>：兼容 OpenAI Chat Completions 接口的服务均可接入（智谱、DeepSeek、通义等），也支持本地 Ollama；必须使用 https:// 地址（明文 http:// 仅允许 localhost）；</li>
+            <li><strong>提供商 / Base URL</strong>：兼容 OpenAI Chat Completions 接口的服务均可接入（智谱、DeepSeek、通义等），也支持本地 Ollama；必须使用 https:// 地址（明文 http:// 仅允许本机或内网地址，如 localhost、192.168.x.x）；</li>
             <li><strong>API Key</strong>：以 AES-GCM 加密存储于本地，不会上传到任何第三方；</li>
             <li><strong>模型 / Temperature</strong>：按需选择模型与采样温度，支持 SSE 流式渲染；</li>
             <li>填完后可点击「测试连接」验证连通性，再回到脚本管理使用 AI 分析。</li>

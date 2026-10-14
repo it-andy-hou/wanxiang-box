@@ -163,7 +163,7 @@
 #大模型接入
 提供商
 Base URL
-智谱示例：https://open.bigmodel.cn/api/paas/v4。基础地址自动补全路径；以 /chat/completions 结尾的完整端点原样使用。 必须使用 https:// 地址（明文 http:// 仅允许 localhost 本机地址，如本地 Ollama）。
+智谱示例：https://open.bigmodel.cn/api/paas/v4。基础地址自动补全路径；以 /chat/completions 结尾的完整端点原样使用。 必须使用 https:// 地址（明文 http:// 仅允许本机或内网地址，如本地 Ollama、192.168.x.x、10.x.x.x、.local/.internal 主机名）。
 API Key
 密钥将用 AES-GCM 加密存储于本地。
 模型

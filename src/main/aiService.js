@@ -18,11 +18,35 @@ const SETTINGS_KEY = 'ai';        // simple-db settings 表中的配置键
 // ============================================================
 
 /**
+ * 判断主机名是否为本机或内网地址（明文 http 的放行范围）。
+ * 覆盖：loopback、RFC1918 私有网段、链路本地、IPv6 ULA、
+ * .local/.internal 后缀、单标签主机名（如 docker 网络内的 ollama-server）。
+ */
+function isPrivateHost(hostname) {
+    // URL.hostname 对 IPv6 会带方括号（如 [fd12::1]），先去掉再判定
+    const h = String(hostname || '').toLowerCase().replace(/^\[|\]$/g, '');
+    if (h === 'localhost' || h === '::1') return true;
+    if (h.endsWith('.local') || h.endsWith('.internal')) return true;
+    // 单标签主机名（无点无冒号，如 docker 网络内的 ollama-server）；IPv6 含冒号需继续往下判定
+    if (!h.includes('.') && !h.includes(':')) return true;
+    const m = h.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (m) {
+        const a = Number(m[1]), b = Number(m[2]);
+        if (a === 127 || a === 10 || a === 169 && b === 254) return true;
+        if (a === 192 && b === 168) return true;
+        if (a === 172 && b >= 16 && b <= 31) return true;
+    }
+    // IPv6 ULA（fc00::/7）与链路本地（fe80::/10）
+    if (/^f[cd][0-9a-f]{2}:/.test(h) || /^fe[89ab][0-9a-f]:/.test(h)) return true;
+    return false;
+}
+
+/**
  * 解析 Base URL 为完整 chat/completions 端点。
  * 规则：
  *  - 以 /chat/completions 结尾的完整端点原样使用
  *  - 基础地址自动补全路径（去尾部斜杠后拼 /chat/completions）
- *  - 必须 https://；明文 http:// 仅允许 localhost / 127.0.0.1
+ *  - 必须 https://；明文 http:// 仅允许本机或内网地址（含 localhost、本地 Ollama、内网网关）
  * 返回 { endpoint } 或抛出 Error
  */
 function resolveEndpoint(baseUrl) {
@@ -33,9 +57,8 @@ function resolveEndpoint(baseUrl) {
     if (u.protocol !== 'https:' && u.protocol !== 'http:') {
         throw new Error('必须使用 http(s):// 地址');
     }
-    const isLocal = u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname === '::1';
-    if (u.protocol === 'http:' && !isLocal) {
-        throw new Error('明文 http:// 仅允许 localhost 本机地址（如本地 Ollama），请使用 https://');
+    if (u.protocol === 'http:' && !isPrivateHost(u.hostname)) {
+        throw new Error('明文 http:// 仅允许本机或内网地址（如本地 Ollama、192.168.x.x），公网地址请使用 https://');
     }
     let endpoint = raw.replace(/\/+$/, '');
     if (!/\/chat\/completions$/.test(endpoint)) {

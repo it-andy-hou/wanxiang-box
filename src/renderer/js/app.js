@@ -2000,7 +2000,7 @@ class SSHToolsApp {
                         <div class="form-group" style="margin-bottom: 0.75rem;">
                             <label for="aiBaseUrl">Base URL</label>
                             <input type="text" class="form-control" id="aiBaseUrl" value="${aiSettings.baseUrl}" placeholder="如 https://open.bigmodel.cn/api/paas/v4" autocomplete="off">
-                            <small class="form-text text-muted">基础地址自动补全路径；以 /chat/completions 结尾的完整端点原样使用。必须使用 https:// 地址（明文 http:// 仅允许 localhost 本机地址，如本地 Ollama）。</small>
+                            <small class="form-text text-muted">基础地址自动补全路径；以 /chat/completions 结尾的完整端点原样使用。必须使用 https:// 地址（明文 http:// 仅允许本机或内网地址，如本地 Ollama、192.168.x.x）。</small>
                         </div>
                         <div class="form-group" style="margin-bottom: 0.75rem;">
                             <label for="aiApiKey">API Key</label>
