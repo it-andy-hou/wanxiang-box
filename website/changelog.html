@@ -142,8 +142,42 @@
       <div class="release">
         <div class="release-card">
           <div class="release-head">
-            <span class="release-version">v1.260917.0</span>
+            <span class="release-version">v1.261014.0</span>
             <span class="release-latest">最新版本</span>
+            <span class="release-date">2026-10-14</span>
+          </div>
+          <div class="release-title">AI 脚本分析与风险防护</div>
+          <ul>
+            <li><span class="tag feature">新增</span>AI 脚本分析：接入 OpenAI 兼容大模型（智谱、DeepSeek、本地 Ollama 等），输出功能摘要、风险等级、高危行定位与修复建议</li>
+            <li><span class="tag feature">新增</span>大模型接入设置：Base URL / API Key（AES-GCM 加密存储）/ 模型 / Temperature / SSE 流式渲染 / 一键测试连接</li>
+            <li><span class="tag feature">新增</span>分析结果本地缓存，脚本内容未变化时复用结果不重复消耗 token；状态栏统计累计 token 消耗</li>
+            <li><span class="tag feature">新增</span>脚本风险自动评估引擎：纯静态分析零依赖，按可逆性划分高危 / 中危 / 普通三档，逐条给出命中规则与代码片段</li>
+            <li><span class="tag feature">新增</span>执行前风险门禁：按脚本内容现场评估（不信任存量标签），高危强制二次确认、中危普通确认</li>
+            <li><span class="tag feature">新增</span>脚本 JSON 完整备份导出 / 导入：目录树、标签值、脚本映射一体化，无损迁移脚本资产；支持 .sh 脚本文件批量导入</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="release">
+        <div class="release-card">
+          <div class="release-head">
+            <span class="release-version">v1.261012.0</span>
+            <span class="release-date">2026-10-12</span>
+          </div>
+          <div class="release-title">全局右键菜单与文件传输优化</div>
+          <ul>
+            <li><span class="tag feature">新增</span>全局右键菜单：输入框支持剪切 / 复制 / 粘贴 / 全选，非输入区域选中文本可复制</li>
+            <li><span class="tag improve">优化</span>文件上传进度改为字节级加权总进度，进度推送 500ms 节流防 IPC 刷屏</li>
+            <li><span class="tag improve">优化</span>上传超时改为「停滞超时」：连续无字节进展才判定失败，大文件不再被总时长误杀</li>
+            <li><span class="tag improve">优化</span>npm start / dev 改用跨平台启动脚本，Windows / macOS / Linux 行为一致</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="release">
+        <div class="release-card">
+          <div class="release-head">
+            <span class="release-version">v1.260917.0</span>
             <span class="release-date">2026-09-17</span>
           </div>
           <div class="release-title">官网内容扩展与软件内更新提醒</div>

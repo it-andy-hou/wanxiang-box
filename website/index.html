@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>万象匣 WanXiang Box — 跨平台运维自动化管控平台</title>
-<meta name="description" content="万象匣是一款基于 Electron 的跨平台运维自动化管控平台：批量 SSH 主机管理、脚本批量执行、工程化任务编排、文件传输与数据备份，一匣尽揽。">
+<meta name="description" content="万象匣是一款基于 Electron 的跨平台运维自动化管控平台：批量 SSH 主机管理、脚本批量执行、AI 脚本风险审查、工程化任务编排、文件传输与数据备份，一匣尽揽。">
 <link rel="icon" type="image/png" href="./assets/logo.png">
 <style>
   :root {
@@ -83,6 +83,7 @@
   .dot.ok { background: #10b981; }
   .dot.blue { background: var(--primary); }
   .dot.violet { background: #8b5cf6; }
+  .dot.amber { background: #f59e0b; }
   .hero-actions { display: flex; justify-content: center; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
   .btn {
     display: inline-flex; align-items: center; gap: 8px;
@@ -214,10 +215,11 @@
     <div class="container">
       <img class="hero-logo" src="./assets/logo.png" alt="万象匣">
       <h1>一匣尽揽，<span class="accent">批量掌控</span>万千主机</h1>
-      <p class="tagline">基于 Electron 的跨平台运维自动化管控平台 —— 批量 SSH 主机管理、脚本批量执行、工程化任务编排、文件传输与数据备份，一站式完成。</p>
+      <p class="tagline">基于 Electron 的跨平台运维自动化管控平台 —— 批量 SSH 主机管理、脚本批量执行、AI 风险审查、工程化任务编排、文件传输与数据备份，一站式完成。</p>
       <div class="hero-badges">
         <span class="badge"><span class="dot ok"></span>Windows / macOS / Linux</span>
         <span class="badge"><span class="dot blue"></span>批量并发执行</span>
+        <span class="badge"><span class="dot amber"></span>AI 脚本风险审查</span>
         <span class="badge"><span class="dot violet"></span>无需外部数据库</span>
       </div>
       <div class="hero-actions">
@@ -267,7 +269,17 @@
         <div class="feature">
           <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
           <h3>脚本管理</h3>
-          <p>在线编辑器、目录树分类、参数模板化、快捷面板与语法高亮。</p>
+          <p>在线编辑器、目录树分类、参数模板化、快捷面板与语法高亮，支持 .sh 批量导入与 JSON 完整备份。</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg></div>
+          <h3>AI 脚本分析</h3>
+          <p>接入 OpenAI 兼容大模型（智谱、DeepSeek、Ollama 等），秒级输出功能摘要、风险等级、高危行定位与修复建议，结果本地缓存不重复消耗 token。</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <h3>风险防护门禁</h3>
+          <p>内置静态风险评估引擎，按可逆性划分高危 / 中危 / 普通三档；执行前现场评估，高危脚本强制二次确认。</p>
         </div>
         <div class="feature">
           <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
@@ -299,6 +311,16 @@
           <h3>仪表盘</h3>
           <p>主机统计、今日执行次数、成功率、待办任务一览。</p>
         </div>
+        <div class="feature">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+          <h3>脚本资产备份</h3>
+          <p>JSON 完整备份（目录树、标签、脚本映射一体化），导入导出无损迁移，换机协作两相宜。</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></div>
+          <h3>细节体验</h3>
+          <p>全局右键菜单（剪切 / 复制 / 粘贴 / 全选）、字节级上传进度、停滞超时守护，桌面级操作手感。</p>
+        </div>
       </div>
     </div>
   </section>
@@ -319,7 +341,7 @@
         <div class="step">
           <span class="num">02</span>
           <h3>编排脚本</h3>
-          <p>在线编辑脚本并参数模板化，按目录分类管理，沉淀团队脚本资产。</p>
+          <p>在线编辑脚本并参数模板化，按目录分类管理，沉淀团队脚本资产；AI 辅助审查 + 风险自动评估为脚本上线把关。</p>
         </div>
         <div class="step">
           <span class="num">03</span>
