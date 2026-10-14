@@ -275,6 +275,14 @@ body {
 /* 各页面表格按真实列数设置最小宽度，确保 1440 默认窗口下无需横向滚动 */
 #hostsTable { min-width: 1180px; }                  /* 主机管理 12 列（含勾选列） */
 #scriptsTable { min-width: 950px; }                 /* 脚本管理 7 列（含 200px 二级目录栏） */
+
+/* 脚本管理列表：滚动时表头吸顶；border-collapse 下 th 边框不跟随滚动，用 inset 阴影兜底 */
+#scriptsTable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    box-shadow: inset 0 -1px 0 var(--border-subtle);
+}
 #taskHistoryTable { min-width: 1100px; }            /* 脚本执行历史 8 列 */
 #commandTaskHistoryTable { min-width: 950px; }      /* 命令执行历史 7 列 */
 #fileUploadTaskHistoryTable { min-width: 1100px; }  /* 文件上传历史 8 列 */
@@ -567,11 +575,14 @@ body {
     color: var(--text-muted);
 }
 
-.footer-stat-divider {
+/* 相邻统计项之间自动生成分隔线，避免手写分隔符遗漏 */
+.footer-stat-item + .footer-stat-item::before {
+    content: "";
     width: 1px;
     height: 12px;
     background: var(--border-strong);
     flex-shrink: 0;
+    margin-right: calc(var(--space-lg) - 5px);
 }
 
 /* 侧边栏切换按钮：展开/折叠双态图标（Lucide panel-left 风格） */

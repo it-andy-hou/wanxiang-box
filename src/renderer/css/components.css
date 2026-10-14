@@ -2379,6 +2379,30 @@ select.form-control option {
     color: var(--text-inverse);
 }
 
+.result-view-toolbar .copy-failed-ip-btn {
+    padding: 3px 10px;
+    margin-left: 0.5rem;
+    font-size: 11px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--rounded-xs);
+    background: var(--surface-subtle);
+    color: var(--status-critical-fg);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.result-view-toolbar .copy-failed-ip-btn:hover:not(:disabled) {
+    background: var(--status-critical-fg);
+    border-color: var(--status-critical-fg);
+    color: var(--text-inverse);
+}
+
+.result-view-toolbar .copy-failed-ip-btn:disabled {
+    cursor: default;
+    opacity: 0.85;
+}
+
 .result-view-toolbar .search-input {
     padding: 4px 10px;
     font-size: 12px;
@@ -3172,6 +3196,78 @@ select.form-control option {
 .te-script-row.is-selected .te-script-name {
     color: var(--primary-active);
     font-weight: 600;
+}
+
+/* 风险等级独立筛选切换按钮组（脚本管理工具栏） */
+.risk-filter-group {
+    display: flex;
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.risk-filter-btn {
+    background: var(--surface-card);
+    color: var(--text-muted);
+    border: none;
+    padding: 0.35rem 0.75rem;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    border-right: 1px solid var(--border-subtle);
+    transition: all 0.15s ease;
+}
+.risk-filter-btn:last-child {
+    border-right: none;
+}
+.risk-filter-btn:hover {
+    color: var(--text-body);
+    background: var(--surface-subtle);
+}
+.risk-filter-btn.active {
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 600;
+}
+.risk-filter-btn.danger.active {
+    background: var(--status-critical-fg);
+}
+.risk-filter-btn.warning.active {
+    background: var(--status-warning-fg);
+}
+
+/* 风险等级角标（自动评估：高危红 / 中危黄），通用：列表/选择器/编辑弹窗共用 */
+.risk-badge {
+    display: inline-block;
+    vertical-align: 1px;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 600;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-left: 4px;
+}
+.risk-badge.high {
+    background: var(--status-critical-bg);
+    color: var(--status-critical-fg);
+    border: 1px solid var(--status-critical-border);
+}
+.risk-badge.medium {
+    background: var(--status-warning-bg);
+    color: var(--status-warning-fg);
+    border: 1px solid var(--status-warning-border);
+}
+.risk-badge.normal {
+    background: var(--status-healthy-bg);
+    color: var(--status-healthy-fg);
+    border: 1px solid var(--status-healthy-border);
+}
+
+/* 脚本选择器行内使用（flex 布局下不占弹性空间） */
+.te-script-row .risk-badge,
+.te-script-selected .risk-badge {
+    display: inline-block;
+    flex: none;
+    margin-left: 0;
 }
 
 /* 标签 chip（可点击过滤） */

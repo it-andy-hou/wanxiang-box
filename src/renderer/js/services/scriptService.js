@@ -72,9 +72,46 @@ class ScriptService {
         return this.scripts.find(script => script.id === id);
     }
     
+    // 自动风险评估打标（所有写入口统一收口：删除人工风险标签，按内容重新计算）
+    // level=normal 时不写风险标签（沿用「普通」= 无标签语义）
+    async applyAutoRiskTag(scriptData) {
+        if (!scriptData || scriptData.content === undefined) return;
+        const analyzer = (typeof RiskAnalyzer !== 'undefined') ? RiskAnalyzer
+            : (typeof window !== 'undefined' ? window.RiskAnalyzer : null);
+        if (!analyzer) {
+            console.warn('RiskAnalyzer 不可用，跳过自动风险打标');
+            return;
+        }
+
+        // 未显式携带标签时，先取原脚本标签以保留环境/架构/自定义标签
+        let tags = Array.isArray(scriptData.tags) ? scriptData.tags.slice() : null;
+        if (tags === null && scriptData.id !== undefined) {
+            try {
+                const current = this.isElectron
+                    ? await this.ipcRenderer.invoke('script:findById', scriptData.id)
+                    : this.getScriptById(scriptData.id);
+                if (current && Array.isArray(current.tags)) tags = current.tags.slice();
+            } catch (e) { /* 取不到则视为无标签 */ }
+        }
+        if (tags === null) tags = [];
+
+        // 剔除人工/历史风险标签
+        tags = tags.filter(t => {
+            const typeId = Number(t && (t.typeId !== undefined ? t.typeId : t.type_id));
+            return typeId !== 3;
+        });
+
+        const result = analyzer.analyzeRisk(scriptData.content || '');
+        if (result.level !== 'normal') {
+            tags.push({ typeId: 3, typeName: '风险等级', value: analyzer.LEVEL_NAMES[result.level] });
+        }
+        scriptData.tags = tags;
+    }
+
     // 添加脚本
     async addScript(scriptData) {
         try {
+            await this.applyAutoRiskTag(scriptData);
             if (this.isElectron) {
                 // Electron环境，通过IPC调用
                 const script = await this.ipcRenderer.invoke('script:create', scriptData);
@@ -118,6 +155,8 @@ class ScriptService {
     // 更新脚本
     async updateScript(id, updates) {
         try {
+            if (updates && updates.id === undefined) updates.id = id; // 供风险重算回查原标签
+            await this.applyAutoRiskTag(updates);
             if (this.isElectron) {
                 // Electron环境
                 const script = await this.ipcRenderer.invoke('script:update', id, updates);
@@ -365,91 +404,6 @@ class ScriptService {
     // 生成唯一ID
     generateId() {
         return 'script_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    }
-    
-    // 导出脚本
-    exportScript(id) {
-        const script = this.getScriptById(id);
-        if (!script) {
-            throw new Error('脚本不存在');
-        }
-        
-        const exportData = {
-            name: script.name,
-            description: script.description,
-            content: script.content,
-            category: script.category,
-            language: script.language,
-            parameters: script.parameters,
-            tags: script.tags,
-            author: script.author,
-            version: script.version,
-            exportedAt: new Date().toISOString()
-        };
-        
-        return JSON.stringify(exportData, null, 2);
-    }
-    
-    // 导入脚本
-    async importScript(scriptJson) {
-        try {
-            const scriptData = JSON.parse(scriptJson);
-            
-            // 基本字段检查
-            if (!scriptData.name || !scriptData.content) {
-                throw new Error('脚本数据格式不正确');
-            }
-            
-            return await this.addScript(scriptData);
-        } catch (error) {
-            console.error('导入脚本失败:', error);
-            throw error;
-        }
-    }
-    
-    // 从 Excel 导入脚本
-    async importFromExcel(excelData) {
-        try {
-            const importResults = {
-                imported: 0,
-                errors: []
-            };
-            
-            for (let i = 0; i < excelData.length; i++) {
-                const row = excelData[i];
-                try {
-                    // 清理和验证数据
-                    const scriptData = {
-                        name: (row.name || '').trim(),
-                        description: (row.description || '').trim(),
-                        content: (row.content || '').trim(),
-                        category: (row.category || 'custom').trim(),
-                        language: (row.language || 'bash').trim(),
-                        tags: row.tags ? row.tags.split(',').map(t => t.trim()).filter(t => t) : [],
-                        author: (row.author || '').trim(),
-                        usage_notes: (row.usage_notes || '').trim()
-                    };
-                    
-                    // 基本验证
-                    if (!scriptData.name || !scriptData.content) {
-                        importResults.errors.push(`第${i + 1}行: 缺少必填字段（脚本名称、脚本内容）`);
-                        continue;
-                    }
-                    
-                    // 添加脚本
-                    await this.addScript(scriptData);
-                    importResults.imported++;
-                    
-                } catch (error) {
-                    importResults.errors.push(`第${i + 1}行: ${error.message}`);
-                }
-            }
-            
-            return importResults;
-        } catch (error) {
-            console.error('Excel导入失败:', error);
-            throw error;
-        }
     }
 }
 

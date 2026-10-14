@@ -50,6 +50,48 @@ const ProjectTaskExecution = (() => {
         // 在管理页内容区显示执行面板
         showExecutionPanel(projectTaskId);
 
+        // 执行前风险门禁：收集所有 command/script 步骤内容现场评估（upload 不涉及）
+        if (window.RiskGate) {
+            try {
+                const detail = await getSvc().getProjectTaskById(projectTaskId);
+                const steps = (detail && Array.isArray(detail.steps)) ? detail.steps : [];
+                const items = [];
+                if (steps.length > 0) {
+                    // script 步骤可能引用脚本库，预加载脚本内容
+                    const needScripts = steps.some(s => s.step_type === 'script' && !(typeof s.config === 'object' && s.config && s.config.scriptContent));
+                    const allScripts = needScripts
+                        ? await (window.scriptService || new window.ScriptService()).loadScripts()
+                        : [];
+                    for (const step of steps) {
+                        const cfg = typeof step.config === 'string' ? JSON.parse(step.config) : (step.config || {});
+                        if (step.step_type === 'command' && cfg.command) {
+                            items.push({ name: step.step_name || '命令步骤', content: cfg.command });
+                        } else if (step.step_type === 'script') {
+                            if (cfg.scriptContent) {
+                                items.push({ name: step.step_name || '脚本步骤', content: cfg.scriptContent });
+                            } else if (cfg.scriptId) {
+                                const script = allScripts.find(s => String(s.id) === String(cfg.scriptId));
+                                if (script) {
+                                    items.push({ name: `${step.step_name || '脚本步骤'}（${script.name}）`, content: script.content || '' });
+                                }
+                            }
+                        }
+                    }
+                }
+                if (items.length > 0) {
+                    const pass = await window.RiskGate.confirm(items, { confirmName: '确认执行' });
+                    if (!pass) {
+                        appendLog('warning', '已取消执行：风险确认未通过');
+                        if (window.Utils && window.Utils.notify) window.Utils.notify.warning('已取消执行：风险确认未通过');
+                        return;
+                    }
+                }
+            } catch (e) {
+                // 评估失败不阻断执行（避免门禁本身故障卡死工作流）
+                console.warn('执行前风险评估失败，跳过拦截:', e);
+            }
+        }
+
         try {
             const result = await getSvc().execute(projectTaskId);
             currentExecutionId = result.executionId;

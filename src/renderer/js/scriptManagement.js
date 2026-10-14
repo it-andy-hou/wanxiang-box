@@ -12,8 +12,20 @@
     let currentCategoryFilter = null;   // null = 全部
     let currentTagTypeFilter  = '';     // typeId 字符串 or ''
     let currentTagValueFilter = '';     // value 字符串 or ''
+    let currentRiskFilter      = '';     // 独立风险筛选：'' 全部 / '高危' / '中危'
     let allCategories       = [];       // 所有目录（平展）
     let tagTypesWithValues  = [];       // [{id,name,is_system,values:[...]}]
+    let selectedScriptIds   = new Set(); // 批量操作勾选的脚本ID
+    let aiAnalysesMap       = {};       // 脚本ID -> { status, riskLevel, stale, createdAt }（AI 角标）
+
+    // AI 角标级别（与规则引擎三档角标相互独立，以 “AI:” 前缀区分）
+    const AI_RISK_BADGES = {
+        CRITICAL: { name: 'AI:严重', cls: 'ai-badge-critical' },
+        HIGH:     { name: 'AI:高危', cls: 'ai-badge-high' },
+        MEDIUM:   { name: 'AI:中危', cls: 'ai-badge-medium' },
+        LOW:      { name: 'AI:低危', cls: 'ai-badge-low' },
+        SAFE:     { name: 'AI:安全', cls: 'ai-badge-safe' }
+    };
 
     // 初始化
     async function init() {
@@ -45,18 +57,33 @@
             refreshBtn.addEventListener('click', loadScripts);
         }
 
+        // 批量重新评估风险：已被 loadScripts 的静默同步取代，按钮移除
+
+        // 风险筛选（独立切换按钮组，与标签筛选解耦）
+        const riskFilterGroup = document.getElementById('riskFilterGroup');
+        if (riskFilterGroup) {
+            riskFilterGroup.addEventListener('click', (e) => {
+                const btn = e.target.closest('.risk-filter-btn');
+                if (!btn) return;
+                currentRiskFilter = btn.dataset.risk || '';
+                riskFilterGroup.querySelectorAll('.risk-filter-btn').forEach(b => b.classList.toggle('active', b === btn));
+                const searchInput = document.getElementById('scriptSearchInput');
+                applyFilters(searchInput ? searchInput.value.trim() : '', currentTagTypeFilter, currentTagValueFilter);
+            });
+        }
+
         // 导入导出按钮
         const importSingleBtn = document.getElementById('importSingleScriptBtn');
         if (importSingleBtn) {
             importSingleBtn.addEventListener('click', importSingleScript);
         }
 
-        const importBtn = document.getElementById('importScriptExcelBtn');
+        const importBtn = document.getElementById('importScriptJsonBtn');
         if (importBtn) {
             importBtn.addEventListener('click', importScripts);
         }
         
-        const exportBtn = document.getElementById('exportScriptExcelBtn');
+        const exportBtn = document.getElementById('exportScriptJsonBtn');
         if (exportBtn) {
             exportBtn.addEventListener('click', exportScripts);
         }
@@ -86,6 +113,16 @@
 
         // 排序
         bindSortEvents();
+
+        // 批量操作：全选/批量AI分析/批量删除
+        const selectAll = document.getElementById('selectAllScripts');
+        if (selectAll) selectAll.addEventListener('change', handleSelectAllScripts);
+
+        const batchAnalyzeBtn = document.getElementById('scriptBatchAnalyzeBtn');
+        if (batchAnalyzeBtn) batchAnalyzeBtn.addEventListener('click', batchAnalyzeScripts);
+
+        const batchDeleteBtn = document.getElementById('scriptBatchDeleteBtn');
+        if (batchDeleteBtn) batchDeleteBtn.addEventListener('click', batchDeleteScripts);
     }
 
     // 绑定排序事件
@@ -134,6 +171,10 @@
         try {
             console.log('加载脚本列表...');
             currentScripts = await scriptService.loadScripts();
+            // 静默同步风险标签：存量脚本/规则变更后自动对齐（仅对有差异的写库，就地更新内存对象）
+            await syncRiskTags(currentScripts);
+            // 加载 AI 分析状态（列表角标）
+            await loadAiAnalyses();
             console.log(`加载了 ${currentScripts.length} 个脚本`);
             // 重新应用当前筛选条件（保持目录/搜索/标签状态，避免保存后丢失目录筛选）
             const searchInput = document.getElementById('scriptSearchInput');
@@ -148,6 +189,69 @@
         }
     }
 
+    // 静默同步风险标签：按当前规则引擎重算，与现有标签有差异才写库
+    // 目的：存量脚本（人工标签/无标签）打开页面即自动对齐，角标直接可见
+    async function syncRiskTags(scripts) {
+        if (!window.RiskAnalyzer || !scriptService) return;
+        for (const s of scripts) {
+            let result;
+            try { result = window.RiskAnalyzer.analyzeRisk(s.content || ''); }
+            catch (e) { continue; }
+            const expected = result.level === 'normal' ? null : window.RiskAnalyzer.LEVEL_NAMES[result.level];
+            const current  = (s.tags || []).find(t => t && Number(t.typeId) === 3);
+            if (expected === (current ? current.value : null)) continue; // 无差异
+            const tags = (s.tags || []).filter(t => !(t && Number(t.typeId) === 3));
+            if (expected) tags.push({ typeId: 3, typeName: '风险等级', value: expected });
+            s.tags = tags; // 就地更新内存对象，避免整页重刷
+            try {
+                await scriptService.updateScript(s.id, {
+                    name: s.name,
+                    description: s.description || '',
+                    content: s.content || '',
+                    category: s.category || 'custom',
+                    category_id: s.category_id || null,
+                    language: s.language || 'bash',
+                    tags,
+                    author: s.author || '',
+                    usage_notes: s.usage_notes || ''
+                });
+            } catch (e) {
+                console.warn(`同步脚本「${s.name}」的风险标签失败:`, e);
+            }
+        }
+    }
+
+    // 加载 AI 分析状态映射（列表角标用，失败静默）
+    async function loadAiAnalyses() {
+        try {
+            if (!window.AiService) return;
+            if (!loadAiAnalyses._svc) loadAiAnalyses._svc = new window.AiService();
+            const r = await loadAiAnalyses._svc.getAllAnalyses();
+            if (r && r.success) aiAnalysesMap = r.data || {};
+        } catch (e) {
+            console.warn('加载 AI 分析状态失败:', e);
+        }
+    }
+
+    // 生成某脚本的 AI 角标 HTML（无分析记录返回空串；过期标记灰色）
+    function buildAiBadge(script) {
+        const a = aiAnalysesMap[String(script.id)];
+        if (!a) return '';
+        if (a.status === 'error') {
+            return `<span class="ai-badge ai-badge-error" title="AI 分析失败">AI:异常</span>`;
+        }
+        if (a.status === 'parse_error') {
+            return `<span class="ai-badge ai-badge-error" title="AI 分析结果解析失败">AI:解析失败</span>`;
+        }
+        if (a.stale) {
+            return `<span class="ai-badge ai-badge-stale" title="脚本已修改，AI 分析结果可能过期，建议重新分析">AI:过期</span>`;
+        }
+        const badge = AI_RISK_BADGES[a.riskLevel];
+        if (!badge) return '';
+        const time = a.createdAt ? new Date(a.createdAt).toLocaleString('zh-CN') : '';
+        return `<span class="ai-badge ${badge.cls}" title="AI 分析风险等级（${time}）">${badge.name}</span>`;
+    }
+
     // 渲染脚本列表
     function renderScripts() {
         const scriptsTableBody = document.querySelector('#scriptsTable tbody');
@@ -159,7 +263,7 @@
         if (userScripts.length === 0) {
             scriptsTableBody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                    <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted);">
                         <p style="font-size: 1.125rem; margin-bottom: 0.5rem;">暂无脚本</p>
                         <p style="font-size: 0.875rem;">点击"添加脚本"创建您的第一个脚本</p>
                     </td>
@@ -175,6 +279,9 @@
 
         // 绑定事件
         bindScriptRowEvents();
+
+        // 同步批量操作栏与全选状态（筛选/重渲染后保持一致）
+        updateScriptBatchBar();
     }
 
     // 更新排序箭头
@@ -196,17 +303,22 @@
         const createdAt = script.created_at ? new Date(script.created_at).toLocaleString('zh-CN') : '-';
         const updatedAt = script.updated_at ? new Date(script.updated_at).toLocaleString('zh-CN') : '-';
 
-        // 标签显示（与编辑弹窗一致：带 typeName:value 前缀）
+        // 风险角标（自动评估）：挂在脚本名称后，列表页直观可见，无需点开编辑；无风险标签 = 普通（绿色）也展示
+        const riskTag = (script.tags || []).find(t => t && Number(t.typeId !== undefined ? t.typeId : t.type_id) === 3);
+        const riskValue = riskTag ? riskTag.value : '普通';
+        const riskClass = riskTag ? (riskTag.value === '高危' ? 'high' : 'medium') : 'normal';
+        const riskBadge = `<span class="risk-badge ${riskClass}" title="风险等级（自动评估）">${escapeHtml(riskValue)}</span>`;
+
+        // 标签显示（与编辑弹窗一致：带 typeName:value 前缀；风险已上移到名称角标，不再作为标签展示）
         let tagsHtml = '';
-        const TYPE_NAMES = { 1: '环境', 2: '架构', 3: '风险等级', 4: '自定义标签' };
-        const TYPE_CLASS = { 1: 'env', 2: 'arch', 3: 'risk', 4: 'custom' };
+        const TYPE_NAMES = { 1: '环境', 2: '架构', 4: '自定义标签' };
+        const TYPE_CLASS = { 1: 'env', 2: 'arch', 4: 'custom' };
         if (script.tags && script.tags.length > 0) {
-            tagsHtml = script.tags.map(tag => {
+            tagsHtml = script.tags.filter(tag => Number(tag.typeId) !== 3).map(tag => {
                 const typeId = Number(tag.typeId);
                 const typeName  = TYPE_NAMES[typeId] || tag.typeName || '标签';
                 const typeClass = TYPE_CLASS[typeId] || 'custom';
-                const isHighRisk = typeId === 3 && tag.value === '高危';
-                return `<span class="tag-chip ${typeClass}${isHighRisk ? ' high' : ''}">`
+                return `<span class="tag-chip ${typeClass}">`
                      + `<span style="opacity:0.7;font-size:0.7rem;margin-right:2px;">${escapeHtml(typeName)}:</span>`
                      + escapeHtml(tag.value || '')
                      + `</span>`;
@@ -214,9 +326,15 @@
         }
         if (!tagsHtml) tagsHtml = '<span style="color:var(--text-faint);">-</span>';
 
+        // 勾选状态（筛选重渲染后保持）
+        const checked = selectedScriptIds.has(String(script.id)) ? 'checked' : '';
+        // AI 分析角标（与规则引擎角标并列，位于其后）
+        const aiBadge = buildAiBadge(script);
+
         return `
             <tr data-script-id="${script.id}">
-                <td><strong>${escapeHtml(script.name)}</strong></td>
+                <td><input type="checkbox" class="script-row-check" data-script-id="${script.id}" ${checked}></td>
+                <td><strong>${escapeHtml(script.name)}</strong>${riskBadge}${aiBadge}</td>
                 <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(script.description || '')}">${escapeHtml(script.description || '无描述')}</td>
                 <td>${tagsHtml}</td>
                 <td>${createdAt}</td>
@@ -233,6 +351,16 @@
 
     // 绑定脚本行事件
     function bindScriptRowEvents() {
+        // 勾选框
+        document.querySelectorAll('.script-row-check').forEach(chk => {
+            chk.addEventListener('change', (e) => {
+                const id = String(e.target.dataset.scriptId);
+                if (e.target.checked) selectedScriptIds.add(id);
+                else selectedScriptIds.delete(id);
+                updateScriptBatchBar();
+            });
+        });
+
         // 查看按钮
         document.querySelectorAll('.btn-view').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -285,6 +413,90 @@
         });
     }
 
+    // =====================================================
+    // 批量操作：全选 / 批量AI分析 / 批量删除
+    // =====================================================
+
+    // 更新批量操作栏显隐与计数
+    function updateScriptBatchBar() {
+        const bar = document.getElementById('scriptBatchActions');
+        const countEl = document.getElementById('scriptSelectedCount');
+        if (!bar || !countEl) return;
+        // 清理已被删除/不在当前筛选视图的勾选
+        const visibleIds = new Set(filteredScripts.map(s => String(s.id)));
+        selectedScriptIds.forEach(id => { if (!visibleIds.has(id)) selectedScriptIds.delete(id); });
+        countEl.textContent = `已选择 ${selectedScriptIds.size} 个脚本`;
+        bar.style.display = selectedScriptIds.size > 0 ? 'flex' : 'none';
+        const selectAll = document.getElementById('selectAllScripts');
+        if (selectAll) selectAll.checked = filteredScripts.length > 0 && selectedScriptIds.size === filteredScripts.length;
+    }
+
+    // 全选/取消全选（仅当前筛选视图）
+    function handleSelectAllScripts(e) {
+        if (e.target.checked) {
+            filteredScripts.forEach(s => selectedScriptIds.add(String(s.id)));
+        } else {
+            selectedScriptIds.clear();
+        }
+        renderScripts();
+        updateScriptBatchBar();
+    }
+
+    // 批量删除
+    async function batchDeleteScripts() {
+        if (selectedScriptIds.size === 0) return;
+        const targets = currentScripts.filter(s => selectedScriptIds.has(String(s.id)));
+
+        // 统计被任务引用的数量（仅提示，不阻塞删除；执行历史保留脚本名）
+        let referencedCount = 0;
+        try {
+            const taskService = new window.TaskService();
+            const tasks = await taskService.getTasks();
+            referencedCount = tasks.filter(t => selectedScriptIds.has(String(t.script_id))).length;
+        } catch (e) { /* 引用统计失败不阻塞 */ }
+
+        const confirmed = await Components.ConfirmDialog.show({
+            title: '批量删除脚本',
+            message: `确定要删除选中的 ${targets.length} 个脚本吗？` +
+                (referencedCount > 0 ? `\n其中 ${referencedCount} 个任务引用了这些脚本，删除后相关任务将无法执行（执行历史会保留）。` : '') +
+                `\n将同步清理快捷面板条目与 AI 分析记录，此操作不可恢复。`,
+            confirmText: '删除',
+            cancelText: '取消'
+        });
+        if (!confirmed) return;
+
+        let success = 0, failed = 0;
+        for (const s of targets) {
+            try {
+                await scriptService.deleteScript(s.id);
+                success++;
+            } catch (err) {
+                console.error(`删除脚本「${s.name}」失败:`, err);
+                failed++;
+            }
+        }
+        selectedScriptIds.clear();
+        if (failed > 0) showMessage(`删除完成: 成功 ${success} 个，失败 ${failed} 个`, 'warning');
+        else showMessage(`已删除 ${success} 个脚本`, 'success');
+        await loadScripts();
+        updateScriptBatchBar();
+    }
+
+    // 批量 AI 分析
+    async function batchAnalyzeScripts() {
+        if (selectedScriptIds.size === 0) return;
+        const targets = currentScripts.filter(s => selectedScriptIds.has(String(s.id)));
+        if (!window.AIAnalysisUI) { showMessage('AI 分析模块未加载', 'error'); return; }
+        window.AIAnalysisUI.showBatchDialog(targets, {
+            onDone: async () => {
+                // 完成后刷新 AI 角标与批量栏
+                await loadAiAnalyses();
+                renderScripts();
+                updateScriptBatchBar();
+            }
+        });
+    }
+
     // 搜索处理
     function handleSearch() {
         const searchInput = document.getElementById('scriptSearchInput');
@@ -308,11 +520,10 @@
         applyFilters(searchInput ? searchInput.value.trim() : '', currentTagTypeFilter, currentTagValueFilter);
     }
 
-    // 固定标签类型（不再依赖数据库预设）
+    // 固定标签类型（不再依赖数据库预设；风险等级已改为独立筛选，不在此列）
     const FIXED_TAG_TYPES = [
         { id: 1, name: '环境' },
         { id: 2, name: '架构' },
-        { id: 3, name: '风险等级' },
         { id: 4, name: '自定义标签' }
     ];
 
@@ -339,11 +550,8 @@
         if (!typeId) return;
 
         let values = [];
-        if (String(typeId) === '3') {
-            // 风险等级：固定两项
-            values = ['普通', '高危'];
-        } else {
-            // 环境/架构：从当前所有脚本中收集已有的唯一值
+        // 环境/架构/自定义：从当前所有脚本中收集已有的唯一值
+        {
             const seen = new Set();
             currentScripts.forEach(s => {
                 if (s.tags && Array.isArray(s.tags)) {
@@ -375,6 +583,11 @@
         const tagValueFilter = document.getElementById('scriptTagValueFilter');
         if (tagTypeFilter)  { tagTypeFilter.value  = ''; currentTagTypeFilter  = ''; }
         if (tagValueFilter) { tagValueFilter.value = ''; currentTagValueFilter = ''; }
+        currentRiskFilter = '';
+        const riskFilterGroup = document.getElementById('riskFilterGroup');
+        if (riskFilterGroup) {
+            riskFilterGroup.querySelectorAll('.risk-filter-btn').forEach(b => b.classList.toggle('active', !b.dataset.risk));
+        }
         updateTagValueFilter('');
         applyFilters('', '', '');
     }
@@ -443,6 +656,12 @@
                 if (!matchName && !matchDesc) return false;
             }
 
+            // 风险等级筛选（独立切换，不占用标签筛选通道）
+            if (currentRiskFilter) {
+                const rt = (script.tags || []).find(t => t && Number(t.typeId) === 3);
+                if (!rt || rt.value !== currentRiskFilter) return false;
+            }
+
             // 标签类型筛选
             if (tagTypeId) {
                 if (!script.tags || !Array.isArray(script.tags)) return false;
@@ -480,6 +699,15 @@
         // 创建查看对话框
         const modal = createViewScriptDialog(script);
         document.body.appendChild(modal);
+        // 挂接 AI 分析区块（位于脚本内容下方；分析完成后刷新列表角标）
+        if (window.AIAnalysisUI) {
+            window.AIAnalysisUI.attachViewSection(modal, script, {
+                onAnalyzed: async () => {
+                    await loadAiAnalyses();
+                    renderScripts();
+                }
+            });
+        }
     }
 
     // 创建查看脚本对话框
@@ -630,10 +858,10 @@
                             </div>
                         </div>
 
-                        <!-- 第二行：标签区（环境/架构/自定义自由输入，风险等级下拉，4 列一行紧凑布局） -->
+                        <!-- 第二行：标签区（环境/架构/自定义自由输入，3 列一行；风险不属于自定义标签，已移至脚本内容区） -->
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label class="form-label">标签</label>
-                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.5rem;">
+                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;">
                                 <div style="display:flex;align-items:center;gap:0.35rem;">
                                     <span style="font-size:0.8125rem;color:var(--text-body);flex-shrink:0;">环境</span>
                                     <input type="text" class="form-control form-control-sm" id="tagEnvInput" placeholder="测试/预发/生产" style="flex:1;min-width:0;">
@@ -649,14 +877,6 @@
                                     <input type="text" class="form-control form-control-sm" id="tagCustomInput" placeholder="输入自定义标签" style="flex:1;min-width:0;">
                                     <button type="button" class="btn btn-secondary btn-sm" id="addCustomTagBtn" style="flex-shrink:0;">加</button>
                                 </div>
-                                <div style="display:flex;align-items:center;gap:0.35rem;">
-                                    <span style="font-size:0.8125rem;color:var(--text-body);flex-shrink:0;">风险</span>
-                                    <select class="form-control form-control-sm" id="tagRiskSelect" style="flex:1;min-width:0;">
-                                        <option value="普通">普通</option>
-                                        <option value="高危">高危</option>
-                                    </select>
-                                    <button type="button" class="btn btn-secondary btn-sm" id="addRiskTagBtn" style="flex-shrink:0;">加</button>
-                                </div>
                             </div>
                             <div id="tagChipsContainer" style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.5rem;min-height:28px;"></div>
                         </div>
@@ -664,12 +884,15 @@
                         <!-- 脚本内容 -->
                         <div class="form-group" style="margin-bottom: 0;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                <label class="form-label" style="margin: 0;">脚本内容 <span style="color: red;">*</span></label>
+                                <label class="form-label" style="margin: 0; display: inline-flex; align-items: center; gap: 0.5rem;">脚本内容 <span style="color: red;">*</span>
+                                    <span id="autoRiskBadge" title="由规则引擎按脚本内容自动评估，保存时自动打标" style="display:inline-flex;align-items:center;justify-content:center;height:calc(1.5rem + 2px);border-radius:6px;font-size:0.8125rem;font-weight:600;background:var(--status-healthy-bg);color:var(--status-healthy-fg);border:1px solid var(--status-healthy-border);">普通</span>
+                                </label>
                                 <label style="margin: 0; font-size: 0.875rem; color: var(--text-muted); cursor: pointer;">
                                     <input type="checkbox" id="showPreview" style="margin-right: 0.25rem; cursor: pointer;">
                                     显示预览
                                 </label>
                             </div>
+                            <div id="autoRiskFindings" style="display:none;margin-bottom:0.5rem;padding:0.4rem 0.6rem;background:var(--surface-subtle);border:1px solid var(--border-subtle);border-radius:6px;"></div>
                             <div style="display: flex; gap: 1rem; height: 460px;">
                                 <div style="flex: 1; display: flex; flex-direction: column;">
                                     <textarea class="form-control" id="scriptContent"
@@ -716,7 +939,8 @@
         }
         let currentTags = [];
         if (isEdit && Array.isArray(script.tags)) {
-            currentTags = script.tags.map(normalizeTagItem).filter(Boolean);
+            // 风险等级已改为自动评估，过滤掉人工/历史风险标签
+            currentTags = script.tags.map(normalizeTagItem).filter(Boolean).filter(t => t.typeId !== 3);
         }
         if (isEdit) {
             console.log('[编辑脚本] script.tags 原始：', script.tags, ' 规范化后：', currentTags);
@@ -788,25 +1012,6 @@
             };
             modalOverlay.querySelector('#addCustomTagBtn').addEventListener('click', addCustom);
             customInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } });
-
-            // 风险等级（下拉选择）
-            const riskSelect = modalOverlay.querySelector('#tagRiskSelect');
-            modalOverlay.querySelector('#addRiskTagBtn').addEventListener('click', () => {
-                const value = riskSelect.value;
-                const idx = currentTags.findIndex(t => t.typeId === 3);
-                if (idx >= 0) {
-                    currentTags[idx].value = value;  // 已存在则更新
-                } else {
-                    currentTags.push({ typeId: 3, typeName: '风险等级', value });
-                }
-                renderTagChips();
-            });
-
-            // 编辑时初始化风险等级选中状态
-            if (isEdit) {
-                const existingRisk = currentTags.find(t => t.typeId === 3);
-                if (existingRisk && riskSelect) riskSelect.value = existingRisk.value;
-            }
         }
 
         // 目录选择器初始化
@@ -839,6 +1044,36 @@
         const preview  = modalOverlay.querySelector('#scriptPreview');
         const previewCode = modalOverlay.querySelector('#scriptPreview code');
         const showPreviewCheckbox = modalOverlay.querySelector('#showPreview');
+
+        // 风险自动评估：按当前脚本内容实时更新只读徽标与命中明细
+        function updateRiskBadge() {
+            const badge = modalOverlay.querySelector('#autoRiskBadge');
+            const detail = modalOverlay.querySelector('#autoRiskFindings');
+            if (!badge || !window.RiskAnalyzer) return;
+            const r = window.RiskAnalyzer.analyzeRisk(textarea.value || '');
+            const styles = {
+                high:   'background:var(--status-critical-bg);color:var(--status-critical-fg);border:1px solid var(--status-critical-border);',
+                medium: 'background:var(--status-warning-bg);color:var(--status-warning-fg);border:1px solid var(--status-warning-border);',
+                normal: 'background:var(--status-healthy-bg);color:var(--status-healthy-fg);border:1px solid var(--status-healthy-border);'
+            };
+            badge.textContent = window.RiskAnalyzer.LEVEL_NAMES[r.level] || '普通';
+            badge.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;height:calc(1.5rem + 2px);padding:0 0.6rem;border-radius:6px;font-size:0.8125rem;font-weight:600;' + (styles[r.level] || styles.normal);
+            if (detail) {
+                if (r.findings.length > 0) {
+                    detail.style.display = 'block';
+                    detail.innerHTML = r.findings.map(f =>
+                        `<div style="font-size:12px;line-height:1.5;">
+                            <span style="font-family:var(--font-mono,monospace);color:var(--text-faint);">L${f.line}</span>
+                            <strong style="color:${f.level === 'high' ? 'var(--status-critical-fg)' : 'var(--status-warning-fg)'};">[${f.ruleId}]</strong>
+                            ${escapeHtml(f.message)}
+                        </div>`).join('');
+                } else {
+                    detail.style.display = 'none';
+                    detail.innerHTML = '';
+                }
+            }
+        }
+
         showPreviewCheckbox.addEventListener('change', (e) => {
             preview.style.display = e.target.checked ? 'block' : 'none';
         });
@@ -846,6 +1081,7 @@
         textarea.addEventListener('input', () => {
             clearTimeout(updateTimer);
             updateTimer = setTimeout(() => {
+                updateRiskBadge();
                 if (showPreviewCheckbox.checked && window.hljs) {
                     previewCode.textContent = textarea.value;
                     previewCode.removeAttribute('data-highlighted');
@@ -854,6 +1090,19 @@
                 }
             }, 300);
         });
+
+        // 打开弹窗即评估一次（不信任存量标签）
+        updateRiskBadge();
+
+        // 挂接 AI 分析入口（对编辑器当前内容分析，未保存的新脚本也可分析但不落库）
+        if (window.AIAnalysisUI) {
+            window.AIAnalysisUI.attachEditSection(modalOverlay, script, {
+                onAnalyzed: async () => {
+                    await loadAiAnalyses();
+                    renderScripts();
+                }
+            });
+        }
 
         return modalOverlay;
     }
@@ -1201,81 +1450,84 @@
         });
     }
 
-    // 单独导入 .sh 脚本
+    // 批量导入 .sh 脚本（支持多选）
     // 优化：去掉「选择文件」那层自定义弹窗，点按钮后直接调起系统文件选择器，
-    //       选完文件且读取成功后才弹出「确认信息」对话框
+    //       选完文件且读取成功后才弹出「确认信息」对话框（统一选一次归属目录）
     async function importSingleScript() {
         try {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = '.sh';
+            fileInput.multiple = true;
             fileInput.style.display = 'none';
 
-            fileInput.addEventListener('change', (e) => {
-                const file = e.target.files && e.target.files[0];
-                if (!file) {
-                    fileInput.remove();
-                    return;
-                }
+            fileInput.addEventListener('change', async (e) => {
+                const files = Array.from(e.target.files || []);
+                fileInput.remove();
+                if (files.length === 0) return;
 
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const content = ev.target.result;
-                    const defaultName = file.name.replace(/\.sh$/i, '');
+                try {
+                    // 读取所有选中的 .sh 文件
+                    const filesData = await Promise.all(files.map(file => new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => resolve({
+                            name: file.name.replace(/\.sh$/i, ''),
+                            content: ev.target.result,
+                            originalFileName: file.name
+                        });
+                        reader.onerror = () => reject(new Error(`读取文件 ${file.name} 失败`));
+                        reader.readAsText(file, 'utf-8');
+                    })));
 
                     const dialog = new Components.ScriptShImportDialog({
-                        fileData: { name: defaultName, content, originalFileName: file.name },
+                        filesData,
                         onImport: () => {
                             loadScripts();
                         }
                     });
                     dialog.show();
-                };
-                reader.onerror = () => showMessage('读取文件失败', 'error');
-                reader.readAsText(file, 'utf-8');
-
-                fileInput.remove();
+                } catch (readError) {
+                    console.error('读取文件失败:', readError);
+                    showMessage(readError.message, 'error');
+                }
             }, { once: true });
 
             document.body.appendChild(fileInput);
             fileInput.click();
         } catch (error) {
-            console.error('单独导入失败:', error);
-            showMessage('单独导入失败: ' + error.message, 'error');
+            console.error('导入失败:', error);
+            showMessage('导入失败: ' + error.message, 'error');
         }
     }
 
-    // 导入脚本
+    // 导入 JSON 备份
     async function importScripts() {
         try {
-            const scriptImport = new Components.ScriptExcelImportDialog({
-                onImport: (result) => {
+            const scriptImport = new Components.ScriptJsonImportDialog({
+                onImport: () => {
+                    loadCategories();
                     loadScripts();
                 }
             });
             scriptImport.show();
         } catch (error) {
-            console.error('Excel导入失败:', error);
-            showMessage('Excel导入失败: ' + error.message, 'error');
+            console.error('JSON导入失败:', error);
+            showMessage('JSON导入失败: ' + error.message, 'error');
         }
     }
 
-    // 导出脚本
+    // 导出 JSON 备份
     async function exportScripts() {
         try {
-            if (currentScripts.length === 0) {
+            if (!scriptService || scriptService.scripts.length === 0) {
                 showMessage('没有数据可导出', 'warning');
                 return;
             }
-            
-            // 显示导出选项对话框
-            const exportDialog = new Components.ScriptExcelExportDialog({
-                scripts: currentScripts
-            });
-            exportDialog.show();
+
+            await Components.ScriptJsonExport.perform();
         } catch (error) {
-            console.error('Excel导出失败:', error);
-            showMessage('Excel导出失败: ' + error.message, 'error');
+            console.error('JSON导出失败:', error);
+            showMessage('JSON导出失败: ' + error.message, 'error');
         }
     }
 

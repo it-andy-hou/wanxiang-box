@@ -210,9 +210,9 @@
                         <div class="page-actions">
                             <button class="btn btn-primary" id="addScriptBtn">添加脚本</button>
                             <button class="btn btn-secondary" id="refreshScriptsBtn">刷新列表</button>
-                            <button class="btn btn-secondary" id="importSingleScriptBtn">单独导入</button>
-                            <button class="btn btn-secondary" id="importScriptExcelBtn">批量导入</button>
-                            <button class="btn btn-secondary" id="exportScriptExcelBtn">批量导出</button>
+                            <button class="btn btn-secondary" id="importSingleScriptBtn">导入 .sh</button>
+                            <button class="btn btn-secondary" id="importScriptJsonBtn">导入备份</button>
+                            <button class="btn btn-secondary" id="exportScriptJsonBtn">导出备份</button>
                         </div>
                     </div>
 
@@ -242,6 +242,11 @@
                                     </div>
                                 </div>
                                 <div class="toolbar-right" style="display:flex;gap:0.5rem;align-items:center;">
+                                    <div class="risk-filter-group" id="riskFilterGroup" title="风险等级筛选（自动评估）">
+                                        <button type="button" class="risk-filter-btn active" data-risk="">全部</button>
+                                        <button type="button" class="risk-filter-btn danger" data-risk="高危">高危</button>
+                                        <button type="button" class="risk-filter-btn warning" data-risk="中危">中危</button>
+                                    </div>
                                     <select class="form-control" id="scriptTagTypeFilter" style="width:120px;" title="标签类型">
                                         <option value="">所有类型</option>
                                     </select>
@@ -252,11 +257,22 @@
                             </div>
 
                             <div class="page-content">
+                                <!-- 脚本批量操作栏 -->
+                                <div class="batch-actions" id="scriptBatchActions" style="display: none;">
+                                    <div class="batch-info">
+                                        <span id="scriptSelectedCount">已选择 0 个脚本</span>
+                                    </div>
+                                    <div class="batch-buttons">
+                                        <button class="btn btn-sm btn-info" id="scriptBatchAnalyzeBtn">批量AI分析</button>
+                                        <button class="btn btn-sm btn-danger" id="scriptBatchDeleteBtn">批量删除</button>
+                                    </div>
+                                </div>
                                 <!-- 脚本列表 -->
                                 <div class="table-container">
                                     <table class="table" id="scriptsTable">
                                         <thead>
                                             <tr>
+                                                <th style="width:36px;"><input type="checkbox" id="selectAllScripts" title="全选/取消全选"></th>
                                                 <th class="sortable" data-sort="name">
                                                     脚本名称 <span class="sort-arrow"></span>
                                                 </th>
@@ -419,6 +435,7 @@
                                             <button class="filter-btn active" data-filter="all">全部</button>
                                             <button class="filter-btn filter-success" data-filter="success"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M20 6 9 17l-5-5"/></svg> 成功</button>
                                             <button class="filter-btn filter-failed" data-filter="failed"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> 失败</button>
+                                            <button class="copy-failed-ip-btn" id="scriptCopyFailedIpsBtn" title="复制所有失败主机的IP" style="display: none;">复制失败IP</button>
                                         </div>
                                         <input type="text" class="search-input" id="scriptResultSearch" placeholder="搜索IP或输出内容...">
                                         <div class="te-log-toolbar">
@@ -598,6 +615,7 @@
                                             <button class="filter-btn active" data-filter="all">全部</button>
                                             <button class="filter-btn filter-success" data-filter="success"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M20 6 9 17l-5-5"/></svg> 成功</button>
                                             <button class="filter-btn filter-failed" data-filter="failed"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> 失败</button>
+                                            <button class="copy-failed-ip-btn" id="commandCopyFailedIpsBtn" title="复制所有失败主机的IP" style="display: none;">复制失败IP</button>
                                         </div>
                                         <input type="text" class="search-input" id="commandResultSearch" placeholder="搜索IP或输出内容...">
                                         <div class="te-log-toolbar">
@@ -1035,7 +1053,6 @@
                     <i class="fas fa-server"></i> 主机
                     <span class="footer-stat-value" id="totalHosts">0</span>
                 </span>
-                <span class="footer-stat-divider"></span>
                 <span class="footer-stat-item footer-stat-online" title="在线主机">
                     <span class="footer-stat-dot"></span> 在线
                     <span class="footer-stat-value" id="onlineHosts">0</span>
@@ -1048,11 +1065,14 @@
                     <span class="footer-stat-dot"></span> 未知
                     <span class="footer-stat-value" id="unknownHosts">0</span>
                 </span>
-                <span class="footer-stat-divider"></span>
                 <!-- 资源统计 -->
                 <span class="footer-stat-item" title="脚本总数">
                     <i class="fas fa-code"></i> 脚本
                     <span class="footer-stat-value" id="totalScripts">0</span>
+                </span>
+                <span class="footer-stat-item" title="AI 分析累计 token 消耗（实际调用模型的次数，命中缓存不计）">
+                    <i class="fas fa-bolt"></i> AI Tokens
+                    <span class="footer-stat-value" id="totalAiTokens">0</span>
                 </span>
                 <span class="footer-stat-item" title="工程任务总数">
                     <i class="fas fa-project-diagram"></i> 工程任务
@@ -1076,14 +1096,17 @@
     <script src="lib/highlight-init.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/components.js"></script>
-    <script src="js/scriptExcelComponents.js"></script>
+    <script src="js/scriptImportComponents.js"></script>
     <script src="js/connectionMonitor.js"></script>
     <script src="js/services/hostService.js"></script>
+    <script src="js/services/riskAnalyzer.js"></script>
     <script src="js/services/scriptService.js"></script>
+    <script src="js/services/aiService.js"></script>
     <script src="js/services/taskService.js"></script>
     <script src="js/services/projectTaskService.js"></script>
     <script src="js/services/backupService.js"></script>
     <script src="js/scriptManagement.js"></script>
+    <script src="js/aiAnalysisUI.js"></script>
     <script src="js/taskExecution.js"></script>
     <script src="js/commandExecution.js"></script>
     <script src="js/fileUpload.js"></script>

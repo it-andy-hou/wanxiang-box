@@ -11,6 +11,7 @@ const { ProjectTaskService } = require('./projectTaskService');
 const { ProjectTaskExecutor } = require('./projectTaskExecutor');
 const { WechatNotifier } = require('./wechatNotifier');
 const { BackupService } = require('./backupService');
+const { AIService } = require('./aiService');
 
 // 全局连接池状态管理器
 class ConnectionPoolMonitor {
@@ -259,6 +260,9 @@ let projectTaskExecutor;
 
 // 数据备份服务实例
 let backupService;
+
+// AI 脚本分析服务实例
+let aiService;
 
 // 为窗口挂载全局右键菜单：输入框支持 剪切/复制/粘贴/全选，非输入区域选中文本后支持 复制
 function attachContextMenu(win) {
@@ -563,6 +567,9 @@ app.whenReady().then(async () => {
     // 初始化数据备份服务与调度器
     backupService = new BackupService();
     backupService.startScheduler();
+    
+    // 初始化 AI 脚本分析服务
+    aiService = new AIService();
     
     // 确保默认SSH密钥存在
     await ensureDefaultSSHKey();
@@ -1038,6 +1045,42 @@ ipcMain.handle('save-excel-file', async (event, excelBuffer, defaultFileName) =>
   }
 });
 
+// 保存通用数据文件（JSON 备份等）并打开所在文件夹
+ipcMain.handle('save-data-file', async (event, dataBuffer, defaultFileName, ext) => {
+  try {
+    const extension = (ext || 'json').toLowerCase();
+    const filterName = extension === 'json' ? 'JSON文件' : '数据文件';
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: '保存文件',
+      defaultPath: path.join(app.getPath('downloads'), defaultFileName),
+      filters: [
+        { name: filterName, extensions: [extension] },
+        { name: '所有文件', extensions: ['*'] }
+      ]
+    });
+
+    if (result.canceled) {
+      return { success: false, canceled: true };
+    }
+
+    // 保存文件
+    fs.writeFileSync(result.filePath, Buffer.from(dataBuffer));
+    console.log('数据文件保存成功:', result.filePath);
+
+    // 打开文件所在文件夹
+    shell.showItemInFolder(result.filePath);
+
+    return {
+      success: true,
+      filePath: result.filePath,
+      fileName: path.basename(result.filePath)
+    };
+  } catch (error) {
+    console.error('保存数据文件失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // 保存CSV文件并打开所在文件夹
 ipcMain.handle('save-csv-file', async (event, csvContent, defaultFileName) => {
   try {
@@ -1369,13 +1412,83 @@ ipcMain.handle('script:update', async (event, id, scriptData) => {
   }
 });
 
+// 删除脚本（级联清理：快捷面板条目、AI 分析记录；执行历史保留）
 ipcMain.handle('script:delete', async (event, id) => {
   try {
-    return await ScriptModel.delete(id);
+    const result = await ScriptModel.delete(id);
+    // 级联删除快捷面板条目（忽略失败，不阻塞主流程）
+    try { await ScriptShortcutModel.remove(id); } catch (_) {}
+    // 级联删除 AI 分析记录
+    try { aiService.deleteAnalyses([id]); } catch (_) {}
+    return result;
   } catch (error) {
     console.error('删除脚本失败:', error);
     throw error;
   }
+});
+
+// =====================================================
+// AI 脚本分析 IPC Handlers
+// =====================================================
+ipcMain.handle('ai:getSettings', () => {
+  try { return { success: true, data: aiService.getSettings() }; }
+  catch (e) { return { success: false, message: e.message }; }
+});
+
+ipcMain.handle('ai:saveSettings', async (event, payload) => {
+  try { return await aiService.saveSettings(payload || {}); }
+  catch (e) { return { success: false, message: e.message }; }
+});
+
+ipcMain.handle('ai:testConnection', async (event, payload) => {
+  try { return await aiService.testConnection(payload || {}); }
+  catch (e) { return { success: false, message: e.message }; }
+});
+
+ipcMain.handle('ai:analyze', async (event, payload) => {
+  try { return await aiService.analyze(payload || {}); }
+  catch (e) { console.error('AI 分析失败:', e); return { success: false, message: e.message }; }
+});
+
+ipcMain.handle('ai:getAnalysis', (event, scriptId) => {
+  try { return { success: true, data: aiService.getAnalysisWithStale(scriptId) }; }
+  catch (e) { return { success: false, message: e.message }; }
+});
+
+// 批量读取所有脚本的分析状态（列表页 AI 角标用）
+ipcMain.handle('ai:getAllAnalyses', () => {
+  try { return { success: true, data: aiService.getAllAnalyses() }; }
+  catch (e) { return { success: false, message: e.message }; }
+});
+
+ipcMain.handle('ai:deleteAnalyses', async (event, scriptIds) => {
+  try { return { success: true, data: await aiService.deleteAnalyses(scriptIds || []) }; }
+  catch (e) { return { success: false, message: e.message }; }
+});
+
+ipcMain.handle('ai:batchAnalyze', async (event, scriptIds, options) => {
+  const { force = false, skipCached = true } = options || {};
+  try {
+    // 优先向发起调用的窗口推送（多窗口/窗口引用变化时仍能送达），mainWindow 作兑底
+    const send = (p) => {
+      const wc = (event.sender && !event.sender.isDestroyed()) ? event.sender
+               : (mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null);
+      if (wc) wc.send('ai:batch-progress', p);
+    };
+    return await aiService.batchAnalyze(scriptIds || [], {
+      force,
+      skipCached,
+      onProgress: send
+    });
+  } catch (e) {
+    console.error('批量 AI 分析失败:', e);
+    return { success: false, message: e.message };
+  }
+});
+
+ipcMain.handle('ai:batchCancel', () => {
+  try { return aiService.cancelBatch(); }
+  catch (e) { return { success: false, message: e.message }; }
 });
 
 ipcMain.handle('script:search', async (event, keyword) => {

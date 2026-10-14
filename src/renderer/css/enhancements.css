@@ -340,6 +340,7 @@ input[type="checkbox"] {
 .tag-chip.arch   { background: var(--status-healthy-bg); color: var(--status-healthy-fg); border: 1px solid var(--status-healthy-border); }
 .tag-chip.risk   { background: var(--status-critical-bg); color: var(--status-critical-fg); border: 1px solid var(--status-critical-border); }
 .tag-chip.risk.high { background: var(--status-critical-bg); color: var(--status-critical-fg); border: 1px solid var(--status-critical-border); font-weight: 600; }
+.tag-chip.risk.medium { background: var(--status-warning-bg); color: var(--status-warning-fg); border: 1px solid var(--status-warning-border); }
 .tag-chip.custom { background: var(--status-neutral-bg); color: var(--status-neutral-fg); border: 1px solid var(--status-neutral-border); }
 
 /* =====================================================
@@ -682,5 +683,300 @@ input[type="checkbox"] {
 
 .file-upload-file-count {
     font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* ============================================================
+   AI 脚本分析
+   ============================================================ */
+
+/* 查看弹窗内的 AI 分析区块 */
+.ai-view-section {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    background: var(--surface-subtle);
+}
+
+.ai-view-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.ai-view-body {
+    font-size: 0.875rem;
+}
+
+/* 分析结果卡片（交通灯） */
+.ai-analysis-card {
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    background: var(--surface-card);
+}
+
+.ai-analysis-card.ai-card-critical { border-left: 4px solid var(--status-critical-fg, #dc2626); }
+.ai-analysis-card.ai-card-high     { border-left: 4px solid var(--status-critical-fg, #dc2626); }
+.ai-analysis-card.ai-card-medium   { border-left: 4px solid var(--status-warning-fg, #d97706); }
+.ai-analysis-card.ai-card-low      { border-left: 4px solid var(--primary, #0284c7); }
+.ai-analysis-card.ai-card-safe     { border-left: 4px solid var(--status-healthy-fg, #16a34a); }
+.ai-analysis-card.ai-card-error    { border-left: 4px solid var(--status-critical-fg, #dc2626); }
+
+.ai-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.4rem;
+}
+
+.ai-risk-badge {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+.ai-risk-critical, .ai-risk-high, .ai-risk-error {
+    background: var(--status-critical-bg);
+    color: var(--status-critical-fg);
+    border-color: var(--status-critical-border);
+}
+.ai-risk-medium {
+    background: var(--status-warning-bg);
+    color: var(--status-warning-fg);
+    border-color: var(--status-warning-border);
+}
+.ai-risk-low {
+    background: var(--primary-glow);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+.ai-risk-safe {
+    background: var(--status-healthy-bg);
+    color: var(--status-healthy-fg);
+    border-color: var(--status-healthy-border);
+}
+
+.ai-card-flags {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.ai-card-purpose {
+    font-size: 0.875rem;
+    color: var(--text-body);
+    margin-bottom: 0.5rem;
+}
+
+.ai-card-section {
+    border-top: 1px dashed var(--border-default);
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.ai-card-section-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-body);
+    margin-bottom: 0.35rem;
+}
+
+.ai-card-mark { font-weight: 700; font-family: var(--font-mono, monospace); }
+.ai-mark-risk { color: var(--status-critical-fg); }
+.ai-mark-dep  { color: var(--primary); }
+.ai-mark-score{ color: var(--primary); }
+.ai-mark-patch{ color: var(--status-healthy-fg); }
+
+.ai-card-risk-item {
+    padding: 0.35rem 0;
+    border-bottom: 1px dotted var(--border-subtle, var(--border-default));
+    font-size: 0.8125rem;
+}
+.ai-card-risk-item:last-child { border-bottom: none; }
+
+.ai-card-risk-line {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.ai-card-lineno {
+    color: var(--text-faint);
+    font-family: var(--font-mono, monospace);
+    flex-shrink: 0;
+}
+
+.ai-card-snippet {
+    font-family: var(--font-mono, monospace);
+    background: var(--surface-subtle);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+}
+
+.ai-card-risk-issue { color: var(--text-body); margin-top: 2px; }
+.ai-card-risk-solution { color: var(--text-muted); margin-top: 2px; }
+
+.ai-card-deps { font-size: 0.8125rem; color: var(--text-body); }
+
+.ai-card-score-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.ai-card-patch {
+    margin: 0;
+    background: var(--surface-subtle);
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8125rem;
+    max-height: 260px;
+    overflow-y: auto;
+}
+.ai-card-patch code { font-family: var(--font-mono, monospace); white-space: pre-wrap; }
+
+.ai-card-meta {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+}
+
+.ai-card-raw {
+    font-size: 0.8125rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 240px;
+    overflow-y: auto;
+    color: var(--text-body);
+}
+
+/* 加载/错误提示 */
+.ai-analysis-loading {
+    padding: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    background: var(--surface-subtle);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.ai-analysis-loading.ai-load-error { color: var(--status-critical-fg); }
+
+.ai-spin {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border-default);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: ai-rotate 0.8s linear infinite;
+    flex-shrink: 0;
+}
+@keyframes ai-rotate { to { transform: rotate(360deg); } }
+
+/* 编辑弹窗 AI 面板 */
+.ai-edit-panel { margin-top: 0.75rem; }
+
+/* 设置弹窗：测试连接结果 */
+.ai-test-result { font-size: 0.8125rem; color: var(--text-muted); }
+.ai-test-result.ok   { color: var(--status-healthy-fg); }
+.ai-test-result.fail { color: var(--status-critical-fg); }
+
+/* 批量分析弹窗 */
+.ai-batch-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 0.75rem;
+    background: var(--surface-subtle);
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.ai-batch-list {
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.ai-batch-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle, var(--border-default));
+    font-size: 0.8125rem;
+}
+.ai-batch-item:last-child { border-bottom: none; }
+
+.ai-batch-item-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ai-batch-item-status {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    padding: 1px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border-default);
+    color: var(--text-muted);
+    background: var(--surface-subtle);
+}
+.ai-batch-item-status.st-success { color: var(--status-healthy-fg); border-color: var(--status-healthy-border); background: var(--status-healthy-bg); }
+.ai-batch-item-status.st-failed  { color: var(--status-critical-fg); border-color: var(--status-critical-border); background: var(--status-critical-bg); }
+.ai-batch-item-status.st-skipped { color: var(--primary); border-color: var(--primary); background: var(--primary-glow); }
+
+/* 列表页 AI 分析角标（五档 + 过期/异常，与规则引擎角标并列） */
+.ai-badge {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 0.5rem;
+    margin-left: 0.35rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.ai-badge-critical { background: var(--status-critical-bg); color: var(--status-critical-fg); border-color: var(--status-critical-border); }
+.ai-badge-high     { background: var(--status-critical-bg); color: var(--status-critical-fg); border-color: var(--status-critical-border); }
+.ai-badge-medium   { background: var(--status-warning-bg); color: var(--status-warning-fg); border-color: var(--status-warning-border); }
+.ai-badge-low      { background: var(--primary-glow); color: var(--primary); border-color: var(--primary); }
+.ai-badge-safe     { background: var(--status-healthy-bg); color: var(--status-healthy-fg); border-color: var(--status-healthy-border); }
+.ai-badge-stale    { background: var(--surface-subtle); color: var(--text-muted); border-color: var(--border-default); }
+.ai-badge-error    { background: var(--status-critical-bg); color: var(--status-critical-fg); border-color: var(--status-critical-border); }
+
+/* 设置弹窗：累计 token 消耗统计 */
+.ai-usage-stats {
+    margin-top: 0.75rem;
+    padding: 0.4rem 0.75rem;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    font-size: 0.75rem;
     color: var(--text-muted);
 }

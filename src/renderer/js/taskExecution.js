@@ -939,6 +939,13 @@
             .filter(Boolean);
     }
 
+    // 风险徽标（typeId=3 自动评估标签）：高危红 / 中危黄
+    function riskBadgeHtml(script) {
+        const t = (script.tags || []).find(x => x && Number(x.typeId !== undefined ? x.typeId : x.type_id) === 3);
+        if (!t || !t.value) return '';
+        return `<span class="risk-badge${t.value === '高危' ? ' high' : ' medium'}">${escapeHtml(t.value)}</span>`;
+    }
+
     // 搜索匹配：名称 / 描述 / 标签（大小写不敏感包含）
     function matchesScript(script, keyword) {
         const kw = keyword.trim().toLowerCase();
@@ -1073,6 +1080,7 @@
         bar.innerHTML = `
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             <span class="te-script-selected-name" title="${escapeHtml(script.description || script.name)}">${escapeHtml(script.name)}</span>
+            ${riskBadgeHtml(script)}
             <span class="te-script-selected-meta">${escapeHtml(catName)}${tags.length ? ' · ' + escapeHtml(tags.join(' / ')) : ''}</span>
             <button type="button" class="te-script-change-btn" id="teScriptChangeBtn" title="更换脚本">更换</button>
         `;
@@ -1196,6 +1204,7 @@
                     <div class="te-script-row${isSelected ? ' is-selected' : ''}" data-script-id="${script.id}" title="${escapeHtml(script.description || script.name)}">
                         <svg class="te-script-row-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                         <span class="te-script-name">${escapeHtml(script.name)}</span>
+                        ${riskBadgeHtml(script)}
                         ${tags.map(t => `<button type="button" class="te-script-tag-chip${t === activeTagFilter ? ' is-active' : ''}" data-tag-value="${escapeHtml(t)}" title="点击按此标签过滤">${escapeHtml(t)}</button>`).join('')}
                         <span class="te-script-time">${formatRelativeTime(script.updated_at)}</span>
                     </div>`;
@@ -1362,6 +1371,18 @@
                 if (selectedTime <= now) {
                     showMessage('执行时间必须晚于当前时间', 'error');
                     return;
+                }
+            }
+
+            // 执行前风险门禁：按脚本内容现场评估（不信任存量标签），高危强确认/中危普通确认
+            if (window.RiskGate) {
+                const script = allScripts.find(s => String(s.id) === String(scriptId));
+                if (script) {
+                    const pass = await window.RiskGate.confirm({ name: script.name, content: script.content });
+                    if (!pass) {
+                        showMessage('已取消执行：风险确认未通过', 'warning');
+                        return;
+                    }
                 }
             }
 
@@ -2421,6 +2442,12 @@
             });
         }
 
+        // 复制失败IP
+        const copyFailedIpsBtn = document.getElementById('scriptCopyFailedIpsBtn');
+        if (copyFailedIpsBtn) {
+            copyFailedIpsBtn.addEventListener('click', () => copyFailedHostIps('script', copyFailedIpsBtn));
+        }
+
         // 搜索
         const searchInput = document.getElementById('scriptResultSearch');
         if (searchInput) {
@@ -2434,6 +2461,42 @@
             });
         }
 
+    }
+
+    // 一键复制所有失败主机的IP（可粘贴到主机选择的IP批量输入框重跑）
+    function copyFailedHostIps(prefix, btn) {
+        const container = document.getElementById(prefix + 'ResultContainer');
+        if (!container) return;
+
+        const failedIps = [...container.querySelectorAll('.result-card[data-status="failed"]')]
+            .map(card => card.dataset.hostIp)
+            .filter(Boolean);
+
+        if (failedIps.length === 0) {
+            showMessage('当前结果中没有失败的主机', 'info');
+            return;
+        }
+
+        copyToClipboard(failedIps.join(','));
+
+        const originalText = btn.textContent;
+        btn.textContent = `已复制 ${failedIps.length} 个`;
+        btn.disabled = true;
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }, 1500);
+
+        showMessage(`已复制 ${failedIps.length} 个失败IP，可粘贴到IP批量输入框重新选择主机`, 'success');
+    }
+
+    // 有失败结果时才显示「复制失败IP」按钮
+    function updateCopyFailedIpsVisibility(prefix) {
+        const btn = document.getElementById(prefix + 'CopyFailedIpsBtn');
+        if (!btn) return;
+        const container = document.getElementById(prefix + 'ResultContainer');
+        const hasFailed = !!(container && container.querySelector('.result-card[data-status="failed"]'));
+        btn.style.display = hasFailed ? '' : 'none';
     }
 
     // 切换视图
@@ -2470,6 +2533,7 @@
         if (container) {
             container.innerHTML = '<div class="result-empty-tip">暂无执行结果，请先执行任务</div>';
         }
+        updateCopyFailedIpsVisibility(prefix);
     }
 
     // 添加结果卡片
@@ -2487,6 +2551,7 @@
             if (result.status === 'running') return; // 已有卡片不重复添加running
             // 更新卡片
             updateResultCard(existingCard, result);
+            updateCopyFailedIpsVisibility(prefix);
             return;
         }
 
@@ -2495,6 +2560,7 @@
 
         // 应用当前筛选
         applyFilterToCard(prefix, card);
+        updateCopyFailedIpsVisibility(prefix);
     }
 
     // 创建结果卡片DOM元素

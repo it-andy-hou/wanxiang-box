@@ -609,9 +609,33 @@ class SSHToolsApp {
                 Utils.$('#totalProjectTasks').textContent = stats.data.projectTasks || 0;
                 Utils.$('#totalScheduledTasks').textContent = stats.data.scheduledTasks || 0;
             }
+            
+            // AI 分析累计 token 消耗（底部状态栏）
+            await this.updateAiTokenStats();
         } catch (error) {
             console.warn('加载扩展统计数据失败:', error);
             // 静默失败，不影响主功能
+        }
+    }
+    
+    // 更新底部状态栏的 AI token 累计消耗（与设置页同源，命中缓存不计）
+    async updateAiTokenStats() {
+        const el = Utils.$('#totalAiTokens');
+        if (!el) return;
+        try {
+            if (window.AIAnalysisUI && window.AIAnalysisUI.refreshTokenStats) {
+                await window.AIAnalysisUI.refreshTokenStats(el);
+                return;
+            }
+            const { ipcRenderer } = window.require('electron');
+            const r = await ipcRenderer.invoke('ai:getSettings');
+            if (r && r.success && r.data) {
+                const n = Number(r.data.totalTokens) || 0;
+                el.textContent = n >= 10000 ? (n / 1000).toFixed(1) + 'k' : n.toLocaleString();
+                el.title = `累计分析 ${r.data.totalCalls || 0} 次，消耗 ${n.toLocaleString()} tokens`;
+            }
+        } catch (e) {
+            // 静默失败
         }
     }
     
@@ -1914,6 +1938,7 @@ class SSHToolsApp {
         let currentConcurrency = 1;
         let currentTimeout = 300;
         let backupSettings = { backup_enabled: true, backup_time: '02:00', backup_keep_count: 30, backup_last_at: null, dailyDir: '', beforeImportDir: '', backupRoot: '' };
+        let aiSettings = { baseUrl: '', model: '', temperature: 0.3, sse: false, hasKey: false, keyPlainFallback: false };
         
         try {
             if (window.require) {
@@ -1932,6 +1957,15 @@ class SSHToolsApp {
             }
         } catch (e) {
             console.error('获取备份设置失败:', e);
+        }
+        try {
+            if (window.require) {
+                const { ipcRenderer } = window.require('electron');
+                const r = await ipcRenderer.invoke('ai:getSettings');
+                if (r && r.success && r.data) aiSettings = { ...aiSettings, ...r.data };
+            }
+        } catch (e) {
+            console.error('获取大模型设置失败:', e);
         }
 
         const settingsDialog = new Modal({
@@ -1956,6 +1990,40 @@ class SSHToolsApp {
                                 单台主机执行超时时间，最低 10 秒，最高 3600 秒（1小时）
                             </small>
                         </div>
+                    </div>
+                    <div style="border-top: 1px solid var(--border-default); padding-top: 1rem; margin-bottom: 1.5rem;">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--primary); font-size: 14px;">${Utils.icon('zap', 14)} 大模型接入</h4>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label>提供商</label>
+                            <input type="text" class="form-control" value="OpenAI 兼容（含自建网关）" disabled>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label for="aiBaseUrl">Base URL</label>
+                            <input type="text" class="form-control" id="aiBaseUrl" value="${aiSettings.baseUrl}" placeholder="如 https://open.bigmodel.cn/api/paas/v4" autocomplete="off">
+                            <small class="form-text text-muted">基础地址自动补全路径；以 /chat/completions 结尾的完整端点原样使用。必须使用 https:// 地址（明文 http:// 仅允许 localhost 本机地址，如本地 Ollama）。</small>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label for="aiApiKey">API Key</label>
+                            <input type="password" class="form-control" id="aiApiKey" placeholder="${aiSettings.hasKey ? '(已存储，留空则不变)' : '请输入 API Key'}" autocomplete="new-password">
+                            <small class="form-text text-muted">密钥将用 AES 加密存储于本地。${aiSettings.keyPlainFallback ? '（当前环境不支持系统加密，将以明文存储，请注意保管）' : ''}</small>
+                        </div>
+                        <div style="display:flex;gap:1rem;margin-bottom:0.75rem;flex-wrap:wrap;">
+                            <div class="form-group" style="flex:1;min-width:160px;margin-bottom:0;">
+                                <label for="aiModel">模型</label>
+                                <input type="text" class="form-control" id="aiModel" value="${aiSettings.model}" placeholder="如 kimi-k3 / glm-4" autocomplete="off">
+                            </div>
+                            <div class="form-group" style="flex:1;min-width:110px;margin-bottom:0;">
+                                <label for="aiTemperature">Temperature</label>
+                                <input type="number" class="form-control" id="aiTemperature" value="${aiSettings.temperature}" min="0" max="2" step="0.1">
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                            <button class="btn btn-secondary" id="aiTestConnectionBtn" style="font-size: 13px;">测试连接</button>
+                            <span id="aiTestResult" class="ai-test-result"></span>
+                        </div>
+                        ${aiSettings.totalCalls > 0 ? `
+                        <div class="ai-usage-stats">累计分析 ${aiSettings.totalCalls} 次 · 消耗 ${aiSettings.totalTokens.toLocaleString()} tokens（输入 ${(aiSettings.totalPromptTokens || 0).toLocaleString()} / 输出 ${(aiSettings.totalCompletionTokens || 0).toLocaleString()}）</div>
+                        ` : ''}
                     </div>
                     <div style="border-top: 1px solid var(--border-default); padding-top: 1rem; margin-bottom: 1.5rem;">
                         <h4 style="margin-bottom: 0.75rem; color: var(--primary); font-size: 14px;">${Utils.icon('key', 14)} 密钥管理</h4>
@@ -2076,6 +2144,34 @@ class SSHToolsApp {
                                 } catch (be) {
                                     console.error('保存备份设置失败:', be);
                                 }
+                                // 一并保存大模型接入设置（全空且未配置过则跳过）
+                                const aiBaseUrl = (document.getElementById('aiBaseUrl') || {}).value || '';
+                                const aiModel = (document.getElementById('aiModel') || {}).value || '';
+                                const aiApiKey = (document.getElementById('aiApiKey') || {}).value || '';
+                                if (aiBaseUrl.trim() || aiModel.trim() || aiApiKey.trim()) {
+                                    const aiTemp = parseFloat((document.getElementById('aiTemperature') || {}).value);
+                                    if (isNaN(aiTemp) || aiTemp < 0 || aiTemp > 2) {
+                                        Utils.notify.error('Temperature 必须在 0-2 之间');
+                                        return;
+                                    }
+                                    try {
+                                        const { ipcRenderer: aiIpc } = window.require('electron');
+                                        const aiResult = await aiIpc.invoke('ai:saveSettings', {
+                                            baseUrl: aiBaseUrl.trim(),
+                                            model: aiModel.trim(),
+                                            temperature: aiTemp,
+                                            apiKey: aiApiKey.trim()
+                                        });
+                                        if (!aiResult.success) {
+                                            Utils.notify.error('大模型设置保存失败: ' + aiResult.message);
+                                            return;
+                                        }
+                                    } catch (ae) {
+                                        console.error('保存大模型设置失败:', ae);
+                                        Utils.notify.error('大模型设置保存失败: ' + ae.message);
+                                        return;
+                                    }
+                                }
                                 Utils.notify.success('全局设置已保存');
                                 settingsDialog.hide();
                             } else {
@@ -2097,6 +2193,39 @@ class SSHToolsApp {
                         }
                     });
                     defaultKeyDialog.show();
+                });
+            }
+
+            // ──── 大模型接入：测试连接 ────
+            const aiTestBtn = document.getElementById('aiTestConnectionBtn');
+            if (aiTestBtn) {
+                aiTestBtn.addEventListener('click', async () => {
+                    const resultEl = document.getElementById('aiTestResult');
+                    const payload = {
+                        baseUrl: ((document.getElementById('aiBaseUrl') || {}).value || '').trim(),
+                        model: ((document.getElementById('aiModel') || {}).value || '').trim(),
+                        apiKey: ((document.getElementById('aiApiKey') || {}).value || '').trim()
+                    };
+                    if (!payload.baseUrl || !payload.model) {
+                        if (resultEl) { resultEl.textContent = '请先填写 Base URL 与模型'; resultEl.className = 'ai-test-result fail'; }
+                        return;
+                    }
+                    aiTestBtn.disabled = true;
+                    aiTestBtn.textContent = '测试中…';
+                    if (resultEl) { resultEl.textContent = '正在连接…'; resultEl.className = 'ai-test-result'; }
+                    try {
+                        const { ipcRenderer } = window.require('electron');
+                        const r = await ipcRenderer.invoke('ai:testConnection', payload);
+                        if (resultEl) {
+                            resultEl.textContent = r.message || (r.success ? '连接成功' : '连接失败');
+                            resultEl.className = 'ai-test-result ' + (r.success ? 'ok' : 'fail');
+                        }
+                    } catch (e) {
+                        if (resultEl) { resultEl.textContent = e.message || '测试失败'; resultEl.className = 'ai-test-result fail'; }
+                    } finally {
+                        aiTestBtn.disabled = false;
+                        aiTestBtn.textContent = '测试连接';
+                    }
                 });
             }
 

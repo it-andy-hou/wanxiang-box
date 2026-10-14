@@ -49,7 +49,9 @@ const DEFAULT_DATA = {
     tag_types: [],            // 标签类型（固定4种：环境/架构/风险等级/自定义标签）
     tag_values: [],           // 各类型下的标签值
     // 快捷面板
-    script_shortcuts: []      // 脚本执行页快捷面板（全局，上限10个）
+    script_shortcuts: [],     // 脚本执行页快捷面板（全局，上限10个）
+    // AI 脚本分析结果（每个脚本仅保留最新一条）
+    script_ai_analyses: []
 };
 
 class SimpleDatabase {

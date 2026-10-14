@@ -800,7 +800,19 @@
                 scheduled_time: isScheduled ? new Date(scheduledTime).toISOString() : null
             };
             console.log('准备创建临时命令任务，任务数据:', JSON.stringify(taskData, null, 2));
-            
+
+            // 执行前风险门禁：临时命令无标签，直接对内容现场评估
+            if (window.RiskGate) {
+                const pass = await window.RiskGate.confirm(
+                    { name: taskName, content: commandText },
+                    { confirmName: '确认执行' }
+                );
+                if (!pass) {
+                    showMessage('已取消执行：风险确认未通过', 'warning');
+                    return;
+                }
+            }
+
             const task = await taskService.createTask(taskData);
             console.log('任务创建返回结果:', JSON.stringify(task, null, 2));
 
@@ -1868,6 +1880,12 @@
             });
         }
 
+        // 复制失败IP
+        const copyFailedIpsBtn = document.getElementById('commandCopyFailedIpsBtn');
+        if (copyFailedIpsBtn) {
+            copyFailedIpsBtn.addEventListener('click', () => copyFailedHostIps('command', copyFailedIpsBtn));
+        }
+
         // 搜索
         const searchInput = document.getElementById('commandResultSearch');
         if (searchInput) {
@@ -1881,6 +1899,42 @@
             });
         }
 
+    }
+
+    // 一键复制所有失败主机的IP（可粘贴到主机选择的IP批量输入框重跑）
+    function copyFailedHostIps(prefix, btn) {
+        const container = document.getElementById(prefix + 'ResultContainer');
+        if (!container) return;
+
+        const failedIps = [...container.querySelectorAll('.result-card[data-status="failed"]')]
+            .map(card => card.dataset.hostIp)
+            .filter(Boolean);
+
+        if (failedIps.length === 0) {
+            showMessage('当前结果中没有失败的主机', 'info');
+            return;
+        }
+
+        copyToClipboard(failedIps.join(','));
+
+        const originalText = btn.textContent;
+        btn.textContent = `已复制 ${failedIps.length} 个`;
+        btn.disabled = true;
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }, 1500);
+
+        showMessage(`已复制 ${failedIps.length} 个失败IP，可粘贴到IP批量输入框重新选择主机`, 'success');
+    }
+
+    // 有失败结果时才显示「复制失败IP」按钮
+    function updateCopyFailedIpsVisibility(prefix) {
+        const btn = document.getElementById(prefix + 'CopyFailedIpsBtn');
+        if (!btn) return;
+        const container = document.getElementById(prefix + 'ResultContainer');
+        const hasFailed = !!(container && container.querySelector('.result-card[data-status="failed"]'));
+        btn.style.display = hasFailed ? '' : 'none';
     }
 
     // 切换视图
@@ -1915,6 +1969,7 @@
         if (container) {
             container.innerHTML = '<div class="result-empty-tip">暂无执行结果，请先执行任务</div>';
         }
+        updateCopyFailedIpsVisibility(prefix);
     }
 
     // 添加结果卡片
@@ -1931,12 +1986,14 @@
         if (existingCard) {
             if (result.status === 'running') return;
             updateResultCard(existingCard, result);
+            updateCopyFailedIpsVisibility(prefix);
             return;
         }
 
         const card = createResultCardElement(result);
         container.appendChild(card);
         applyFilterToCard(prefix, card);
+        updateCopyFailedIpsVisibility(prefix);
     }
 
     // 创建结果卡片DOM元素
