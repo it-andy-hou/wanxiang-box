@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>万象匣 WanXiang Box — 跨平台运维自动化管控平台</title>
-<meta name="description" content="万象匣是一款基于 Electron 的跨平台运维自动化管控平台：批量 SSH 主机管理、脚本批量执行、AI 脚本风险审查、工程化任务编排、文件传输与数据备份，一匣尽揽。">
+<meta name="description" content="万象匣是一款基于 Electron 的跨平台运维自动化管控平台：批量 SSH 主机管理、脚本批量执行、AI 脚本生成与风险审查、工程化任务编排、文件传输与数据备份，一匣尽揽。">
 <link rel="icon" type="image/png" href="./assets/logo.png">
 <style>
   :root {
@@ -221,6 +221,7 @@
       <div class="hero-badges">
         <span class="badge"><span class="dot ok"></span>Windows / macOS / Linux</span>
         <span class="badge"><span class="dot blue"></span>批量并发执行</span>
+        <span class="badge"><span class="dot violet"></span>AI 一句话生成脚本</span>
         <span class="badge"><span class="dot amber"></span>AI 脚本风险审查</span>
         <span class="badge"><span class="dot violet"></span>无需外部数据库</span>
       </div>
@@ -272,6 +273,11 @@
           <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
           <h3>脚本管理</h3>
           <p>在线编辑器、目录树分类、参数模板化、快捷面板与语法高亮，支持 .sh 批量导入与 JSON 完整备份。</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+          <h3>AI 脚本生成</h3>
+          <p>添加脚本时用一句话描述需求，大模型直接生成生产级 Bash 脚本（set -euo pipefail、变量判空防护、幂等可重跑）并自动填充名称、描述与内容。</p>
         </div>
         <div class="feature">
           <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg></div>
@@ -343,7 +349,7 @@
         <div class="step">
           <span class="num">02</span>
           <h3>编排脚本</h3>
-          <p>在线编辑脚本并参数模板化，按目录分类管理，沉淀团队脚本资产；AI 辅助审查 + 风险自动评估为脚本上线把关。</p>
+          <p>在线编辑或用 AI 一句话生成脚本，按目录分类管理，沉淀团队脚本资产；AI 生成 + AI 审查 + 风险门禁为脚本上线全程把关。</p>
         </div>
         <div class="step">
           <span class="num">03</span>

@@ -291,7 +291,7 @@
                     <div class="page-header">
                         <h2>脚本管理</h2>
                         <div class="page-actions">
-                            <button class="btn btn-primary">添加脚本</button>
+                            <button class="btn btn-primary" id="demoAddScriptBtn">添加脚本</button>
                             <button class="btn btn-secondary">刷新列表</button>
                             <button class="btn btn-secondary">单独导入</button>
                             <button class="btn btn-secondary">批量导入</button>
@@ -906,9 +906,62 @@ Mem:            7.6G  3.0G  4.6G  39%</div>
                 </span>
             </div>
             <div class="footer-right">
-                <span>版本: <span>1.260912.0</span></span>
+                <span>版本: <span>1.261022.0</span></span>
             </div>
         </footer>
+
+        <!-- 添加脚本弹窗（演示 AI 生成，与桌面版 v1.261022.0 行为一致） -->
+        <div class="modal-overlay" id="demoAddScriptModal" style="display:none;">
+            <div class="modal" style="max-width: 860px; max-height: 92vh; width: 860px;">
+                <div class="modal-header">
+                    <h2>添加脚本</h2>
+                    <button class="modal-close" id="demoScriptCloseBtn">&times;</button>
+                </div>
+                <div class="modal-body" style="overflow-y: auto; max-height: calc(92vh - 130px); padding: 20px 24px;">
+                    <div style="display: grid; grid-template-columns: 2fr 3fr 2fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">脚本名称 <span style="color: red;">*</span></label>
+                            <input type="text" class="form-control" id="demoScriptName" placeholder="请输入脚本名称">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">脚本描述</label>
+                            <input type="text" class="form-control" id="demoScriptDesc" placeholder="请输入脚本描述">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">目录</label>
+                            <select class="form-control"><option selected>系统巡检</option><option>部署发布</option><option>数据库</option><option>未分类</option></select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <label class="form-label" style="margin: 0; display: inline-flex; align-items: center; gap: 0.5rem;">脚本内容 <span style="color: red;">*</span>
+                                <span style="display:inline-flex;align-items:center;height:calc(1.5rem + 2px);padding:0 0.6rem;border-radius:6px;font-size:0.8125rem;font-weight:600;background:var(--status-healthy-bg);color:var(--status-healthy-fg);border:1px solid var(--status-healthy-border);" id="demoRiskBadge">普通</span>
+                                <button type="button" class="btn btn-sm btn-info" id="demoAiGenToggleBtn">AI 生成</button>
+                            </label>
+                            <label style="margin: 0; font-size: 0.875rem; color: var(--text-muted); cursor: pointer;">
+                                <input type="checkbox" style="margin-right: 0.25rem; cursor: pointer;">显示预览
+                            </label>
+                        </div>
+                        <div class="ai-generate-panel" id="demoAiGenPanel">
+                            <div class="ai-generate-title">用一句话描述你要的脚本，目标系统、路径、特殊要求等直接写明：</div>
+                            <textarea class="form-control" id="demoAiGenReq" rows="3" maxlength="2000" placeholder="例：清理 /data/logs 下超过 7 天的 .log 文件，删除前统计每个文件大小并输出汇总，CentOS 7 环境">清理 /data/logs 下超过 7 天的 .log 文件，删除前统计每个文件大小并输出汇总，CentOS 7 环境</textarea>
+                            <div class="ai-generate-actions">
+                                <span class="ai-generate-hint" id="demoAiGenHint"></span>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-secondary" id="demoAiGenHideBtn">收起</button>
+                                    <button type="button" class="btn btn-sm btn-primary" id="demoAiGenRunBtn">生成</button>
+                                </div>
+                            </div>
+                        </div>
+                        <textarea class="form-control" id="demoScriptContent" placeholder="请输入脚本内容" style="font-family: var(--font-mono); font-size: 14px; line-height: 1.6; resize: none; width: 100%; height: 320px;">#!/bin/bash</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="demoScriptCancelBtn">取消</button>
+                    <button class="btn btn-primary" id="demoScriptSaveBtn">创建</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1008,10 +1061,94 @@ Mem:            7.6G  3.0G  4.6G  39%</div>
                 });
             }
 
+            // ===== 添加脚本弹窗：AI 生成演示（模拟桌面版 v1.261022.0 交互） =====
+            function bindAddScriptDemo() {
+                var modal = document.getElementById('demoAddScriptModal');
+                var addBtn = document.getElementById('demoAddScriptBtn');
+                if (!modal || !addBtn) return;
+
+                var nameEl = document.getElementById('demoScriptName');
+                var descEl = document.getElementById('demoScriptDesc');
+                var contentEl = document.getElementById('demoScriptContent');
+                var panel = document.getElementById('demoAiGenPanel');
+                var reqEl = document.getElementById('demoAiGenReq');
+                var runBtn = document.getElementById('demoAiGenRunBtn');
+                var hintEl = document.getElementById('demoAiGenHint');
+
+                var open = function () { modal.style.display = 'flex'; };
+                var close = function () { modal.style.display = 'none'; };
+                addBtn.addEventListener('click', open);
+                document.getElementById('demoScriptCloseBtn').addEventListener('click', close);
+                document.getElementById('demoScriptCancelBtn').addEventListener('click', close);
+                modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+                document.getElementById('demoScriptSaveBtn').addEventListener('click', close); // 演示模式不真正入库
+
+                // AI 生成面板展开/收起
+                document.getElementById('demoAiGenToggleBtn').addEventListener('click', function () {
+                    panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+                });
+                document.getElementById('demoAiGenHideBtn').addEventListener('click', function () {
+                    panel.style.display = 'none';
+                });
+
+                // 模拟 AI 生成：生成中 loading → 填充名称/描述/内容（与桌面版行为一致）
+                var GENERATED = {
+                    name: 'clean-expired-logs.sh',
+                    desc: '清理超过保留天数的过期日志',
+                    content: [
+                        '#!/bin/bash',
+                        'set -euo pipefail',
+                        '',
+                        '# 清理超过保留天数的过期日志',
+                        '# 适用环境: CentOS 7 / 通用 Linux；删除仅限 LOG_DIR 下的 .log 文件',
+                        '',
+                        'LOG_DIR="/data/logs"    # 日志目录',
+                        'KEEP_DAYS=7           # 保留天数',
+                        '',
+                        '# 防护：目录变量判空，避免空变量导致路径坍缩',
+                        'LOG_DIR="${LOG_DIR:?LOG_DIR 未配置}"',
+                        '',
+                        'if [ ! -d "$LOG_DIR" ]; then',
+                        '    echo "错误: 日志目录 $LOG_DIR 不存在"',
+                        '    exit 1',
+                        'fi',
+                        '',
+                        'echo "开始清理 $LOG_DIR 下超过 ${KEEP_DAYS} 天的 .log 文件..."',
+                        'deleted=0',
+                        "while IFS= read -r -d '' file; do",
+                        '    size=$(du -h "$file" | cut -f1)',
+                        '    rm -f "$file"',
+                        '    echo "已删除: $file (${size})"',
+                        '    deleted=$((deleted + 1))',
+                        'done < <(find "$LOG_DIR" -maxdepth 1 -name "*.log" -mtime +"$KEEP_DAYS" -print0)',
+                        '',
+                        'echo "清理完成，共删除 ${deleted} 个文件"'
+                    ].join('\n')
+                };
+
+                runBtn.addEventListener('click', function () {
+                    if (!reqEl.value.trim()) { hintEl.textContent = '请先描述你的脚本需求'; return; }
+                    runBtn.disabled = true;
+                    runBtn.textContent = '生成中…';
+                    reqEl.disabled = true;
+                    hintEl.textContent = 'AI 生成中，可能需要十几秒到几分钟，请稍候…';
+                    setTimeout(function () {
+                        nameEl.value = GENERATED.name;
+                        descEl.value = GENERATED.desc;
+                        contentEl.value = GENERATED.content;
+                        hintEl.textContent = '已填充，可调整需求后重新生成';
+                        runBtn.disabled = false;
+                        runBtn.textContent = '生成';
+                        reqEl.disabled = false;
+                    }, 1200);
+                });
+            }
+
             renderHosts();
             bindNavigation();
             bindSidebarToggle();
             bindResultCards();
+            bindAddScriptDemo();
         })();
     </script>
 </body>
