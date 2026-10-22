@@ -114,9 +114,12 @@
         // 排序
         bindSortEvents();
 
-        // 批量操作：全选/批量AI分析/批量删除
+        // 批量操作：全选/批量移动目录/批量AI分析/批量删除
         const selectAll = document.getElementById('selectAllScripts');
         if (selectAll) selectAll.addEventListener('change', handleSelectAllScripts);
+
+        const batchMoveBtn = document.getElementById('scriptBatchMoveBtn');
+        if (batchMoveBtn) batchMoveBtn.addEventListener('click', batchMoveScripts);
 
         const batchAnalyzeBtn = document.getElementById('scriptBatchAnalyzeBtn');
         if (batchAnalyzeBtn) batchAnalyzeBtn.addEventListener('click', batchAnalyzeScripts);
@@ -482,6 +485,96 @@
         updateScriptBatchBar();
     }
 
+    // 批量移动脚本到指定目录：弹窗选择目标目录，跳过已在目标目录的脚本
+    async function batchMoveScripts() {
+        if (selectedScriptIds.size === 0) return;
+        const targets = currentScripts.filter(s => selectedScriptIds.has(String(s.id)));
+
+        // 选择目标目录（返回目录ID；null=未分类；undefined=取消）
+        const targetCatId = await showMoveCategoryDialog();
+        if (targetCatId === undefined) return;
+
+        const targetName = targetCatId === null
+            ? '未分类'
+            : (allCategories.find(c => String(c.id) === String(targetCatId)) || {}).name || String(targetCatId);
+
+        // 跳过已在目标目录的脚本，避免无谓刷新 updated_at
+        const currentCatKey = s => String(s.category_id || '');
+        const targetCatKey = String(targetCatId === null ? '' : targetCatId);
+        const toMove = targets.filter(s => currentCatKey(s) !== targetCatKey);
+        if (toMove.length === 0) {
+            showMessage('选中脚本均已在目标目录，无需移动', 'info');
+            return;
+        }
+
+        const confirmed = await Components.ConfirmDialog.show({
+            title: '批量移动脚本',
+            message: `确定要将 ${toMove.length} 个脚本移动到「${targetName}」吗？` +
+                (toMove.length < targets.length ? `\n（另有 ${targets.length - toMove.length} 个已在目标目录，将跳过）` : '') +
+                '\n移动会刷新脚本的更新时间。',
+            confirmText: '移动',
+            cancelText: '取消'
+        });
+        if (!confirmed) return;
+
+        try {
+            const result = await scriptService.batchMoveCategory(toMove.map(s => s.id), targetCatId);
+            showMessage(`已移动 ${result.moved} 个脚本到「${targetName}」`, 'success');
+            selectedScriptIds.clear();
+            await loadScripts();
+            renderCategoryTree();
+            updateScriptBatchBar();
+        } catch (error) {
+            console.error('批量移动脚本失败:', error);
+            showMessage('批量移动脚本失败: ' + error.message, 'error');
+        }
+    }
+
+    // 目标目录选择弹窗（返回：目录ID / null=未分类 / undefined=取消）
+    function showMoveCategoryDialog() {
+        return new Promise(resolve => {
+            let catOptions = '<option value="__null">未分类</option>';
+            allCategories.forEach(cat => {
+                catOptions += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+            });
+
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+                <div class="modal" style="max-width:380px;">
+                    <div class="modal-header">
+                        <h3 style="font-size:1rem;margin:0;">移动到目录</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">目标目录</label>
+                        <select class="form-control" id="_moveCatSelect" style="width:100%;">${catOptions}</select>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" id="_moveCatCancel">取消</button>
+                        <button class="btn btn-primary" id="_moveCatOk">移动</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            const select = overlay.querySelector('#_moveCatSelect');
+            select.focus();
+            const cleanup = (result) => { overlay.remove(); resolve(result); };
+            const confirmMove = () => {
+                const v = select.value;
+                cleanup(v === '__null' ? null : (isNaN(v) ? v : parseInt(v)));
+            };
+            overlay.querySelector('.modal-close').addEventListener('click', () => cleanup(undefined));
+            overlay.querySelector('#_moveCatCancel').addEventListener('click', () => cleanup(undefined));
+            overlay.querySelector('#_moveCatOk').addEventListener('click', confirmMove);
+            select.addEventListener('keydown', e => {
+                if (e.key === 'Enter') confirmMove();
+                if (e.key === 'Escape') cleanup(undefined);
+            });
+            overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(undefined); });
+        });
+    }
+
     // 批量 AI 分析
     async function batchAnalyzeScripts() {
         if (selectedScriptIds.size === 0) return;
@@ -820,9 +913,12 @@
     function createScriptEditorDialog(script = null) {
         const isEdit = script !== null;
         // 构建目录选项（一级平列）
-        let catOptions = '<option value="">未分类</option>';
+        // 新建脚本时默认选中左侧目录树当前选中的目录（「全部」null 或「未分类」-1 时保持「未分类」）；编辑时按脚本自身目录初始化
+        const defaultCatId = !isEdit && currentCategoryFilter !== null && currentCategoryFilter > 0
+            ? String(currentCategoryFilter) : '';
+        let catOptions = '<option value="" ' + (defaultCatId === '' ? 'selected' : '') + '>未分类</option>';
         allCategories.forEach(cat => {
-            catOptions += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+            catOptions += `<option value="${cat.id}" ${defaultCatId === String(cat.id) ? 'selected' : ''}>${escapeHtml(cat.name)}</option>`;
         });
 
         // 标签输入：用固定3行（环境标签、架构标签、风险等级）
@@ -1094,8 +1190,12 @@
         // 打开弹窗即评估一次（不信任存量标签）
         updateRiskBadge();
 
-        // 挂接 AI 分析入口（对编辑器当前内容分析，未保存的新脚本也可分析但不落库）
+        // 挂接 AI 入口：生成（仅新增模式：需求描述 → 草稿直接覆盖三个字段）与分析
+        // （对编辑器当前内容分析，未保存的新脚本也可分析但不落库）
         if (window.AIAnalysisUI) {
+            if (!isEdit) {
+                window.AIAnalysisUI.attachGenerateSection(modalOverlay);
+            }
             window.AIAnalysisUI.attachEditSection(modalOverlay, script, {
                 onAnalyzed: async () => {
                     await loadAiAnalyses();

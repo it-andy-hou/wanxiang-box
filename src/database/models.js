@@ -288,6 +288,22 @@ class ScriptModel {
         }
     }
     
+    // 批量移动脚本目录（仅更新 category_id；updated_at 由 db.update 自动刷新）
+    static async batchMoveCategory(ids, categoryId) {
+        try {
+            const db = getDatabase();
+            let moved = 0;
+            for (const id of ids) {
+                const result = await db.update('scripts', id, { category_id });
+                if (result) moved++;
+            }
+            return { total: ids.length, moved };
+        } catch (error) {
+            console.error('批量移动脚本目录失败:', error);
+            throw error;
+        }
+    }
+    
     static async search(keyword) {
         try {
             const db = getDatabase();

@@ -194,6 +194,33 @@ class ScriptService {
         }
     }
     
+    // 批量移动脚本目录（轻量通道：不重算风险标签，仅最后重载一次列表）
+    async batchMoveCategory(ids, categoryId) {
+        try {
+            if (this.isElectron) {
+                const result = await this.ipcRenderer.invoke('script:batchMoveCategory', ids, categoryId);
+                await this.loadScripts(); // 重新加载
+                return result;
+            } else {
+                // 非Electron环境
+                let moved = 0;
+                for (const id of ids) {
+                    const index = this.scripts.findIndex(script => String(script.id) === String(id));
+                    if (index !== -1) {
+                        this.scripts[index].category_id = categoryId;
+                        this.scripts[index].updated_at = new Date().toISOString();
+                        moved++;
+                    }
+                }
+                await this.saveScripts();
+                return { total: ids.length, moved };
+            }
+        } catch (error) {
+            console.error('批量移动脚本目录失败:', error);
+            throw error;
+        }
+    }
+    
     // 删除脚本
     async deleteScript(id) {
         try {

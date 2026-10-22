@@ -145,8 +145,24 @@
       <div class="release">
         <div class="release-card">
           <div class="release-head">
-            <span class="release-version">v1.261014.0</span>
+            <span class="release-version">v1.261022.0</span>
             <span class="release-latest">最新版本</span>
+            <span class="release-date">2026-10-22</span>
+          </div>
+          <div class="release-title">AI 脚本生成</div>
+          <ul>
+            <li><span class="tag feature">新增</span>AI 脚本生成：添加脚本弹窗内用一句话描述需求，大模型直接生成生产级 Bash 脚本并自动填充名称、描述与内容</li>
+            <li><span class="tag feature">新增</span>生成脚本强制工程规范（set -euo pipefail、变量判空防护、幂等可重跑、头部集中配置）与破坏性操作安全防护；名称自动规范为英文 kebab-case 文件名（如 fix-data.sh）</li>
+            <li><span class="tag feature">新增</span>脚本列表批量移动目录：勾选多个脚本一键归档到指定目录，跳过已在目标目录的脚本</li>
+            <li><span class="tag fix">修复</span>批量连接测试进度事件丢失或中途停止后，结果行不再残留「等待中」，结束后统一回填终态</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="release">
+        <div class="release-card">
+          <div class="release-head">
+            <span class="release-version">v1.261014.0</span>
             <span class="release-date">2026-10-14</span>
           </div>
           <div class="release-title">AI 脚本分析与风险防护</div>

@@ -8,6 +8,7 @@ const crypto = require('crypto');
 // 常量
 // ============================================================
 const MAX_SCRIPT_CHARS = 30000;   // 超过此长度拒绝分析（防止超上下文）
+const MAX_GENERATE_REQUIREMENT_CHARS = 2000; // 脚本生成需求描述的最大长度
 const DEFAULT_TIMEOUT_MS = 180000; // 单次请求超时（实测复杂脚本分析可达 2 分钟）
 const BATCH_CONCURRENCY = 2;      // 批量分析并发上限
 const ANALYSIS_TABLE = 'script_ai_analyses';
@@ -143,6 +144,66 @@ function buildMessages(content) {
         { role: 'system', content: system },
         { role: 'user', content: user }
     ];
+}
+
+/**
+ * 组装脚本生成消息（System + User）。
+ * 需求描述来自添加脚本弹窗的 AI 生成面板，目标环境等特殊要求由用户在需求中自行写明。
+ */
+function buildGenerateMessages(requirement) {
+    const system = [
+        '你是一个资深的 Linux 自动化运维工程师，为生产环境编写 Bash 脚本。你的任务是根据用户的需求描述生成可直接使用的脚本草稿。',
+        '',
+        '【强制工程规范】',
+        '1. 以 #!/bin/bash 开头，第二行启用 set -euo pipefail。',
+        '2. 变量引用一律用双引号包裹；关键路径/目录变量用 ${VAR:?提示信息} 判空防护，防止空变量导致路径坍缩。',
+        '3. 幂等可重跑：重复执行不产生副作用（如先判断再操作）。',
+        '4. 可配置项（路径、阈值、保留天数等）集中为脚本头部变量，并加中文注释说明。',
+        '5. 关键步骤用 echo 输出中文执行日志；失败时错误信息明确，便于排查。',
+        '',
+        '【安全约束】',
+        '1. 需求涉及破坏性操作（删除、kill、重启服务、覆盖文件等）时，必须内置防护：路径白名单/固定前缀校验、变量判空、操作前输出影响范围清单；禁止生成裸 rm -rf 类无防护代码。',
+        '2. 无法安全实现的需求（如格式化磁盘、清空根目录）不得直接实现，应在 description 中明确标注风险与限制。',
+        '3. description 保持简短核心（30字以内）；风险提示与适用环境等补充说明写在脚本文本的头部注释中，不写入 description。',
+        '',
+        '【输出约束】',
+        '必须严格按照指定 JSON Schema 输出，不得输出任何未经 JSON 包装的自然语言。',
+        'name 为英文脚本文件名（kebab-case 小写英文单词加连字符，10~30 字符，以 .sh 结尾，如 fix-data.sh、clean-expired-logs.sh，禁止中文与拼音）；description 为简短核心的一句话描述（30字以内，只讲脚本做什么，不要写适用环境、注意事项等补充说明）；content 为完整脚本文本文本（含 shebang、set 选项、中文注释），其中的换行用 \\n 转义以保证 JSON 合法。'
+    ].join('\n');
+
+    const user = [
+        '请根据以下需求编写一个生产可用的 Bash 脚本：',
+        '',
+        '【需求描述】',
+        String(requirement || ''),
+        '',
+        '请严格按照以下 JSON 格式返回：',
+        '{',
+        '"name": "英文脚本文件名（kebab-case，以 .sh 结尾，如 fix-data.sh）",',
+        '"description": "简短核心描述（30字以内，只讲脚本做什么）",',
+        '"content": "完整 Bash 脚本文本（含 shebang、set 选项、中文注释）"',
+        '}'
+    ].join('\n');
+
+    return [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+    ];
+}
+
+/**
+ * 规范化 AI 生成的脚本名：kebab-case 英文 + .sh 后缀。
+ * 模型偶尔不守约时兑底：非 [a-z0-9._-] 字符替换为连字符、补 .sh 后缀、全非法时回退为 script-<时间戳>.sh。
+ */
+function normalizeGeneratedName(name) {
+    let n = String(name || '').trim().toLowerCase();
+    // 只保留英文数字/连字符/点，其余（含中文、空格、下划线等）替换为连字符，压缩重复并去首尾
+    n = n.replace(/[^a-z0-9.-]+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+    if (!n) return 'script-' + Date.now() + '.sh';
+    // 去掉已有其他后缀后统一补 .sh（去后缀可能产生尾部连字符，再清一次）
+    n = n.replace(/\.(sh|bash|shell)$/i, '').replace(/-+$/g, '');
+    if (!n) return 'script-' + Date.now() + '.sh';
+    return n.slice(0, 60) + '.sh';
 }
 
 /**
@@ -488,6 +549,47 @@ class AIService {
         };
     }
 
+    // ---------- 脚本生成 ----------
+
+    /**
+     * AI 生成脚本草稿（一次性调用，不落库、不缓存；用户保存后才入脚本库）。
+     * 返回 { success, data: { name, description, content }, usage, message }
+     */
+    async generateScript({ requirement } = {}) {
+        const text = String(requirement || '').trim();
+        if (!text) return { success: false, message: '请先描述你的脚本需求' };
+        if (text.length > MAX_GENERATE_REQUIREMENT_CHARS) {
+            return { success: false, message: `需求描述超过 ${MAX_GENERATE_REQUIREMENT_CHARS} 字符，请精简后再试` };
+        }
+
+        let reply, usage;
+        try {
+            ({ content: reply, usage } = await this.chat(buildGenerateMessages(text)));
+        } catch (e) {
+            return { success: false, message: e.message };
+        }
+
+        // 累计 token 消耗统计（与分析共用累计值）
+        await this._addUsage(usage);
+
+        const parsed = parseAnalysisJson(reply);
+        if (!parsed.ok) {
+            return { success: false, message: '模型未返回合法结果，请调整需求后重试' };
+        }
+
+        const data = parsed.data || {};
+        const name = normalizeGeneratedName(data.name);
+        const description = String(data.description || '').trim();
+        const content = String(data.content || '').trim();
+        if (!name) return { success: false, message: '模型未返回脚本名称，请重试' };
+        if (!content) return { success: false, message: '模型未返回脚本内容，请重试' };
+        if (content.length > MAX_SCRIPT_CHARS) {
+            return { success: false, message: `生成的脚本超过 ${MAX_SCRIPT_CHARS} 字符，请精简需求后重试` };
+        }
+
+        return { success: true, data: { name, description, content }, usage, message: '生成完成' };
+    }
+
     /** 每脚本仅保留最新一条分析记录 */
     async _upsertRecord(record) {
         const db = this._getDb();
@@ -580,10 +682,13 @@ module.exports = {
     AIService,
     resolveEndpoint,
     buildMessages,
+    buildGenerateMessages,
+    normalizeGeneratedName,
     parseAnalysisJson,
     extractContent,
     extractUsage,
     sha256,
     MAX_SCRIPT_CHARS,
+    MAX_GENERATE_REQUIREMENT_CHARS,
     BATCH_CONCURRENCY
 };

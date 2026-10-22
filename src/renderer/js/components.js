@@ -2965,6 +2965,9 @@ class BatchOperationDialog {
             this.updateHostStatus(i, 'running', '等待中...');
         }
         
+        // 已收到进度事件的主机索引（用于结束后回填未更新的行）
+        const processedIndexes = new Set();
+        
         try {
             const results = await window.hostService.batchTestConnectionConcurrent(
                 hosts,
@@ -2974,6 +2977,7 @@ class BatchOperationDialog {
                     if (!this.isRunning) return;
                     
                     const { completed, total, index, result } = progress;
+                    processedIndexes.add(index);
                     this.currentIndex = completed - 1;
                     
                     // 更新单个主机状态（区分认证失败和连接失败）
@@ -2994,6 +2998,17 @@ class BatchOperationDialog {
             );
             
             this.results = results;
+            
+            // 回填未收到进度事件的主机行（如中途停止后事件被忽略，或进度事件丢失）
+            for (let i = 0; i < hosts.length; i++) {
+                if (processedIndexes.has(i)) continue;
+                const result = results[i];
+                if (!result) continue;
+                const statusLabel = result.success ? `成功 (${result.duration}ms)`
+                    : (result.authFailed ? `认证失败` : result.message || '失败');
+                this.updateHostStatus(i, result.success ? 'success' : (result.authFailed ? 'warning' : 'error'),
+                    statusLabel);
+            }
             
             // 强制更新进度条到100%（避免最后几个进度事件未到达的竞态问题）
             const progressFill = document.getElementById('progressFill');
@@ -3021,6 +3036,9 @@ class BatchOperationDialog {
             this.updateHostStatus(i, 'running', '等待中...');
         }
         
+        // 已收到进度事件的主机索引（用于结束后回填未更新的行）
+        const processedIndexes = new Set();
+        
         try {
             if (!window.require) {
                 await this.startSerialOperation();
@@ -3041,6 +3059,7 @@ class BatchOperationDialog {
                 if (!this.isRunning) return;
                 
                 const { completed, total, index, result } = progress;
+                processedIndexes.add(index);
                 this.currentIndex = completed - 1;
                 
                 // 更新单个主机状态
@@ -3087,6 +3106,15 @@ class BatchOperationDialog {
             }
             
             if (response.success) {
+                // 回填未收到进度事件的主机行（如中途停止后事件被忽略，或进度事件丢失）
+                for (let i = 0; i < hosts.length; i++) {
+                    if (processedIndexes.has(i)) continue;
+                    const result = response.results[i];
+                    if (!result) continue;
+                    this.updateHostStatus(i, result.success ? 'success' : 'error',
+                        result.success ? `在线 (${result.latency}ms)` : '离线');
+                }
+                
                 // 构造结果数据（兼容导出和结果概览）
                 this.results = response.results.map((result, i) => ({
                     success: result.success,
@@ -3270,6 +3298,7 @@ class BatchOperationDialog {
     
     updateHostStatus(index, status, message) {
         const hostStatus = document.getElementById(`hostStatus_${index}`);
+        if (!hostStatus) return; // 对话框已关闭时元素不存在，避免报错中断事件处理
         const statusClasses = {
             waiting: 'info',
             running: 'warning',

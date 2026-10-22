@@ -980,3 +980,42 @@ input[type="checkbox"] {
     font-size: 0.75rem;
     color: var(--text-muted);
 }
+
+/* 添加弹窗 AI 生成面板 */
+.ai-generate-panel {
+    margin-bottom: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--primary-glow);
+    border: 1px solid var(--status-info-border);
+    border-radius: 6px;
+}
+
+.ai-generate-title {
+    font-size: 0.8125rem;
+    color: var(--text-body);
+    margin-bottom: 0.4rem;
+}
+
+.ai-generate-panel .form-control {
+    background: var(--surface-card);
+    font-size: 0.875rem;
+    resize: vertical;
+    min-height: 72px;
+}
+
+.ai-generate-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.ai-generate-hint {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.ai-generate-actions .btn { flex-shrink: 0; }

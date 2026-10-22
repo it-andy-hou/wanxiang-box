@@ -1412,6 +1412,16 @@ ipcMain.handle('script:update', async (event, id, scriptData) => {
   }
 });
 
+// 批量移动脚本目录（仅更新 category_id，不重算风险标签）
+ipcMain.handle('script:batchMoveCategory', async (event, ids, categoryId) => {
+  try {
+    return await ScriptModel.batchMoveCategory(ids, categoryId);
+  } catch (error) {
+    console.error('批量移动脚本目录失败:', error);
+    throw error;
+  }
+});
+
 // 删除脚本（级联清理：快捷面板条目、AI 分析记录；执行历史保留）
 ipcMain.handle('script:delete', async (event, id) => {
   try {
@@ -1448,6 +1458,12 @@ ipcMain.handle('ai:testConnection', async (event, payload) => {
 ipcMain.handle('ai:analyze', async (event, payload) => {
   try { return await aiService.analyze(payload || {}); }
   catch (e) { console.error('AI 分析失败:', e); return { success: false, message: e.message }; }
+});
+
+// AI 生成脚本草稿（一次性调用，不落库不缓存）
+ipcMain.handle('ai:generateScript', async (event, payload) => {
+  try { return await aiService.generateScript(payload || {}); }
+  catch (e) { console.error('AI 生成脚本失败:', e); return { success: false, message: e.message }; }
 });
 
 ipcMain.handle('ai:getAnalysis', (event, scriptId) => {

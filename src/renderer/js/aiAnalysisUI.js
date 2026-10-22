@@ -312,6 +312,106 @@
     }
 
     // ============================================================
+    // 添加弹窗 AI 生成区块
+    // ============================================================
+
+    /**
+     * 在「添加脚本」弹窗中挂接 AI 生成：按钮位于「脚本内容」标签行，
+     * 点击展开内嵌面板（需求输入 + 生成按钮），生成成功后直接覆盖名称/描述/内容三个字段。
+     * 生成为一次性调用（不落库不缓存），用户点「创建」后才入脚本库。
+     */
+    function attachGenerateSection(modalOverlay) {
+        const contentLabel = Array.from(modalOverlay.querySelectorAll('.form-label')).find(el => el.textContent.includes('脚本内容'));
+        if (!contentLabel) return;
+        const contentGroup = contentLabel.closest('.form-group');
+        if (!contentGroup) return;
+
+        // 按钮（与 AI 分析按钮、预览开关同排）
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-info';
+        btn.id = 'aiGenerateToggleBtn';
+        btn.textContent = 'AI 生成';
+        btn.style.marginLeft = '0.5rem';
+        btn.title = '用自然语言描述需求，AI 生成脚本草稿并自动填充名称、描述与内容';
+        contentLabel.parentNode.appendChild(btn);
+
+        // 内嵌面板（插在脚本内容标题行之后、风险明细之前）
+        const panel = document.createElement('div');
+        panel.className = 'ai-generate-panel';
+        panel.style.display = 'none';
+        panel.innerHTML = `
+            <div class="ai-generate-title">用一句话描述你要的脚本，目标系统、路径、特殊要求等直接写明：</div>
+            <textarea class="form-control" id="aiGenerateReq" rows="3" maxlength="2000"
+                placeholder="例：清理 /data/logs 下超过 7 天的 .log 文件，删除前统计每个文件大小并输出汇总，CentOS 7 环境"></textarea>
+            <div class="ai-generate-actions">
+                <span class="ai-generate-hint" id="aiGenerateHint"></span>
+                <div>
+                    <button type="button" class="btn btn-sm btn-secondary" id="aiGenerateHideBtn">收起</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="aiGenerateRunBtn">生成</button>
+                </div>
+            </div>
+        `;
+        const riskFindings = contentGroup.querySelector('#autoRiskFindings');
+        if (riskFindings) contentGroup.insertBefore(panel, riskFindings);
+        else contentGroup.insertBefore(panel, contentGroup.lastElementChild);
+
+        const reqInput = panel.querySelector('#aiGenerateReq');
+        const runBtn = panel.querySelector('#aiGenerateRunBtn');
+        const hideBtn = panel.querySelector('#aiGenerateHideBtn');
+        const hintEl = panel.querySelector('#aiGenerateHint');
+
+        btn.addEventListener('click', () => {
+            const visible = panel.style.display !== 'none';
+            panel.style.display = visible ? 'none' : 'block';
+            if (!visible) reqInput.focus();
+        });
+        // 仅收起面板，需求文本保留（误点后再展开不丢内容）
+        hideBtn.addEventListener('click', () => { panel.style.display = 'none'; });
+
+        runBtn.addEventListener('click', async () => {
+            const requirement = reqInput.value.trim();
+            if (!requirement) { notify('请先描述你的脚本需求', 'warning'); reqInput.focus(); return; }
+
+            const cfg = await isConfigured();
+            if (!cfg.ok) { notify(cfg.msg, 'warning'); return; }
+
+            runBtn.disabled = true;
+            runBtn.textContent = '生成中…';
+            reqInput.disabled = true;
+            hintEl.textContent = 'AI 生成中，可能需要十几秒到几分钟，请稍候…';
+            try {
+                const s = svc();
+                const r = await s.generateScript({ requirement });
+                afterModelCall(); // 实际调用了模型，刷新底部 token 统计（不受弹窗关闭影响）
+                // 弹窗已关闭则丢弃结果
+                if (!document.body.contains(panel)) return;
+                if (!r.success) {
+                    hintEl.textContent = '';
+                    notify(r.message || '生成失败', 'error');
+                    return;
+                }
+                // 直接覆盖三个字段（需求已确认：不弹覆盖确认）
+                modalOverlay.querySelector('#scriptName').value = r.data.name;
+                modalOverlay.querySelector('#scriptDescription').value = r.data.description;
+                const textarea = modalOverlay.querySelector('#scriptContent');
+                textarea.value = r.data.content;
+                // 触发 input 事件复用编辑器现有防抖逻辑：风险徽标重评 + 预览刷新
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                hintEl.textContent = '已填充，可调整需求后重新生成';
+                notify('已按 AI 结果填充名称、描述与脚本内容', 'success');
+            } catch (e) {
+                if (document.body.contains(panel)) hintEl.textContent = '';
+                notify('AI 生成失败: ' + e.message, 'error');
+            } finally {
+                runBtn.disabled = false;
+                runBtn.textContent = '生成';
+                reqInput.disabled = false;
+            }
+        });
+    }
+
+    // ============================================================
     // 批量分析弹窗
     // ============================================================
 
@@ -526,6 +626,7 @@
         renderCard,
         attachViewSection,
         attachEditSection,
+        attachGenerateSection,
         showBatchDialog,
         isConfigured,
         refreshTokenStats
