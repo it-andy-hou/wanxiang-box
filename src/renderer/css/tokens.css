@@ -97,9 +97,12 @@
     --table-row-height: 42px;
     --control-height: 32px;
 
-    /* ---- 字体 ---- */
-    --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+    /* ---- 字体 ----
+       三端统一：内置可变字体优先（woff2 位于 assets/fonts/，
+       由 @fontsource-variable/inter@5.3.0 · noto-sans-sc@5.3.1 · jetbrains-mono@5.3.0 提供），
+       系统字体仅作极端情况兜底；中文统一走 Noto Sans SC，避免 Windows 上随机回退宋体 */
+    --font-ui: 'Inter Variable', 'Noto Sans SC Variable', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono Variable', 'Noto Sans SC Variable', 'Consolas', monospace;
 
     /* ---- 阴影 ---- */
     --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06);

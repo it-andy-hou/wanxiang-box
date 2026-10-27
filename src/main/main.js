@@ -1507,6 +1507,17 @@ ipcMain.handle('ai:batchCancel', () => {
   catch (e) { return { success: false, message: e.message }; }
 });
 
+// AI 请求日志（chat() 层埋点，滚动保留最近 200 条）
+ipcMain.handle('ai:getRequestLogs', () => {
+  try { return { success: true, data: aiService.getRequestLogs() }; }
+  catch (e) { return { success: false, message: e.message }; }
+});
+
+ipcMain.handle('ai:clearRequestLogs', async () => {
+  try { return { success: true, data: await aiService.clearRequestLogs() }; }
+  catch (e) { return { success: false, message: e.message }; }
+});
+
 ipcMain.handle('script:search', async (event, keyword) => {
   try {
     return await ScriptModel.search(keyword);

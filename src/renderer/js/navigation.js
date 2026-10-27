@@ -98,6 +98,17 @@ class NavigationManager {
             onEnter: () => this.loadHistoryPage(),
             onLeave: () => this.saveHistoryState()
         });
+
+        this.pages.set('ai-logs', {
+            id: 'ai-logs',
+            title: 'AI 请求记录',
+            icon: '💬',
+            description: '查看 AI 请求日志与审计详情',
+            breadcrumb: ['AI 请求记录'],
+            toolbar: false,
+            onEnter: () => this.loadAiLogsPage(),
+            onLeave: () => this.saveAiLogsState()
+        });
     }
     
     // 导航到指定页面
@@ -292,6 +303,15 @@ class NavigationManager {
         }
     }
     
+    loadAiLogsPage() {
+        console.log('加载 AI 请求记录页面');
+        if (window.AiRequestLogs && window.AiRequestLogs.init) {
+            window.AiRequestLogs.init();
+        } else {
+            console.warn('AiRequestLogs 未加载');
+        }
+    }
+
     loadProjectTasksPage() {
         console.log('加载工程任务页面');
         if (window.ProjectTaskManagement && window.ProjectTaskManagement.init) {
@@ -515,6 +535,7 @@ class NavigationManager {
         }
     }
     saveHistoryState() { /* 保存历史页面状态 */ }
+    saveAiLogsState() { /* 保存 AI 请求记录页面状态 */ }
     
     saveProjectTasksState() {
         // 离开页面时取消执行事件监听

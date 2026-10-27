@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>万象匣</title>
+    <!-- 内置字体（三端渲染统一）：@fontsource-variable/inter@5.3.0 · noto-sans-sc@5.3.1 · jetbrains-mono@5.3.0
+         文件位于 assets/fonts/，由 electron-builder 的 src/**/* 打包规则带入安装包 -->
+    <link rel="stylesheet" href="assets/fonts/inter/index.css">
+    <link rel="stylesheet" href="assets/fonts/noto-sans-sc/index.css">
+    <link rel="stylesheet" href="assets/fonts/jetbrains-mono/index.css">
     <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
@@ -48,6 +53,7 @@
                     <a href="#" class="nav-item" data-page="fileupload"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg></span><span class="nav-item-text">文件上传</span></a>
                     <a href="#" class="nav-item" data-page="scheduled"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="nav-item-text">任务调度</span></a>
                     <a href="#" class="nav-item" data-page="history"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span><span class="nav-item-text">任务记录</span></a>
+                    <a href="#" class="nav-item" data-page="ai-logs"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg></span><span class="nav-item-text">AI 请求记录</span></a>
                 </nav>
             </aside>
 
@@ -1007,6 +1013,66 @@
                     </div>
                 </div>
 
+                <!-- AI 请求记录页面 -->
+                <div class="page" id="page-ai-logs" style="display: none;">
+                    <div class="page-header">
+                        <h2>AI 请求记录</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" id="aiLogsRefreshBtn">刷新列表</button>
+                            <button class="btn btn-danger" id="aiLogsClearBtn">清空记录</button>
+                        </div>
+                    </div>
+
+                    <!-- 工具栏 -->
+                    <div class="toolbar">
+                        <div class="toolbar-left">
+                            <div class="search-bar">
+                                <input type="text" class="form-control" placeholder="搜索脚本名称 / 模型 / 错误信息..." id="aiLogsSearchInput">
+                            </div>
+                        </div>
+                        <div class="toolbar-right" style="display: flex; gap: 10px;">
+                            <select class="form-control" id="aiLogsPurposeFilter" style="min-width: 120px;">
+                                <option value="">全部来源</option>
+                                <option value="analyze">脚本分析</option>
+                                <option value="generate">脚本生成</option>
+                                <option value="test">测试连接</option>
+                            </select>
+                            <select class="form-control" id="aiLogsStatusFilter" style="min-width: 120px;">
+                                <option value="">全部状态</option>
+                                <option value="success">成功</option>
+                                <option value="timeout">超时</option>
+                                <option value="network_error">网络错误</option>
+                                <option value="http_error">接口错误</option>
+                                <option value="bad_response">响应异常</option>
+                                <option value="parse_error">解析失败</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="page-content">
+                        <div class="table-container">
+                            <table class="table" id="aiLogsTable">
+                                <thead>
+                                    <tr>
+                                        <th>时间</th>
+                                        <th>来源</th>
+                                        <th>脚本</th>
+                                        <th>模型</th>
+                                        <th>状态</th>
+                                        <th>HTTP</th>
+                                        <th>耗时</th>
+                                        <th>Token</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- AI 请求日志将动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 工程任务页面 -->
                 <div class="page" id="page-project-tasks" style="display: none;">
                     <div class="page-header">
@@ -1113,6 +1179,7 @@
     <script src="js/fileUpload.js"></script>
     <script src="js/scheduledTasks.js"></script>
     <script src="js/taskHistory.js"></script>
+    <script src="js/aiRequestLogs.js"></script>
     <script src="js/projectTaskManagement.js"></script>
     <script src="js/projectTaskExecution.js"></script>
     <script src="js/navigation.js"></script>

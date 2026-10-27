@@ -168,5 +168,7 @@ API Key
 密钥将用 AES-GCM 加密存储于本地。
 模型
 Temperature
+关闭深度思考（推理模型提速）
+适用于 qwen3 等推理模型：开启后请求体携带 chat_template_kwargs: { enable_thinking: false }，跳过内部思考链直接输出，可大幅降低响应耗时（实测复杂任务 342s → 6s）。非推理模型可忽略，不勾选则不携带该参数。
 流式渲染 (SSE)
 测试连接

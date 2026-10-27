@@ -69,6 +69,18 @@
             return await this.ipcRenderer.invoke('ai:batchCancel');
         }
 
+        /** 获取 AI 请求日志（倒序，最新在前） */
+        async getRequestLogs() {
+            if (!this.isElectron) return { success: false, message: '仅支持 Electron 环境' };
+            return await this.ipcRenderer.invoke('ai:getRequestLogs');
+        }
+
+        /** 清空 AI 请求日志 */
+        async clearRequestLogs() {
+            if (!this.isElectron) return { success: false, message: '仅支持 Electron 环境' };
+            return await this.ipcRenderer.invoke('ai:clearRequestLogs');
+        }
+
         /** 删除指定脚本的分析记录 */
         async deleteAnalyses(scriptIds) {
             if (!this.isElectron) return { success: false, message: '仅支持 Electron 环境' };

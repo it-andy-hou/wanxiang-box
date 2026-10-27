@@ -51,7 +51,9 @@ const DEFAULT_DATA = {
     // 快捷面板
     script_shortcuts: [],     // 脚本执行页快捷面板（全局，上限10个）
     // AI 脚本分析结果（每个脚本仅保留最新一条）
-    script_ai_analyses: []
+    script_ai_analyses: [],
+    // AI 请求日志（滚动保留最近 200 条，含耗时/状态/错误等信息）
+    ai_request_logs: []
 };
 
 class SimpleDatabase {

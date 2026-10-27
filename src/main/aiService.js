@@ -12,6 +12,10 @@ const MAX_GENERATE_REQUIREMENT_CHARS = 2000; // 脚本生成需求描述的最�
 const DEFAULT_TIMEOUT_MS = 180000; // 单次请求超时（实测复杂脚本分析可达 2 分钟）
 const BATCH_CONCURRENCY = 2;      // 批量分析并发上限
 const ANALYSIS_TABLE = 'script_ai_analyses';
+const REQUEST_LOG_TABLE = 'ai_request_logs'; // AI 请求日志表（滚动保留）
+const MAX_REQUEST_LOGS = 200;    // 请求日志滚动保留条数（超出删最旧）
+const MAX_LOG_BODY_CHARS = 200000; // 审计模式下请求/响应全文的截断上限
+const RESPONSE_PREVIEW_CHARS = 500; // 响应预览截断长度
 const SETTINGS_KEY = 'ai';        // simple-db settings 表中的配置键
 
 // ============================================================
@@ -292,7 +296,9 @@ class AIService {
             baseUrl: cfg.baseUrl || '',
             model: cfg.model || '',
             temperature: typeof cfg.temperature === 'number' ? cfg.temperature : 0.3,
+            disableThinking: !!cfg.disableThinking, // 关闭推理模型的深度思考（qwen3 等，经 chat_template_kwargs 透传给 vLLM）
             sse: !!cfg.sse,
+            logFullRequest: !!cfg.logFullRequest, // 审计模式：记录完整请求体（含脚本内容）
             hasKey: hasEnc || hasPlain,
             keyPlainFallback: hasPlain && !hasEnc, // 明文降级存储标记
             // 累计消耗统计（仅统计脚本分析调用）
@@ -342,6 +348,8 @@ class AIService {
             cfg.temperature = t;
         }
         if (payload.sse !== undefined) cfg.sse = !!payload.sse;
+        if (payload.disableThinking !== undefined) cfg.disableThinking = !!payload.disableThinking;
+        if (payload.logFullRequest !== undefined) cfg.logFullRequest = !!payload.logFullRequest;
 
         if (payload.apiKey !== undefined && String(payload.apiKey).trim() !== '') {
             const key = String(payload.apiKey).trim();
@@ -376,11 +384,12 @@ class AIService {
     }
 
     /**
-     * 调用 /chat/completions。
+     * 调用 /chat/completions，并写入请求日志（ai_request_logs 表，滚动保留）。
      * settingsOverride 可传 { baseUrl, apiKey, model, temperature }（测试连接时用表单值）。
-     * 返回 { content, usage }（usage 可能为 null，网关未返回时）。
+     * purpose: 'analyze' | 'generate' | 'test'（日志来源标记，缺省 'other'）。
+     * 返回 { content, usage, logId }（usage 可能为 null，网关未返回时；logId 供上层回填日志状态）。
      */
-    async chat(messages, { timeout = DEFAULT_TIMEOUT_MS, settingsOverride = null } = {}) {
+    async chat(messages, { timeout = DEFAULT_TIMEOUT_MS, settingsOverride = null, purpose = 'other', scriptId = null, scriptName = '' } = {}) {
         const cfg = settingsOverride || {};
         const baseUrl = cfg.baseUrl || this.getSettings().baseUrl;
         const model = cfg.model || this.getSettings().model;
@@ -392,45 +401,162 @@ class AIService {
         if (!apiKey) throw new Error('请先在 设置 → 大模型接入 中配置 API Key');
 
         const { endpoint } = resolveEndpoint(baseUrl);
+        const endpointHost = new URL(endpoint).hostname;
 
+        // 请求日志基础字段（失败前就要能定位到目标，故先组装）
+        const requestBodyJson = { model, messages, temperature, stream: false };
+        // 关闭深度思考：qwen3 系推理模型经 vLLM 的 chat_template_kwargs 透传（实测复杂任务 342s -> 6s）
+        if (!!(cfg.disableThinking || this.getSettings().disableThinking)) {
+            requestBodyJson.chat_template_kwargs = { enable_thinking: false };
+        }
+        const requestBody = JSON.stringify(requestBodyJson);
+        const logFullRequest = !!this.getSettings().logFullRequest;
+        const log = {
+            id: 'airq_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+            purpose,
+            script_id: scriptId !== undefined && scriptId !== null ? scriptId : '',
+            script_name: scriptName || '',
+            endpoint_host: endpointHost,
+            model,
+            status: '',
+            http_status: null,
+            error: '',
+            duration_ms: 0,
+            ttfb_ms: null, // 首字节耗时（响应头到达时间）；null 表示超时前连响应头都未收到
+            timeout_ms: timeout,
+            usage: null,
+            request_chars: requestBody.length,
+            request_body: logFullRequest ? requestBody.slice(0, MAX_LOG_BODY_CHARS) : '',
+            response_preview: '',
+            created_at: new Date().toISOString()
+        };
+
+        const t0 = Date.now();
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeout);
-        let res;
+        let res, text;
         try {
-            res = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model,
-                    messages,
-                    temperature,
-                    stream: false // 分析结果需整体解析 JSON，本期不走 SSE
-                }),
-                signal: controller.signal
-            });
+            try {
+                res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: requestBody,
+                    signal: controller.signal
+                });
+            } catch (e) {
+                // 响应头都未返回：超时说明模型/网关在限时内未完成计算（连接、排队、推理均在此阶段）
+                log.duration_ms = Date.now() - t0;
+                const isTimeout = e.name === 'AbortError';
+                log.status = isTimeout ? 'timeout' : 'network_error';
+                log.error = isTimeout
+                    ? `请求超时（${Math.round(timeout / 1000)}s，响应头未返回）`
+                    : `网络请求失败: ${e.message}`;
+                throw new Error(log.error);
+            }
+            log.http_status = res.status;
+            log.ttfb_ms = Date.now() - t0; // 首字节耗时：stream:false 下响应头到达 ≈ 模型计算完成
+            try {
+                text = await res.text(); // 超时计时器持续有效：响应体传输同样受总超时约束，避免网关半开连接永久挂起
+            } catch (e) {
+                log.duration_ms = Date.now() - t0;
+                const isTimeout = e.name === 'AbortError';
+                log.status = isTimeout ? 'timeout' : 'network_error';
+                log.error = isTimeout
+                    ? `响应超时（响应头 ${log.ttfb_ms}ms 已返回，响应体未在 ${Math.round(timeout / 1000)}s 内传完）`
+                    : `响应读取失败: ${e.message}`;
+                throw new Error(log.error);
+            }
         } catch (e) {
-            if (e.name === 'AbortError') throw new Error(`请求超时（${Math.round(timeout / 1000)}s）`);
-            throw new Error(`网络请求失败: ${e.message}`);
+            this._writeRequestLog(log);
+            console.warn(`[AI请求] ${purpose} ${endpointHost} 失败(${log.status}) ${log.duration_ms}ms: ${log.error}`);
+            throw e;
         } finally {
             clearTimeout(timer);
         }
 
-        const text = await res.text();
+        log.duration_ms = Date.now() - t0;
         if (!res.ok) {
             let detail = text;
             try { const j = JSON.parse(text); detail = j.error?.message || j.message || text; } catch (e) { /* 保留原文 */ }
-            throw new Error(`接口返回 ${res.status}: ${String(detail).slice(0, 300)}`);
+            log.status = 'http_error';
+            log.error = `接口返回 ${res.status}: ${String(detail).slice(0, 300)}`;
+            log.response_preview = text.slice(0, RESPONSE_PREVIEW_CHARS);
+            this._writeRequestLog(log);
+            console.warn(`[AI请求] ${purpose} ${endpointHost} 失败(http ${res.status}) ${log.duration_ms}ms: ${log.error}`);
+            throw new Error(log.error);
         }
         let body;
         try { body = JSON.parse(text); } catch (e) {
-            throw new Error('接口返回非 JSON 内容: ' + text.slice(0, 200));
+            log.status = 'bad_response';
+            log.error = '接口返回非 JSON 内容: ' + text.slice(0, 200);
+            log.response_preview = text.slice(0, RESPONSE_PREVIEW_CHARS);
+            this._writeRequestLog(log);
+            console.warn(`[AI请求] ${purpose} ${endpointHost} 失败(非JSON) ${log.duration_ms}ms`);
+            throw new Error(log.error);
         }
         const content = extractContent(body);
-        if (!content) throw new Error('接口未返回任何消息内容');
-        return { content, usage: extractUsage(body) };
+        if (!content) {
+            log.status = 'bad_response';
+            log.error = '接口未返回任何消息内容';
+            log.response_preview = text.slice(0, RESPONSE_PREVIEW_CHARS);
+            this._writeRequestLog(log);
+            console.warn(`[AI请求] ${purpose} ${endpointHost} 失败(无内容) ${log.duration_ms}ms`);
+            throw new Error(log.error);
+        }
+        log.status = 'success';
+        log.usage = extractUsage(body);
+        log.response_preview = String(content).slice(0, RESPONSE_PREVIEW_CHARS);
+        this._writeRequestLog(log);
+        return { content, usage: log.usage, logId: log.id };
+    }
+
+    /**
+     * 写入请求日志（滚动保留 MAX_REQUEST_LOGS 条，超出删最旧）。
+     * 日志写入失败不影响 AI 主流程。
+     */
+    async _writeRequestLog(log) {
+        try {
+            const db = this._getDb();
+            const list = db.getTable(REQUEST_LOG_TABLE);
+            list.push(log);
+            while (list.length > MAX_REQUEST_LOGS) {
+                list.shift();
+            }
+            await db.setTable(REQUEST_LOG_TABLE, list);
+        } catch (e) {
+            console.warn('写入 AI 请求日志失败:', e.message);
+        }
+    }
+
+    /** 回填日志字段（如解析失败标记 parse_error、生成成功后回填脚本名） */
+    async _updateRequestLog(logId, updates = {}) {
+        if (!logId) return;
+        try {
+            const db = this._getDb();
+            const list = db.getTable(REQUEST_LOG_TABLE);
+            const idx = list.findIndex(r => r.id === logId);
+            if (idx >= 0) {
+                list[idx] = { ...list[idx], ...updates };
+                await db.setTable(REQUEST_LOG_TABLE, list);
+            }
+        } catch (e) {
+            console.warn('更新 AI 请求日志失败:', e.message);
+        }
+    }
+
+    /** 读取请求日志（倒序，最新在前） */
+    getRequestLogs() {
+        const list = this._getDb().getTable(REQUEST_LOG_TABLE);
+        return [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+
+    /** 清空请求日志 */
+    async clearRequestLogs() {
+        await this._getDb().setTable(REQUEST_LOG_TABLE, []);
+        return true;
     }
 
     /** 测试连接：发送最小消息（优先用表单值，未填 Key 时用已存 Key） */
@@ -443,7 +569,7 @@ class AIService {
         const t0 = Date.now();
         const { content } = await this.chat(
             [{ role: 'user', content: '请只回复两个字：ok' }],
-            { timeout: 30000, settingsOverride: override }
+            { timeout: 30000, settingsOverride: override, purpose: 'test' }
         );
         return { success: true, message: `连接成功（${Date.now() - t0}ms），模型回复: ${String(content).slice(0, 50)}` };
     }
@@ -514,9 +640,10 @@ class AIService {
             }
         }
 
-        let reply, usage;
+        let reply, usage, logId;
         try {
-            ({ content: reply, usage } = await this.chat(buildMessages(text)));
+            ({ content: reply, usage, logId } = await this.chat(buildMessages(text),
+                { purpose: 'analyze', scriptId: hasId ? scriptId : null, scriptName: scriptName || '' }));
         } catch (e) {
             const record = this._makeRecord(scriptId, scriptName, contentHash, null, '', 'error', e.message);
             if (hasId) await this._upsertRecord(record);
@@ -528,6 +655,10 @@ class AIService {
 
         const parsed = parseAnalysisJson(reply);
         const status = parsed.ok ? 'success' : 'parse_error';
+        if (!parsed.ok && logId) {
+            // 模型有返回但 JSON 不合法 → 回填日志状态，便于在请求记录页定位
+            await this._updateRequestLog(logId, { status: 'parse_error', error: '模型未返回合法 JSON' });
+        }
         const record = this._makeRecord(scriptId, scriptName, contentHash, parsed.ok ? parsed.data : null, reply, status, parsed.ok ? '' : '模型未返回合法 JSON', usage);
         if (hasId) await this._upsertRecord(record);
         return { success: status === 'success', data: { record, fromCache: false }, message: status === 'success' ? '分析完成' : '解析失败（已保留原始返回）' };
@@ -562,9 +693,12 @@ class AIService {
             return { success: false, message: `需求描述超过 ${MAX_GENERATE_REQUIREMENT_CHARS} 字符，请精简后再试` };
         }
 
-        let reply, usage;
+        let reply, usage, logId;
+        // 需求摘要先充当 script_name（生成时脚本尚不存在；超时/失败时也能定位是哪个需求）
+        const requirementPreview = text.replace(/\s+/g, ' ').slice(0, 24);
         try {
-            ({ content: reply, usage } = await this.chat(buildGenerateMessages(text)));
+            ({ content: reply, usage, logId } = await this.chat(buildGenerateMessages(text),
+                { purpose: 'generate', scriptName: requirementPreview }));
         } catch (e) {
             return { success: false, message: e.message };
         }
@@ -574,6 +708,7 @@ class AIService {
 
         const parsed = parseAnalysisJson(reply);
         if (!parsed.ok) {
+            if (logId) await this._updateRequestLog(logId, { status: 'parse_error', error: '模型未返回合法结果' });
             return { success: false, message: '模型未返回合法结果，请调整需求后重试' };
         }
 
@@ -581,6 +716,8 @@ class AIService {
         const name = normalizeGeneratedName(data.name);
         const description = String(data.description || '').trim();
         const content = String(data.content || '').trim();
+        // 生成完成 → 回填实际生成的脚本名（覆盖需求摘要）
+        if (name && logId) await this._updateRequestLog(logId, { script_name: name });
         if (!name) return { success: false, message: '模型未返回脚本名称，请重试' };
         if (!content) return { success: false, message: '模型未返回脚本内容，请重试' };
         if (content.length > MAX_SCRIPT_CHARS) {

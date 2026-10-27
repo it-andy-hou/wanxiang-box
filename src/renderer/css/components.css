@@ -3276,7 +3276,7 @@ select.form-control option {
     border: 1px solid var(--border-subtle);
     background: var(--surface-subtle);
     color: var(--text-muted);
-    font-family: "JetBrains Mono", SF Mono, Consolas, monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     line-height: 1;
     padding: 2px 5px;
@@ -3298,7 +3298,7 @@ select.form-control option {
 .te-script-time {
     flex: none;
     margin-left: auto;
-    font-family: "JetBrains Mono", SF Mono, Consolas, monospace;
+    font-family: var(--font-mono);
     font-size: 11px;
     color: var(--text-faint);
     font-feature-settings: "tabular-nums" 1;

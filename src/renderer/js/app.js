@@ -1938,7 +1938,7 @@ class SSHToolsApp {
         let currentConcurrency = 1;
         let currentTimeout = 300;
         let backupSettings = { backup_enabled: true, backup_time: '02:00', backup_keep_count: 30, backup_last_at: null, dailyDir: '', beforeImportDir: '', backupRoot: '' };
-        let aiSettings = { baseUrl: '', model: '', temperature: 0.3, sse: false, hasKey: false, keyPlainFallback: false };
+        let aiSettings = { baseUrl: '', model: '', temperature: 0.3, disableThinking: false, sse: false, hasKey: false, keyPlainFallback: false };
         
         try {
             if (window.require) {
@@ -2019,7 +2019,22 @@ class SSHToolsApp {
                         </div>
                         <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
                             <button class="btn btn-secondary" id="aiTestConnectionBtn" style="font-size: 13px;">测试连接</button>
+                            <button class="btn btn-secondary" id="aiViewLogsBtn" style="font-size: 13px;">查看请求记录</button>
                             <span id="aiTestResult" class="ai-test-result"></span>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.75rem; margin-top: 0.75rem;">
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" id="aiDisableThinking" ${aiSettings.disableThinking ? 'checked' : ''}>
+                                <span>关闭深度思考（推理模型提速）</span>
+                            </label>
+                            <small class="form-text text-muted">适用于 qwen3 等推理模型：跳过内部思考链直接输出，可大幅降低响应耗时（实测 342s → 6s）。经 chat_template_kwargs 透传给服务端，普通模型可忽略此选项。</small>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" id="aiLogFullRequest" ${aiSettings.logFullRequest ? 'checked' : ''}>
+                                <span>记录完整请求体（审计）</span>
+                            </label>
+                            <small class="form-text text-muted">开启后每次请求的完整 Prompt（含脚本内容）将明文记录在本地数据库，仅用于审计排查，请注意数据安全；关闭时仅记录请求字符数。</small>
                         </div>
                         ${aiSettings.totalCalls > 0 ? `
                         <div class="ai-usage-stats">累计分析 ${aiSettings.totalCalls} 次 · 消耗 ${aiSettings.totalTokens.toLocaleString()} tokens（输入 ${(aiSettings.totalPromptTokens || 0).toLocaleString()} / 输出 ${(aiSettings.totalCompletionTokens || 0).toLocaleString()}）</div>
@@ -2156,11 +2171,15 @@ class SSHToolsApp {
                                     }
                                     try {
                                         const { ipcRenderer: aiIpc } = window.require('electron');
+                                        const aiLogFullEl = document.getElementById('aiLogFullRequest');
+                                        const aiDisableThinkingEl = document.getElementById('aiDisableThinking');
                                         const aiResult = await aiIpc.invoke('ai:saveSettings', {
                                             baseUrl: aiBaseUrl.trim(),
                                             model: aiModel.trim(),
                                             temperature: aiTemp,
-                                            apiKey: aiApiKey.trim()
+                                            apiKey: aiApiKey.trim(),
+                                            disableThinking: !!(aiDisableThinkingEl && aiDisableThinkingEl.checked),
+                                            logFullRequest: !!(aiLogFullEl && aiLogFullEl.checked)
                                         });
                                         if (!aiResult.success) {
                                             Utils.notify.error('大模型设置保存失败: ' + aiResult.message);
@@ -2193,6 +2212,17 @@ class SSHToolsApp {
                         }
                     });
                     defaultKeyDialog.show();
+                });
+            }
+
+            // ──── 大模型接入：查看请求记录 ────
+            const aiViewLogsBtn = document.getElementById('aiViewLogsBtn');
+            if (aiViewLogsBtn) {
+                aiViewLogsBtn.addEventListener('click', () => {
+                    settingsDialog.hide();
+                    if (window.app && window.app.navigationManager) {
+                        window.app.navigationManager.navigateTo('ai-logs');
+                    }
                 });
             }
 
