@@ -1,6 +1,6 @@
 {
   "name": "wanxiang-box",
-  "version": "1.261027.0",
+  "version": "1.261109.0",
   "description": "万象匣-运维自动化管控平台",
   "main": "src/main/main.js",
   "scripts": {
@@ -34,6 +34,7 @@
   "dependencies": {
     "csv-parser": "^3.0.0",
     "csv-writer": "^1.6.0",
+    "echarts": "^6.1.0",
     "highlight.js": "^11.11.1",
     "mermaid": "^11.12.3",
     "node-ssh": "^13.2.1",
@@ -42,7 +43,7 @@
   "build": {
     "appId": "com.wanxiangbox.app",
     "productName": "万象匣",
-    "copyright": "Copyright \u00a9 2026 侯金刚. All rights reserved.",
+    "copyright": "Copyright © 2026 侯金刚. All rights reserved.",
     "directories": {
       "output": "dist"
     },
