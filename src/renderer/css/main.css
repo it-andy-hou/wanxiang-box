@@ -704,8 +704,9 @@ body {
 .toolbar-right select {
     min-width: 120px;
     height: 38px;
-    line-height: 1.45;
-    padding: 6px 12px;
+    /* 仅水平内边距：Electron 27（Chromium 118）在 macOS 上对 select 的垂直 padding
+       会叠加到原生定位上把文字下推，导致下半截被裁；去掉垂直 padding 让引擎原生居中 */
+    padding: 0 12px;
     border: 1px solid var(--border-subtle);
     border-radius: var(--rounded-sm);
     font-size: 13px;
@@ -735,7 +736,8 @@ body {
 #hostDatacenterFilter,
 #hostEnvironmentFilter,
 #hostOwnerFilter,
-#hostStatusFilter {
+#hostStatusFilter,
+#hostOsTypeFilter {
     background-color: var(--surface-subtle) !important;
     background-image: none !important;
     color: var(--text-body);
@@ -747,7 +749,8 @@ body {
 #hostDatacenterFilter:-webkit-autofill,
 #hostEnvironmentFilter:-webkit-autofill,
 #hostOwnerFilter:-webkit-autofill,
-#hostStatusFilter:-webkit-autofill {
+#hostStatusFilter:-webkit-autofill,
+#hostOsTypeFilter:-webkit-autofill {
     -webkit-box-shadow: 0 0 0 1000px var(--surface-subtle) inset !important;
     background-color: var(--surface-subtle) !important;
     background-image: none !important;
@@ -776,6 +779,209 @@ body {
     line-height: 1.4;
     font-weight: 600;
     vertical-align: middle;
+}
+
+/* 页头「重置」按钮：角标绝对定位右上角 */
+#clearFiltersBtn {
+    position: relative;
+}
+
+#clearFiltersBtn .reset-all-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    margin-left: 0;
+    padding: 0 5px;
+    font-size: 10px;
+    line-height: 1.4;
+    pointer-events: none;
+}
+
+/* Excel 数据下拉（导入 / 导出 / 下载模板）：悬浮面板，不挤压页头布局 */
+.excel-menu-wrap {
+    position: relative;
+}
+
+.excel-menu-wrap .excel-menu-chevron {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.excel-menu-wrap.open .excel-menu-chevron {
+    transform: rotate(180deg);
+}
+
+.excel-menu-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    flex-direction: column;
+    min-width: 156px;
+    padding: 6px;
+    background: var(--surface-float);
+    border: 1px solid var(--border-default);
+    border-radius: var(--rounded-md);
+    box-shadow: var(--shadow-modal);
+    z-index: 300; /* 与更多筛选浮层同层级，低于 modal */
+}
+
+.excel-menu-panel.open {
+    display: flex;
+}
+
+.excel-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-body);
+    background: none;
+    border: none;
+    border-radius: var(--rounded-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    text-align: left;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.excel-menu-item:hover {
+    background: var(--surface-subtle);
+    color: var(--primary);
+}
+
+/* 更多筛选：展开后挤入工具栏首行（负责人 / 状态 / 系统版本） */
+.more-filters-inline {
+    display: none;
+}
+
+.more-filters-inline.open {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.more-filters-inline select {
+    /* 覆盖 .form-control 的 width:100%，改为内容自适应宽度，与其他筛选并排 */
+    width: auto;
+    flex: 0 1 auto;
+    min-width: 110px;
+    max-width: 240px;
+    height: 38px;
+    /* 同 .toolbar-right select：不用垂直 padding / line-height，避免 Chromium 118 文字下移裁切 */
+    padding: 0 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--rounded-sm);
+    font-size: 13px;
+    background-color: var(--surface-subtle);
+    color: var(--text-body);
+    box-sizing: border-box;
+}
+
+.more-filters-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 38px;
+    padding: 0 12px;
+    white-space: nowrap;
+}
+
+.more-filters-btn .reset-all-badge {
+    margin-left: 0;
+}
+
+.more-filters-btn .more-filters-chevron {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.more-filters-btn.expanded .more-filters-chevron {
+    transform: rotate(180deg);
+}
+
+/* 可搜索筛选下拉：点击筛选 select 弹出的关键词过滤面板 */
+.select-search-panel {
+    position: fixed;
+    z-index: 20000; /* 高于页面弹窗（含 z-index 10000 的工程任务步骤弹窗），保证在主机选择弹窗内可用 */
+    display: flex;
+    flex-direction: column;
+    max-height: 320px;
+    padding: 8px;
+    background: var(--surface-float);
+    border: 1px solid var(--border-default);
+    border-radius: var(--rounded-md);
+    box-shadow: var(--shadow-modal);
+}
+
+.select-search-panel .select-search-input {
+    flex-shrink: 0;
+    margin-bottom: 6px;
+    font-size: 13px;
+    height: 34px;
+    padding: 0 10px;
+    line-height: normal; /* 覆盖 .form-control 的 1.45，避免文字紧贴上下边缘 */
+}
+
+.select-search-panel .select-search-list {
+    overflow-y: auto;
+    min-width: 180px;
+}
+
+.select-search-all,
+.select-search-item {
+    padding: 6px 10px;
+    border-radius: var(--rounded-sm);
+    font-size: 13px;
+    color: var(--text-body);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.select-search-all {
+    flex-shrink: 0; /* 面板触顶 max-height 时禁止被 flex 压缩，否则此行被裁半截 */
+    margin-bottom: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+    border-radius: var(--rounded-sm) var(--rounded-sm) 0 0;
+    color: var(--text-muted);
+}
+
+.select-search-all:hover,
+.select-search-item:hover,
+.select-search-item.active {
+    background: var(--surface-active);
+}
+
+.select-search-all.selected,
+.select-search-item.selected {
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.select-search-empty {
+    padding: 10px;
+    font-size: 12px;
+    color: var(--text-faint);
+    text-align: center;
+}
+
+
+/* 主机列表「系统版本」列的 OS 小 logo */
+.os-logo {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 5px;
+    vertical-align: -2px;
+    line-height: 1;
+}
+
+.os-logo svg {
+    display: block;
 }
 
 /* 响应式设计 */

@@ -39,6 +39,12 @@
             return await this.ipcRenderer.invoke('ai:analyze', payload);
         }
 
+        /** AI 分析当前批次执行结果（一次性调用，不落库） */
+        async analyzeExecutionResult(payload) {
+            if (!this.isElectron) return { success: false, message: '仅支持 Electron 环境' };
+            return await this.ipcRenderer.invoke('ai:analyzeExecutionResult', payload);
+        }
+
         /** AI 生成脚本草稿（一次性调用，不落库不缓存） */
         async generateScript(payload) {
             if (!this.isElectron) return { success: false, message: '仅支持 Electron 环境' };

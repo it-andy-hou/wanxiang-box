@@ -109,6 +109,17 @@ class NavigationManager {
             onEnter: () => this.loadAiLogsPage(),
             onLeave: () => this.saveAiLogsState()
         });
+
+        this.pages.set('statistics', {
+            id: 'statistics',
+            title: '统计看板',
+            icon: '📈',
+            description: '数据可视化统计看板',
+            breadcrumb: ['统计看板'],
+            toolbar: false,
+            onEnter: () => this.loadStatisticsPage(),
+            onLeave: () => this.saveStatisticsState()
+        });
     }
     
     // 导航到指定页面
@@ -309,6 +320,15 @@ class NavigationManager {
             window.AiRequestLogs.init();
         } else {
             console.warn('AiRequestLogs 未加载');
+        }
+    }
+
+    loadStatisticsPage() {
+        console.log('加载统计看板页面');
+        if (window.Statistics && window.Statistics.init) {
+            window.Statistics.init();
+        } else {
+            console.warn('Statistics 未加载');
         }
     }
 
@@ -536,6 +556,13 @@ class NavigationManager {
     }
     saveHistoryState() { /* 保存历史页面状态 */ }
     saveAiLogsState() { /* 保存 AI 请求记录页面状态 */ }
+
+    saveStatisticsState() {
+        // 离开页面时销毁全部图表实例，避免内存泄漏
+        if (window.Statistics && window.Statistics.destroy) {
+            window.Statistics.destroy();
+        }
+    }
     
     saveProjectTasksState() {
         // 离开页面时取消执行事件监听

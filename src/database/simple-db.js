@@ -53,7 +53,9 @@ const DEFAULT_DATA = {
     // AI 脚本分析结果（每个脚本仅保留最新一条）
     script_ai_analyses: [],
     // AI 请求日志（滚动保留最近 200 条，含耗时/状态/错误等信息）
-    ai_request_logs: []
+    ai_request_logs: [],
+    // AI 用量按日汇总（长期保留，解决请求日志滚动 200 条无法看长期趋势的问题）
+    ai_usage_daily: []
 };
 
 class SimpleDatabase {

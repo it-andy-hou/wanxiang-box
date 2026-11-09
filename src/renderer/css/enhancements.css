@@ -894,6 +894,54 @@ input[type="checkbox"] {
 .ai-test-result.ok   { color: var(--status-healthy-fg); }
 .ai-test-result.fail { color: var(--status-critical-fg); }
 
+/* 执行结果 AI 分析 */
+.ai-execution-modal { max-width: 960px; width: calc(100% - 2rem); }
+.ai-execution-modal .modal-body { max-height: 68vh; overflow-y: auto; }
+.ai-execution-task { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.ai-execution-task span { color: var(--text-muted); font-size: 0.8125rem; }
+.ai-execution-controls { display: grid; grid-template-columns: 180px 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+.ai-execution-controls label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8125rem; color: var(--text-body); }
+.ai-execution-privacy { padding: 0.6rem 0.75rem; margin-bottom: 0.75rem; border-radius: 6px; background: var(--status-warning-bg); color: var(--status-warning-fg); font-size: 0.75rem; line-height: 1.6; }
+.ai-execution-stats { display: flex; gap: 1rem; flex-wrap: wrap; padding: 0.6rem 0.75rem; margin-bottom: 0.75rem; border-radius: 6px; background: var(--surface-subtle); font-size: 0.8125rem; }
+.ai-execution-report { min-height: 80px; }
+.ai-execution-overall { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; padding: 0.85rem 1rem; border: 1px solid var(--border-default); border-left-width: 4px; border-radius: 8px; background: var(--surface-card); }
+.ai-execution-attention-normal { border-left-color: var(--status-healthy-fg); }
+.ai-execution-attention-warning { border-left-color: var(--status-warning-fg); }
+.ai-execution-attention-critical { border-left-color: var(--status-critical-fg); }
+.ai-execution-attention { flex-shrink: 0; font-size: 0.75rem; font-weight: 700; }
+.ai-execution-muted { color: var(--text-muted); font-size: 0.75rem; font-weight: 400; }
+.ai-execution-coverage { padding: 0.5rem 0.25rem; color: var(--text-muted); font-size: 0.75rem; }
+.ai-execution-issue { margin-top: 0.75rem; padding: 0.85rem 1rem; border: 1px solid var(--border-default); border-radius: 8px; background: var(--surface-card); }
+.ai-execution-issue-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.ai-execution-issue-type { padding: 2px 6px; border-radius: 4px; background: var(--surface-subtle); color: var(--primary); font-size: 0.75rem; }
+.ai-execution-issue-failure .ai-execution-issue-type,
+.ai-execution-issue-suspected_failure .ai-execution-issue-type { color: var(--status-critical-fg); }
+.ai-execution-hosts { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.ai-execution-host { padding: 2px 6px; border-radius: 4px; background: var(--surface-subtle); font-family: var(--font-mono, monospace); font-size: 0.75rem; }
+.ai-execution-block { margin-top: 0.75rem; padding-top: 0.6rem; border-top: 1px dashed var(--border-default); }
+.ai-execution-block h4,
+.ai-execution-summary h3,
+.ai-execution-limitations h3 { margin: 0 0 0.4rem; color: var(--text-body); font-size: 0.8125rem; }
+.ai-execution-block ul,
+.ai-execution-summary ul,
+.ai-execution-limitations ul { margin: 0; padding-left: 1.25rem; color: var(--text-body); font-size: 0.8125rem; line-height: 1.7; }
+.ai-execution-evidence { margin-top: 0.45rem; }
+.ai-execution-evidence > span { color: var(--text-muted); font-size: 0.75rem; }
+.ai-execution-evidence pre,
+.ai-execution-recommendation pre,
+.ai-execution-raw pre { margin: 0.25rem 0 0; padding: 0.55rem 0.65rem; border-radius: 5px; background: var(--surface-subtle); white-space: pre-wrap; word-break: break-word; font-size: 0.75rem; }
+.ai-execution-recommendation { margin-top: 0.5rem; padding: 0.55rem 0.65rem; border-left: 3px solid var(--status-healthy-fg); background: var(--surface-subtle); }
+.ai-execution-recommendation.ai-recommendation-caution { border-left-color: var(--status-warning-fg); }
+.ai-execution-recommendation.ai-recommendation-destructive { border-left-color: var(--status-critical-fg); }
+.ai-execution-recommendation > div { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+.ai-execution-recommendation p { margin: 0.35rem 0 0; color: var(--text-muted); font-size: 0.75rem; }
+.ai-execution-risk { flex-shrink: 0; color: var(--text-muted); font-size: 0.75rem; }
+.ai-execution-summary,
+.ai-execution-limitations { margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 8px; background: var(--surface-subtle); }
+.ai-execution-limitations { color: var(--text-muted); }
+.ai-execution-empty { padding: 1rem; color: var(--status-healthy-fg); text-align: center; }
+.ai-execution-raw { margin-top: 0.5rem; }
+
 /* 批量分析弹窗 */
 .ai-batch-summary {
     display: flex;

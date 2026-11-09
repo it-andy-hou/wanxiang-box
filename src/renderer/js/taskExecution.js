@@ -11,6 +11,7 @@
     let executionStartTime = null;
     let executionTimer = null;
     let currentTaskResults = []; // 存储当前任务的执行结果
+        let currentTaskContent = ''; // 当前已执行脚本快照，避免后续选择变化污染 AI 分析上下文
     let allScripts = [];          // 全量脚本缓存，用于客户端过滤
     let categoryMap = new Map();  // 目录 id → 名称映射，用于分组展示
     let recentScriptIds = [];     // 最近使用的脚本 id（取前5）
@@ -195,6 +196,12 @@
         const exportResultBtn = document.getElementById('exportResultBtn');
         if (exportResultBtn) {
             exportResultBtn.addEventListener('click', exportResults);
+        }
+
+        // AI 分析执行结果按钮
+        const analyzeResultBtn = document.getElementById('analyzeExecutionResultBtn');
+        if (analyzeResultBtn) {
+            analyzeResultBtn.addEventListener('click', analyzeExecutionResults);
         }
     
     }
@@ -383,7 +390,12 @@
     async function showHostSelector() {
         try {
             const hosts = await hostService.loadHosts();
-            
+
+            // 打开弹窗时后台刷新一次主机连接状态（不阻塞弹窗展示）
+            if (window.connectionMonitor && typeof window.connectionMonitor.performStatusCheck === 'function') {
+                window.connectionMonitor.performStatusCheck().catch(() => {});
+            }
+
             const modal = createHostSelectorDialog(hosts);
             document.body.appendChild(modal);
         } catch (error) {
@@ -403,11 +415,9 @@
             appName: '',
             datacenter: '',
             environment: '',
-            owner: ''
+            owner: '',
+            osType: ''
         };
-        
-        // 提取唯一的系统名称（始终显示全部系统，不受其他筛选条件影响）
-        const systemNames = [...new Set(hosts.map(h => h.systemName || h.system_name).filter(Boolean))];
         
         modalOverlay.innerHTML = `
             <div class="modal" style="max-width: 1000px;">
@@ -418,10 +428,9 @@
                 <div class="modal-body" style="padding: 20px;">
                     <!-- 快速筛选工具栏 -->
                     <div style="margin-bottom: 1rem;">
-                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 12px;">
+                        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 12px;">
                             <select class="form-control" id="filterSystemName" style="height: 38px; line-height: 22px; padding: 7px 12px; vertical-align: middle;">
                                 <option value="">全部系统</option>
-                                ${systemNames.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')}
                             </select>
                             <select class="form-control" id="filterAppName" style="height: 38px; line-height: 22px; padding: 7px 12px; vertical-align: middle;">
                                 <option value="">全部应用</option>
@@ -434,6 +443,9 @@
                             </select>
                             <select class="form-control" id="filterOwner" style="height: 38px; line-height: 22px; padding: 7px 12px; vertical-align: middle;">
                                 <option value="">全部负责人</option>
+                            </select>
+                            <select class="form-control" id="filterOsType" style="height: 38px; line-height: 22px; padding: 7px 12px; vertical-align: middle;">
+                                <option value="">全部系统版本</option>
                             </select>
                         </div>
                         <div class="search-bar" style="width: 100%; margin-bottom: 10px;">
@@ -462,6 +474,7 @@
                                     <th>机房</th>
                                     <th>环境</th>
                                     <th>负责人</th>
+                                    <th>系统版本</th>
                                 </tr>
                             </thead>
                             <tbody id="hostSelectorTableBody">
@@ -470,7 +483,8 @@
                                         data-app-name="${escapeHtml(host.appName || host.app_name || '')}" 
                                         data-datacenter="${escapeHtml(host.datacenter || '')}" 
                                         data-environment="${escapeHtml(host.environment || '')}"
-                                        data-owner="${escapeHtml(host.owner || '')}">
+                                        data-owner="${escapeHtml(host.owner || '')}"
+                                        data-os-type="${escapeHtml(host.osType || host.os_type || '')}">
                                         <td><input type="checkbox" class="host-checkbox" value="${host.id}" ${selectedHosts.includes(host.id) ? 'checked' : ''}></td>
                                         <td>${escapeHtml(host.ip)}</td>
                                         <td>${escapeHtml(host.hostname || '-')}</td>
@@ -479,6 +493,7 @@
                                         <td>${escapeHtml(host.datacenter || '-')}</td>
                                         <td>${escapeHtml(host.environment || '-')}</td>
                                         <td>${escapeHtml(host.owner || '-')}</td>
+                                        <td>${escapeHtml(host.osType || host.os_type || '-')}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -507,122 +522,31 @@
             updateSelectAllState();
         });
 
-        // 更新筛选器选项（级联联动）
+        // 更新筛选器选项（级联联动 + 数量统计，与主机管理页同口径）
         function updateFilterOptions() {
-            // 根据当前筛选条件获取可用的主机列表
-            const getFilteredHostsForOptions = () => {
-                return hosts.filter(host => {
-                    let match = true;
-                    
-                    // 如果已选择系统，则只显示该系统下的选项
-                    if (currentFilters.systemName) {
-                        match = match && ((host.systemName || host.system_name) === currentFilters.systemName);
-                    }
-                    
-                    // 如果已选择应用，则只显示该应用下的选项
-                    if (currentFilters.appName) {
-                        match = match && ((host.appName || host.app_name) === currentFilters.appName);
-                    }
-                    
-                    // 如果已选择机房，则只显示该机房下的选项
-                    if (currentFilters.datacenter) {
-                        match = match && (host.datacenter === currentFilters.datacenter);
-                    }
-                    
-                    // 如果已选择环境，则只显示该环境下的选项
-                    if (currentFilters.environment) {
-                        match = match && (host.environment === currentFilters.environment);
-                    }
-                    
-                    return match;
-                });
-            };
-            
-            const hostsForOptions = getFilteredHostsForOptions();
-            
-            // 更新应用名称筛选器（根据已选系统进行联动）
-            const appNameFilter = modalOverlay.querySelector('#filterAppName');
-            const appNames = [...new Set(hostsForOptions.map(h => h.appName || h.app_name).filter(Boolean))];
-            
-            appNameFilter.innerHTML = '<option value="">全部应用</option>';
-            appNames.forEach(name => {
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                if (name === currentFilters.appName) {
-                    option.selected = true;
+            const opts = window.HostFilterOptions.build(hosts, currentFilters);
+            const configs = [
+                ['#filterSystemName', 'systemName', '全部系统'],
+                ['#filterAppName', 'appName', '全部应用'],
+                ['#filterDatacenter', 'datacenter', '全部机房'],
+                ['#filterEnvironment', 'environment', '全部环境'],
+                ['#filterOwner', 'owner', '全部负责人'],
+                ['#filterOsType', 'osType', '全部系统版本']
+            ];
+            configs.forEach(([selector, key, allLabel]) => {
+                const selectEl = modalOverlay.querySelector(selector);
+                if (window.HostFilterOptions.render(selectEl, opts[key], currentFilters[key], allLabel)) {
+                    currentFilters[key] = '';
                 }
-                appNameFilter.appendChild(option);
             });
-            // 如果当前选中值不在可用选项中，恢复为默认值
-            if (currentFilters.appName && !appNames.includes(currentFilters.appName)) {
-                currentFilters.appName = '';
-                appNameFilter.value = '';
-            }
-            
-            // 更新机房筛选器（根据已选系统、应用进行联动）
-            const datacenterFilter = modalOverlay.querySelector('#filterDatacenter');
-            const datacenters = [...new Set(hostsForOptions.map(h => h.datacenter).filter(Boolean))];
-            
-            datacenterFilter.innerHTML = '<option value="">全部机房</option>';
-            datacenters.forEach(dc => {
-                const option = document.createElement('option');
-                option.value = dc;
-                option.textContent = dc;
-                if (dc === currentFilters.datacenter) {
-                    option.selected = true;
-                }
-                datacenterFilter.appendChild(option);
-            });
-            // 如果当前选中值不在可用选项中，恢复为默认值
-            if (currentFilters.datacenter && !datacenters.includes(currentFilters.datacenter)) {
-                currentFilters.datacenter = '';
-                datacenterFilter.value = '';
-            }
-            
-            // 更新环境筛选器（根据已选系统、应用、机房进行联动）
-            const environmentFilter = modalOverlay.querySelector('#filterEnvironment');
-            const environments = [...new Set(hostsForOptions.map(h => h.environment).filter(Boolean))];
-            
-            environmentFilter.innerHTML = '<option value="">全部环境</option>';
-            environments.forEach(env => {
-                const option = document.createElement('option');
-                option.value = env;
-                option.textContent = env;
-                if (env === currentFilters.environment) {
-                    option.selected = true;
-                }
-                environmentFilter.appendChild(option);
-            });
-            // 如果当前选中值不在可用选项中，恢复为默认值
-            if (currentFilters.environment && !environments.includes(currentFilters.environment)) {
-                currentFilters.environment = '';
-                environmentFilter.value = '';
-            }
-            
-            // 更新负责人筛选器（根据已选系统、应用、机房、环境进行联动）
-            const ownerFilter = modalOverlay.querySelector('#filterOwner');
-            const owners = [...new Set(hostsForOptions.map(h => h.owner).filter(Boolean))].sort();
-            
-            ownerFilter.innerHTML = '<option value="">全部负责人</option>';
-            owners.forEach(owner => {
-                const option = document.createElement('option');
-                option.value = owner;
-                option.textContent = owner;
-                if (owner === currentFilters.owner) {
-                    option.selected = true;
-                }
-                ownerFilter.appendChild(option);
-            });
-            // 如果当前选中值不在可用选项中，恢复为默认值
-            if (currentFilters.owner && !owners.includes(currentFilters.owner)) {
-                currentFilters.owner = '';
-                ownerFilter.value = '';
-            }
         }
         
         // 初始化筛选器选项
         updateFilterOptions();
+
+        // 筛选下拉启用可搜索面板（与主机管理页一致）
+        ['#filterSystemName', '#filterAppName', '#filterDatacenter', '#filterEnvironment', '#filterOwner', '#filterOsType']
+            .forEach(id => window.SelectSearch.attach(modalOverlay.querySelector(id)));
 
         // 筛选功能
         function applyFilters() {
@@ -638,6 +562,7 @@
                 const datacenter = row.dataset.datacenter;
                 const environment = row.dataset.environment;
                 const owner = row.dataset.owner;
+                const osType = row.dataset.osType;
                 
                 // 检查是否匹配所有筛选条件
                 const matchSearch = !searchKeyword || rowText.includes(searchKeyword);
@@ -646,8 +571,9 @@
                 const matchDatacenter = !currentFilters.datacenter || datacenter === currentFilters.datacenter;
                 const matchEnvironment = !currentFilters.environment || environment === currentFilters.environment;
                 const matchOwner = !currentFilters.owner || owner === currentFilters.owner;
+                const matchOsType = !currentFilters.osType || osType === currentFilters.osType;
                 
-                const shouldShow = matchSearch && matchSystem && matchApp && matchDatacenter && matchEnvironment && matchOwner;
+                const shouldShow = matchSearch && matchSystem && matchApp && matchDatacenter && matchEnvironment && matchOwner && matchOsType;
                 row.style.display = shouldShow ? '' : 'none';
                 
                 if (shouldShow) visibleCount++;
@@ -700,6 +626,11 @@
         });
         modalOverlay.querySelector('#filterOwner').addEventListener('change', (e) => {
             currentFilters.owner = e.target.value;
+            updateFilterOptions();
+            applyFilters();
+        });
+        modalOverlay.querySelector('#filterOsType').addEventListener('change', (e) => {
+            currentFilters.osType = e.target.value;
             updateFilterOptions();
             applyFilters();
         });
@@ -1442,6 +1373,8 @@
 
             // 初始化监控界面
             initMonitorUI();
+            const executedScript = allScripts.find(s => String(s.id) === String(scriptId));
+            currentTaskContent = executedScript ? executedScript.content || '' : '';
             
             // 记录开始时间
             executionStartTime = Date.now();
@@ -1505,6 +1438,7 @@
         currentTaskResults = [];
         // 清空结果视图
         clearResultView('script');
+        setAiAnalysisEnabled(false);
     }
 
     // 更新进度
@@ -1531,6 +1465,11 @@
                 status: status,
                 stdout: stdout || '',
                 stderr: stderr || '',
+                exitCode: data.exitCode !== undefined ? data.exitCode : null,
+                error: data.error || '',
+                errorHint: data.errorHint || '',
+                retryCount: data.retryCount || 0,
+                isNormalNoMatch: !!data.isNormalNoMatch,
                 duration: duration
             });
             // 实时更新结果视图
@@ -1670,6 +1609,7 @@
 
         // 自动对比多台机器的执行结果
         showResultComparisonBanner('script', currentTaskResults);
+        setAiAnalysisEnabled(currentTaskResults.length > 0);
         
         // 重新加载任务历史
         loadTaskHistory();
@@ -1768,6 +1708,7 @@
         if (stopBtn) stopBtn.style.display = 'none';
 
         showMessage('任务执行失败: ' + error.message, 'error');
+        setAiAnalysisEnabled(false);
         
         // 取消监听
         if (currentTaskId) {
@@ -1832,6 +1773,30 @@
         logDiv.scrollTop = logDiv.scrollHeight;
     }
 
+    function setAiAnalysisEnabled(enabled) {
+        const btn = document.getElementById('analyzeExecutionResultBtn');
+        if (btn) btn.disabled = !enabled;
+    }
+
+    function analyzeExecutionResults() {
+        if (!currentTaskResults.length) {
+            showMessage('没有可分析的执行结果，请先完成任务', 'warning');
+            return;
+        }
+        if (!window.AIAnalysisUI) {
+            showMessage('AI 分析组件未加载', 'error');
+            return;
+        }
+        const taskNameInput = document.getElementById('taskName');
+        window.AIAnalysisUI.showExecutionDialog({
+            type: 'script',
+            taskName: taskNameInput ? taskNameInput.value : '脚本任务',
+            content: currentTaskContent,
+            finished: true,
+            results: currentTaskResults
+        });
+    }
+
     // 清空日志
     function clearLog() {
         const logDiv = document.getElementById('executionLog');
@@ -1848,6 +1813,9 @@
         // 同步清空结果模式视图
         clearResultView('script');
         currentTaskResults = [];
+        currentTaskContent = '';
+        setAiAnalysisEnabled(false);
+        if (window.AIAnalysisUI) window.AIAnalysisUI.closeExecutionDialogs();
 
         // 重置筛选/搜索状态
         scriptCurrentFilter = 'all';

@@ -1,0 +1,204 @@
+/* ============================================================
+   统计看板页面样式（仅 Electron 应用加载，demo 副本不引入）
+   ============================================================ */
+
+/* ---------- 页边距：与其他页面一致（toolbar/page-header 同用 space-xl） ---------- */
+#page-statistics .page-content {
+    padding: var(--space-lg) var(--space-xl) var(--space-xl);
+}
+
+/* ---------- KPI 指标卡（固定一行 8 张，紧凑尺寸） ---------- */
+.stats-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* 窗口过窄时降为两行（4×2），避免卡片压得不可读 */
+@media (max-width: 1280px) {
+    .stats-kpi-row {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.stats-kpi-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0; /* flex/grid 子项压缩保护 */
+}
+
+.stats-kpi-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stats-kpi-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums; /* 数字等宽，跳动不抖动 */
+}
+
+.stats-kpi-sub {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stats-kpi-sub .up { color: var(--status-healthy-fg); }
+.stats-kpi-sub .down { color: var(--status-critical-fg); }
+
+/* ---------- 分区标题 ---------- */
+.stats-section {
+    margin-bottom: 28px;
+}
+
+.stats-section-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stats-section-title::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    border-radius: 2px;
+    background: var(--primary);
+    flex-shrink: 0;
+}
+
+/* ---------- 图表网格 ---------- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px;
+}
+
+.stats-grid > .stats-card {
+    min-width: 0; /* 防止 grid 子项撑破 */
+}
+
+.stats-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stats-card-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-body);
+}
+
+.stats-chart {
+    width: 100%;
+    height: 260px;
+    min-height: 0; /* 高度链保护：允许在受限容器内收缩 */
+}
+
+.stats-chart.tall {
+    height: 320px;
+}
+
+/* ---------- 资产区 3 列网格 ---------- */
+.stats-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+@media (max-width: 1280px) {
+    .stats-grid-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .stats-grid-3 {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+}
+
+/* ---------- 时间轴/AI 区 2 列网格 ---------- */
+.stats-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 960px) {
+    .stats-grid-2 {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+}
+
+/* ---------- 空数据占位 ---------- */
+.stats-empty {
+    height: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.stats-empty-icon {
+    opacity: 0.5;
+}
+
+/* ---------- 时间范围切换 ---------- */
+.stats-range-group {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface-card);
+}
+
+.stats-range-btn {
+    padding: 6px 14px;
+    font-size: 0.8125rem;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.stats-range-btn + .stats-range-btn {
+    border-left: 1px solid var(--border-subtle);
+}
+
+.stats-range-btn:hover {
+    background: var(--surface-active);
+}
+
+.stats-range-btn.active {
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 600;
+}

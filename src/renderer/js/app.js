@@ -20,6 +20,7 @@ class SSHToolsApp {
         this.environmentFilter = '';
         this.ownerFilter = '';
         this.statusFilter = '';
+        this.osTypeFilter = '';
         
         // 分页状态
         this.paginationCurrentPage = 1;
@@ -47,7 +48,8 @@ class SSHToolsApp {
             appNames: [],
             datacenters: [],
             environments: [],
-            owners: []
+            owners: [],
+            osTypes: []
         };
         
         // 初始化服务
@@ -82,10 +84,7 @@ class SSHToolsApp {
             // 更新UI
             this.updateUI();
             
-            // 初始化连接监控器
-            this.initConnectionMonitor();
-            
-            // 启动连接池状态监控
+            // 启动连接池状态监控（底部状态栏：运行时间 / 最后活动时间）
             this.startConnectionPoolMonitoring();
             
             // 初始UI增强功能
@@ -119,9 +118,13 @@ class SSHToolsApp {
         });
         
         // 快速操作按钮事件
-        Utils.on('#importCsvBtn', 'click', () => this.importExcel());
-        Utils.on('#exportCsvBtn', 'click', () => this.exportExcel());
+        Utils.on('#importCsvBtn', 'click', () => { this.closeExcelMenu(); this.importExcel(); });
+        Utils.on('#exportCsvBtn', 'click', () => { this.closeExcelMenu(); this.exportExcel(); });
         Utils.on('#batchConnectBtn', 'click', () => this.batchConnectTestWithSelector());
+        
+        // Excel 数据下拉菜单（导入 / 导出 / 下载模板）
+        Utils.on('#excelMenuBtn', 'click', () => this.toggleExcelMenu());
+        Utils.on('#excelDownloadTemplateBtn', 'click', () => { this.closeExcelMenu(); this.downloadExcelTemplate(); });
         
         // 主机管理相关事件
         Utils.on('#addHostBtn', 'click', () => this.showAddHostModal());
@@ -238,6 +241,18 @@ class SSHToolsApp {
             this.filterHosts();
         });
         
+        Utils.on('#hostOsTypeFilter', 'change', (e) => {
+            this.osTypeFilter = e.target.value;
+            this.updateFilters(); // 更新其他筛选器选项
+            this.filterHosts();
+        });
+        
+        // 更多筛选：行内展开/收起
+        Utils.on('#moreFiltersBtn', 'click', () => this.toggleMoreFilters());
+        
+        // 可搜索筛选下拉：点击筛选 select 时弹出自带关键词过滤的选项面板
+        this.initSearchableSelects();
+        
         // 分页事件
         Utils.on('#firstPageBtn', 'click', () => this.goToPage(1));
         Utils.on('#prevPageBtn', 'click', () => this.goToPage(this.paginationCurrentPage - 1));
@@ -280,7 +295,8 @@ class SSHToolsApp {
             'hostDatacenterFilter',
             'hostEnvironmentFilter',
             'hostOwnerFilter',
-            'hostStatusFilter'
+            'hostStatusFilter',
+            'hostOsTypeFilter'
         ];
         
         filterIds.forEach(id => {
@@ -338,22 +354,8 @@ class SSHToolsApp {
         // 更新统计信息
         this.updateStats();
         
-        // 更新连接状态
-        this.updateConnectionStatus();
-        
         // 更新选中状态
         this.updateBatchActions();
-    }
-    
-    // 初始化连接监控器（简化版）
-    initConnectionMonitor() {
-        try {
-            // 简化的状态显示，不再使用复杂的监控器
-            this.updateConnectionStatus('ready', '就绪');
-            console.log('简化连接状态初始化成功');
-        } catch (error) {
-            console.error('初始化连接状态失败:', error);
-        }
     }
     
     // 初始化UI增强功能
@@ -485,6 +487,9 @@ class SSHToolsApp {
         // 性能优化：批量创建行，减少innerHTML的使用
         const rowsHTML = hostsToRender.map((host, index) => {
             const originalIndex = this.hosts.indexOf(host);
+            // 系统版本小 logo（本地内置 SVG，按 osType 匹配）
+            const osType = host.osType || host.os_type || '';
+            const osLogoHtml = osType && window.OsLogos ? `<span class="os-logo">${OsLogos.getLogo(osType)}</span>` : '';
             return `
                 <tr data-environment="${host.environment || ''}" data-status="${host.status || 'unknown'}">
                     <td><input type="checkbox" name="hostCheck" value="${originalIndex}" onchange="app.updateBatchActions()"></td>
@@ -493,7 +498,7 @@ class SSHToolsApp {
                     <td><span class="app-name">${host.appName || host.app_name || '-'}</span></td>
                     <td><span class="badge badge-secondary">${host.port || '22'}</span></td>
                     <td><span class="username">${host.username || '-'}</span></td>
-                    <td><span class="os-info-badge" title="${(host.osType || host.os_type || '') + (host.osVersion || host.os_version ? ' ' + (host.osVersion || host.os_version) : '')}">${this.formatOsInfo(host)}</span></td>
+                    <td><span class="os-info-badge" title="${(host.osType || host.os_type || '') + (host.osVersion || host.os_version ? ' ' + (host.osVersion || host.os_version) : '')}">${osLogoHtml}${this.formatOsInfo(host)}</span></td>
                     <td><span class="datacenter-badge">${host.datacenter || '-'}</span></td>
                     <td>
                         <span class="environment-badge ${this.getEnvironmentClass(host.environment)}">
@@ -654,20 +659,7 @@ class SSHToolsApp {
         };
     }
     
-    updateConnectionStatus(status = 'ready', message = '就绪') {
-        const statusEl = Utils.$('#connectionStatus');
-        if (statusEl) {
-            statusEl.textContent = message;
-            statusEl.className = `status-indicator status-${status}`;
-            
-            // 添加状态指示点击事件
-            statusEl.onclick = () => this.showConnectionStatus();
-            statusEl.style.cursor = 'pointer';
-            statusEl.title = '点击查看连接状态和连接池统计';
-        }
-    }
-    
-    // 定期更新连接池状态
+    // 定期更新底部状态栏的运行时间与最后活动时间
     startConnectionPoolMonitoring() {
         // 立即执行一次
         this.updateConnectionPoolStatus();
@@ -678,7 +670,7 @@ class SSHToolsApp {
         }, 3000);
     }
     
-    // 更新连接池状态
+    // 更新底部状态栏的运行时间与最后活动时间
     async updateConnectionPoolStatus() {
         try {
             if (!window.require) return;
@@ -687,22 +679,24 @@ class SSHToolsApp {
             const stats = await ipcRenderer.invoke('get-connection-pool-stats');
             
             if (stats.success) {
-                const statusEl = Utils.$('#connectionStatus');
-                if (statusEl) {
-                    const activeCount = stats.activeConnections || 0;
-                    const totalCreated = stats.totalConnectionsCreated || 0;
-                    
-                    // 根据活跃连接数更新状态
-                    if (activeCount > 0) {
-                        statusEl.textContent = `活跃连接: ${activeCount}`;
-                        statusEl.className = 'status-indicator status-active';
+                const uptimeEl = Utils.$('#appUptime');
+                const lastActivityEl = Utils.$('#lastActivityTime');
+                
+                if (uptimeEl) {
+                    uptimeEl.textContent = this.formatUptime(stats.uptime || 0);
+                    uptimeEl.title = '应用启动至今的运行时长';
+                }
+                
+                if (lastActivityEl) {
+                    if (stats.lastActivityTime > 0) {
+                        const d = new Date(stats.lastActivityTime);
+                        const pad = (n) => String(n).padStart(2, '0');
+                        lastActivityEl.textContent = `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                        lastActivityEl.title = `最近一次 SSH 连接池活动时间：${d.toLocaleString('zh-CN', { hour12: false })}`;
                     } else {
-                        statusEl.textContent = `就绪 (总: ${totalCreated})`;
-                        statusEl.className = 'status-indicator status-ready';
+                        lastActivityEl.textContent = '无';
+                        lastActivityEl.title = '暂无连接池活动';
                     }
-                    
-                    // 更新tooltip
-                    statusEl.title = `点击查看详情\n活跃连接: ${activeCount}\n总连接数: ${totalCreated}`;
                 }
             }
         } catch (error) {
@@ -710,128 +704,17 @@ class SSHToolsApp {
         }
     }
     
-    // 显示连接状态详情
-    async showConnectionStatus() {
-        const hostStats = this.getStatistics();
+    // 格式化运行时长
+    formatUptime(ms) {
+        const seconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
         
-        // 获取连接池状态
-        let poolStats = {
-            activeConnections: 0,
-            totalConnectionsCreated: 0,
-            totalConnectionsClosed: 0,
-            uptime: 0,
-            lastActivityTime: 0
-        };
-        
-        try {
-            if (window.require) {
-                const { ipcRenderer } = window.require('electron');
-                const result = await ipcRenderer.invoke('get-connection-pool-stats');
-                if (result.success) {
-                    poolStats = result;
-                }
-            }
-        } catch (error) {
-            console.error('获取连接池状态失败:', error);
-        }
-        
-        // 格式化运行时间
-        const formatUptime = (ms) => {
-            const seconds = Math.floor(ms / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const hours = Math.floor(minutes / 60);
-            const days = Math.floor(hours / 24);
-            
-            if (days > 0) return `${days}天 ${hours % 24}小时`;
-            if (hours > 0) return `${hours}小时 ${minutes % 60}分钟`;
-            if (minutes > 0) return `${minutes}分钟 ${seconds % 60}秒`;
-            return `${seconds}秒`;
-        };
-        
-        // 计算最后活动时间
-        const lastActivityText = poolStats.lastActivityTime > 0 
-            ? new Date(poolStats.lastActivityTime).toLocaleString('zh-CN')
-            : '无';
-        
-        const statusDialog = new Modal({
-            title: '连接状态监控',
-            content: `
-                <div class="connection-status-dialog">
-                    <!-- SSH连接池状态 -->
-                    <div class="status-section">
-                        <h6><i class="fas fa-network-wired"></i> SSH连接池状态</h6>
-                        <div class="status-item">
-                            <span class="status-label">活跃连接数:</span>
-                            <span class="status-value text-primary"><strong>${poolStats.activeConnections}</strong></span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">总连接数(创建):</span>
-                            <span class="status-value">${poolStats.totalConnectionsCreated}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">总连接数(关闭):</span>
-                            <span class="status-value">${poolStats.totalConnectionsClosed}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">应用运行时间:</span>
-                            <span class="status-value">${formatUptime(poolStats.uptime)}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">最后活动时间:</span>
-                            <span class="status-value">${lastActivityText}</span>
-                        </div>
-                    </div>
-                    
-                    <!-- 主机状态 -->
-                    <div class="status-section mt-3">
-                        <h6><i class="fas fa-server"></i> 主机状态统计</h6>
-                        <div class="status-item">
-                            <span class="status-label">总主机数:</span>
-                            <span class="status-value">${hostStats.total}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">在线主机:</span>
-                            <span class="status-value text-success"><strong>${hostStats.online}</strong></span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">离线主机:</span>
-                            <span class="status-value text-danger">${hostStats.offline}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">未知状态:</span>
-                            <span class="status-value text-warning">${hostStats.unknown}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-3">
-                        <h6>操作</h6>
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-sm btn-primary" id="pingAllBtn">
-                                <i class="fas fa-sync-alt"></i> Ping所有主机
-                            </button>
-                            <button type="button" class="btn btn-sm btn-info" id="refreshStatsBtn">
-                                <i class="fas fa-refresh"></i> 刷新统计
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `,
-            width: '600px',
-            onShow: () => {
-                // 绑定事件
-                document.getElementById('pingAllBtn').onclick = () => {
-                    this.pingAllHosts();
-                    statusDialog.hide();
-                };
-                
-                document.getElementById('refreshStatsBtn').onclick = async () => {
-                    statusDialog.hide();
-                    await this.showConnectionStatus();
-                };
-            }
-        });
-        
-        statusDialog.show();
+        if (days > 0) return `${days}天 ${hours % 24}小时`;
+        if (hours > 0) return `${hours}小时 ${minutes % 60}分钟`;
+        if (minutes > 0) return `${minutes}分钟 ${seconds % 60}秒`;
+        return `${seconds}秒`;
     }
     
     // 真实的Ping所有主机操作（主进程高并发Worker池模式）
@@ -2615,7 +2498,7 @@ class SSHToolsApp {
                 <div style="text-align: center; margin-bottom: 24px;">
                     <div style="font-size: 28px; font-weight: 700; color: var(--primary); letter-spacing: 2px;">万象匣</div>
                     <div style="font-size: 13px; color: var(--primary); margin-top: 4px; letter-spacing: 1px;">WanXiang Box</div>
-                    <div style="font-size: 12px; color: var(--text-faint); margin-top: 8px;">运维自动化管控平台 &nbsp;·&nbsp; v1.260912.0</div>
+                    <div id="aboutVersion" style="font-size: 12px; color: var(--text-faint); margin-top: 8px;">运维自动化管控平台</div>
                 </div>
 
                 <div style="
@@ -2646,6 +2529,20 @@ class SSHToolsApp {
         `;
 
         document.body.appendChild(modal);
+
+        // 版本号动态读取，避免硬编码与 package.json 脱节
+        if (window.require) {
+            try {
+                const { ipcRenderer } = window.require('electron');
+                ipcRenderer.invoke('get-app-version').then(version => {
+                    const el = document.getElementById('aboutVersion');
+                    if (el) el.innerHTML = `运维自动化管控平台 &nbsp;·&nbsp; v${version}`;
+                }).catch(() => {});
+            } catch (e) {
+                console.error('获取应用版本失败:', e);
+            }
+        }
+
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
         document.getElementById('aboutCloseBtn').addEventListener('click', () => modal.remove());
         document.getElementById('aboutOkBtn').addEventListener('click', () => modal.remove());
@@ -2780,6 +2677,11 @@ class SSHToolsApp {
                     return false;
                 }
 
+                // 系统版本（OS 类型）过滤
+                if (this.osTypeFilter && (host.osType || host.os_type || '') !== this.osTypeFilter) {
+                    return false;
+                }
+
                 return true;
             });
         }
@@ -2816,12 +2718,107 @@ class SSHToolsApp {
         if (this.environmentFilter) count++;
         if (this.ownerFilter) count++;
         if (this.statusFilter) count++;
+        if (this.osTypeFilter) count++;
         if (count > 0) {
             badge.textContent = String(count);
             badge.style.display = 'inline-block';
         } else {
             badge.style.display = 'none';
         }
+        
+        // 同步更新「更多筛选」按钮角标
+        this.updateMoreFiltersBadge();
+    }
+    
+    // 计算收在「更多筛选」中的已生效条件数量，更新按钮角标
+    updateMoreFiltersBadge() {
+        const badge = Utils.$('#moreFiltersBadge');
+        if (!badge) return;
+        let count = 0;
+        if (this.ownerFilter) count++;
+        if (this.statusFilter) count++;
+        if (this.osTypeFilter) count++;
+        if (count > 0) {
+            badge.textContent = String(count);
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    
+    // Excel 数据下拉菜单：展开 / 收起（导入 / 导出 / 下载模板）
+    toggleExcelMenu() {
+        const panel = Utils.$('#excelMenuPanel');
+        const wrap = Utils.$('.excel-menu-wrap');
+        const btn = Utils.$('#excelMenuBtn');
+        if (!panel || !wrap) return;
+        const open = panel.classList.contains('open');
+        panel.classList.toggle('open', !open);
+        wrap.classList.toggle('open', !open);
+        if (btn) btn.setAttribute('aria-expanded', String(!open));
+        
+        // 首次展开时绑定外部点击 / ESC 收起，避免重复注册
+        if (!open && !this._excelMenuBound) {
+            this._excelMenuBound = true;
+            document.addEventListener('click', (e) => {
+                if (wrap.contains(e.target)) return;
+                this.closeExcelMenu();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') this.closeExcelMenu();
+            });
+        }
+    }
+    
+    closeExcelMenu() {
+        const panel = Utils.$('#excelMenuPanel');
+        const wrap = Utils.$('.excel-menu-wrap');
+        const btn = Utils.$('#excelMenuBtn');
+        if (panel) panel.classList.remove('open');
+        if (wrap) wrap.classList.remove('open');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+    
+    // 下载 Excel 导入模板（复用 ExcelImportDialog 的模板生成逻辑，无需弹出弹窗）
+    downloadExcelTemplate() {
+        try {
+            const dialog = new Components.ExcelImportDialog({});
+            dialog.downloadTemplate();
+        } catch (error) {
+            console.error('下载模板失败:', error);
+            Utils.notify.error(`下载模板失败: ${error.message}`);
+        }
+    }
+    
+    // 更多筛选：挤入工具栏首行展开/收起（负责人 / 状态 / 系统版本）
+    toggleMoreFilters() {
+        const inline = Utils.$('#moreFiltersInline');
+        const btn = Utils.$('#moreFiltersBtn');
+        if (!inline || !btn) return;
+        const expanded = inline.classList.contains('open');
+        inline.classList.toggle('open', !expanded);
+        btn.classList.toggle('expanded', !expanded);
+        btn.setAttribute('aria-expanded', String(!expanded));
+    }
+    
+    // 可搜索筛选下拉：拦截 7 个筛选 select 的原生下拉，改为弹搜索面板
+    // 原生 select 仍承载数据与 change 事件，现有筛选联动/重置逻辑零改动
+    initSearchableSelects() {
+        const ids = [
+            '#hostSystemNameFilter', '#hostAppNameFilter', '#hostDatacenterFilter',
+            '#hostEnvironmentFilter', '#hostOwnerFilter', '#hostStatusFilter', '#hostOsTypeFilter'
+        ];
+        ids.forEach(id => window.SelectSearch.attach(Utils.$(id)));
+    }
+    
+    // 打开某个筛选下拉的搜索面板（实现已抽取至 utils.js 的 SelectSearch，供主机管理页与各主机选择弹窗共用）
+    openSelectSearchPanel(select) {
+        window.SelectSearch.open(select);
+    }
+    
+    // 关闭筛选下拉搜索面板
+    closeSelectSearchPanel() {
+        window.SelectSearch.close();
     }
     
     // 搜索主机
@@ -3041,7 +3038,8 @@ class SSHToolsApp {
             Utils.$('#hostDatacenterFilter'),
             Utils.$('#hostEnvironmentFilter'),
             Utils.$('#hostOwnerFilter'),
-            Utils.$('#hostStatusFilter')
+            Utils.$('#hostStatusFilter'),
+            Utils.$('#hostOsTypeFilter')
         ];
         
         filterSelects.forEach(select => {
@@ -3067,6 +3065,7 @@ class SSHToolsApp {
         this.environmentFilter = '';
         this.ownerFilter = '';
         this.statusFilter = '';
+        this.osTypeFilter = '';
         
         // 更新筛选器选项
         this.updateFilters();
@@ -3109,6 +3108,9 @@ class SSHToolsApp {
         }
         
         this.applySorting();
+        // 重新分页：paginatedHosts 是 filteredHosts 的切片副本，
+        // 排序后必须重新切片，否则渲染的仍是旧顺序
+        this.applyPagination();
         this.renderCurrentView();
     }
     
@@ -3173,6 +3175,10 @@ class SSHToolsApp {
                 }
                 if (excludeKey !== 'status' && this.statusFilter &&
                     host.status !== this.statusFilter) {
+                    return false;
+                }
+                if (excludeKey !== 'osType' && this.osTypeFilter &&
+                    (host.osType || host.os_type || '') !== this.osTypeFilter) {
                     return false;
                 }
                 return true;
@@ -3250,6 +3256,15 @@ class SSHToolsApp {
 
         if (this.statusFilter && !statuses.includes(this.statusFilter)) {
             this.statusFilter = '';
+        }
+
+        // 系统版本（OS 类型）：选项仅来自已探测过系统信息的主机
+        const osHosts = getFilteredHostsExcept('osType');
+        const osCounts = countBy(osHosts, host => host.osType || host.os_type);
+        const osTypes = Object.keys(osCounts);
+        this.updateFilterSelect('#hostOsTypeFilter', osTypes.map(name => ({ value: name, label: name, count: osCounts[name] })), this.osTypeFilter, '全部系统版本');
+        if (this.osTypeFilter && !osTypes.includes(this.osTypeFilter)) {
+            this.osTypeFilter = '';
         }
     }
     
@@ -3536,11 +3551,11 @@ class SSHToolsApp {
         
         if (stats.isMonitoring) {
             this.connectionMonitor.stopMonitoring();
-            this.updateConnectionStatus('stopped', '已停止');
+            this.updateStatus('连接监控已停止');
             Utils.notify.info('连接监控已停止');
         } else {
             this.connectionMonitor.startMonitoring();
-            this.updateConnectionStatus('monitoring', '监控中');
+            this.updateStatus('连接监控中');
             Utils.notify.info('连接监控已开始');
         }
     }
@@ -3623,15 +3638,6 @@ class SSHToolsApp {
             // 初始化所有工具提示
             if (Utils.tooltip && Utils.tooltip.initAll) {
                 Utils.tooltip.initAll();
-            }
-            
-            // 为状态指示器添加交互式工具提示
-            const statusIndicator = Utils.$('#connectionStatus');
-            if (statusIndicator && Utils.tooltip && Utils.tooltip.create) {
-                Utils.tooltip.create(statusIndicator, '点击查看连接状态详情', {
-                    placement: 'bottom',
-                    trigger: 'hover'
-                });
             }
         } catch (error) {
             console.error('初始化工具提示失败:', error);
@@ -3731,6 +3737,7 @@ class SSHToolsApp {
         this.cachedFilterOptions.datacenters = [...new Set(this.hosts.map(host => host.datacenter).filter(Boolean))];
         this.cachedFilterOptions.environments = [...new Set(this.hosts.map(host => host.environment).filter(Boolean))];
         this.cachedFilterOptions.owners = [...new Set(this.hosts.map(host => host.owner).filter(Boolean))].sort();
+        this.cachedFilterOptions.osTypes = [...new Set(this.hosts.map(host => host.osType || host.os_type).filter(Boolean))];
     }
     
     // 性能优化：批量更新筛选器选项

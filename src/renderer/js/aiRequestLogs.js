@@ -109,7 +109,7 @@
 
     // 创建记录行
     function createLogRow(log) {
-        const purposeText = { analyze: '脚本分析', generate: '脚本生成', test: '测试连接', other: '其他' }[log.purpose] || log.purpose;
+        const purposeText = { analyze: '脚本分析', execution_analysis: '执行结果分析', generate: '脚本生成', test: '测试连接', other: '其他' }[log.purpose] || log.purpose;
         const scriptName = log.script_name || (log.script_id ? `#${log.script_id}` : '-');
         const status = log.status || 'unknown';
         const statusInfo = getStatusInfo(status);
@@ -151,7 +151,7 @@
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
 
-        const purposeText = { analyze: '脚本分析', generate: '脚本生成', test: '测试连接', other: '其他' }[log.purpose] || log.purpose;
+        const purposeText = { analyze: '脚本分析', execution_analysis: '执行结果分析', generate: '脚本生成', test: '测试连接', other: '其他' }[log.purpose] || log.purpose;
         const statusInfo = getStatusInfo(log.status || 'unknown');
         const hasFullRequest = !!(log.request_body && log.request_body.length > 0);
 

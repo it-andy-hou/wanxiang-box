@@ -880,7 +880,17 @@ const ProjectTaskManagement = (() => {
         ).join('');
     }
 
-    function showStepHostSelector() {
+    async function showStepHostSelector() {
+        // 打开前重新加载主机数据，并后台刷新一次连接状态（不阻塞弹窗展示）
+        try {
+            const ipcRenderer = require('electron').ipcRenderer;
+            allHosts = await ipcRenderer.invoke('host-find-all') || [];
+        } catch (e) {
+            console.error('重新加载主机列表失败:', e);
+        }
+        if (window.connectionMonitor && typeof window.connectionMonitor.performStatusCheck === 'function') {
+            window.connectionMonitor.performStatusCheck().catch(() => {});
+        }
         const hosts = allHosts;
         if (!hosts || hosts.length === 0) {
             showError('暂无可用主机，请先在主机管理中添加主机');
@@ -891,8 +901,7 @@ const ProjectTaskManagement = (() => {
         modalOverlay.className = 'modal-overlay';
         modalOverlay.style.zIndex = '10000';
 
-        let currentFilters = { systemName: '', appName: '', datacenter: '', environment: '', owner: '' };
-        const systemNames = [...new Set(hosts.map(h => h.systemName || h.system_name).filter(Boolean))];
+        let currentFilters = { systemName: '', appName: '', datacenter: '', environment: '', owner: '', osType: '' };
 
         modalOverlay.innerHTML = `
             <div class="modal" style="max-width:1000px;background:var(--surface-float);border-radius:12px;box-shadow:var(--shadow-modal);width:100%;max-height:85vh;overflow-y:auto;">
@@ -902,15 +911,15 @@ const ProjectTaskManagement = (() => {
                 </div>
                 <div class="modal-body" style="padding:20px 24px;">
                     <div style="margin-bottom:1rem;">
-                        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;">
+                        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px;">
                             <select class="form-control" id="shFilterSystem" style="height:38px;">
                                 <option value="">全部系统</option>
-                                ${systemNames.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}
                             </select>
                             <select class="form-control" id="shFilterApp" style="height:38px;"><option value="">全部应用</option></select>
                             <select class="form-control" id="shFilterDc" style="height:38px;"><option value="">全部机房</option></select>
                             <select class="form-control" id="shFilterEnv" style="height:38px;"><option value="">全部环境</option></select>
                             <select class="form-control" id="shFilterOwner" style="height:38px;"><option value="">全部负责人</option></select>
+                            <select class="form-control" id="shFilterOs" style="height:38px;"><option value="">全部系统版本</option></select>
                         </div>
                         <div style="margin-bottom:10px;">
                             <input type="text" class="form-control" placeholder="搜索IP地址或主机名..." id="shSearch" style="width:100%;">
@@ -928,15 +937,16 @@ const ProjectTaskManagement = (() => {
                         <table class="table">
                             <thead><tr>
                                 <th><input type="checkbox" id="shSelectAll"></th>
-                                <th>IP地址</th><th>主机名</th><th>系统名称</th><th>应用名称</th><th>机房</th><th>环境</th><th>负责人</th>
+                                <th>IP地址</th><th>主机名</th><th>系统名称</th><th>应用名称</th><th>机房</th><th>环境</th><th>负责人</th><th>系统版本</th>
                             </tr></thead>
                             <tbody id="shTableBody">
                                 ${hosts.map(host => `
                                     <tr data-system-name="${escapeHtml(host.systemName || host.system_name || '')}" 
                                         data-app-name="${escapeHtml(host.appName || host.app_name || '')}" 
                                         data-datacenter="${escapeHtml(host.datacenter || '')}" 
-                                        data-environment="${escapeHtml(host.environment || '')}" 
-                                        data-owner="${escapeHtml(host.owner || '')}">
+                                        data-environment="${escapeHtml(host.environment || '')}"
+                                        data-owner="${escapeHtml(host.owner || '')}"
+                                        data-os-type="${escapeHtml(host.os_type || '')}">
                                         <td><input type="checkbox" class="sh-host-cb" value="${host.id}" ${stepSelectedHosts.includes(host.id) ? 'checked' : ''}></td>
                                         <td>${escapeHtml(host.ip)}</td>
                                         <td>${escapeHtml(host.hostname || '-')}</td>
@@ -945,6 +955,7 @@ const ProjectTaskManagement = (() => {
                                         <td>${escapeHtml(host.datacenter || '-')}</td>
                                         <td>${escapeHtml(host.environment || '-')}</td>
                                         <td>${escapeHtml(host.owner || '-')}</td>
+                                        <td>${escapeHtml(host.os_type || '-')}</td>
                                     </tr>`).join('')}
                             </tbody>
                         </table>
@@ -973,30 +984,26 @@ const ProjectTaskManagement = (() => {
         }
 
         function updateFilterOptions() {
-            const filtered = hosts.filter(h => {
-                if (currentFilters.systemName && (h.systemName || h.system_name) !== currentFilters.systemName) return false;
-                if (currentFilters.appName && (h.appName || h.app_name) !== currentFilters.appName) return false;
-                if (currentFilters.datacenter && h.datacenter !== currentFilters.datacenter) return false;
-                if (currentFilters.environment && h.environment !== currentFilters.environment) return false;
-                return true;
+            const opts = window.HostFilterOptions.build(hosts, currentFilters);
+            const configs = [
+                ['shFilterSystem', 'systemName', '全部系统'],
+                ['shFilterApp', 'appName', '全部应用'],
+                ['shFilterDc', 'datacenter', '全部机房'],
+                ['shFilterEnv', 'environment', '全部环境'],
+                ['shFilterOwner', 'owner', '全部负责人'],
+                ['shFilterOs', 'osType', '全部系统版本']
+            ];
+            configs.forEach(([id, key, allLabel]) => {
+                if (window.HostFilterOptions.render(getEl(id), opts[key], currentFilters[key], allLabel)) {
+                    currentFilters[key] = '';
+                }
             });
-            function rebuildSelect(id, key, label) {
-                const sel = getEl(id);
-                const cur = currentFilters[key];
-                const vals = [...new Set(filtered.map(h => h[key] || (key === 'appName' ? h.app_name : key === 'systemName' ? h.system_name : '')).filter(Boolean))];
-                sel.innerHTML = `<option value="">${label}</option>` + vals.map(v => `<option value="${escapeHtml(v)}" ${v === cur ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('');
-                if (cur && !vals.includes(cur)) { currentFilters[key] = ''; sel.value = ''; }
-            }
-            rebuildSelect('shFilterApp', 'appName', '全部应用');
-            rebuildSelect('shFilterDc', 'datacenter', '全部机房');
-            rebuildSelect('shFilterEnv', 'environment', '全部环境');
-            // owner
-            const ownerSel = getEl('shFilterOwner');
-            const owners = [...new Set(filtered.map(h => h.owner).filter(Boolean))].sort();
-            ownerSel.innerHTML = '<option value="">全部负责人</option>' + owners.map(o => `<option value="${escapeHtml(o)}" ${o === currentFilters.owner ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('');
-            if (currentFilters.owner && !owners.includes(currentFilters.owner)) { currentFilters.owner = ''; ownerSel.value = ''; }
         }
         updateFilterOptions();
+
+        // 筛选下拉启用可搜索面板（与主机管理页一致）
+        ['shFilterSystem', 'shFilterApp', 'shFilterDc', 'shFilterEnv', 'shFilterOwner', 'shFilterOs']
+            .forEach(id => window.SelectSearch.attach(getEl(id)));
 
         function applyFilters() {
             const kw = getEl('shSearch').value.toLowerCase();
@@ -1007,15 +1014,16 @@ const ProjectTaskManagement = (() => {
                     (!currentFilters.appName || row.dataset.appName === currentFilters.appName) &&
                     (!currentFilters.datacenter || row.dataset.datacenter === currentFilters.datacenter) &&
                     (!currentFilters.environment || row.dataset.environment === currentFilters.environment) &&
-                    (!currentFilters.owner || row.dataset.owner === currentFilters.owner);
+                    (!currentFilters.owner || row.dataset.owner === currentFilters.owner) &&
+                    (!currentFilters.osType || row.dataset.osType === currentFilters.osType);
                 row.style.display = match ? '' : 'none';
             });
             updateSelCount();
         }
 
         getEl('shSearch').addEventListener('input', applyFilters);
-        ['shFilterSystem', 'shFilterApp', 'shFilterDc', 'shFilterEnv', 'shFilterOwner'].forEach(id => {
-            const keyMap = { shFilterSystem: 'systemName', shFilterApp: 'appName', shFilterDc: 'datacenter', shFilterEnv: 'environment', shFilterOwner: 'owner' };
+        ['shFilterSystem', 'shFilterApp', 'shFilterDc', 'shFilterEnv', 'shFilterOwner', 'shFilterOs'].forEach(id => {
+            const keyMap = { shFilterSystem: 'systemName', shFilterApp: 'appName', shFilterDc: 'datacenter', shFilterEnv: 'environment', shFilterOwner: 'owner', shFilterOs: 'osType' };
             getEl(id).addEventListener('change', (e) => {
                 currentFilters[keyMap[id]] = e.target.value;
                 updateFilterOptions();

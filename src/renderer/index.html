@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/enhancements.css">
+    <link rel="stylesheet" href="css/statistics.css">
     <!-- Highlight.js 语法高亮样式 -->
     <link rel="stylesheet" href="lib/atom-one-light.css">
     <!-- Mermaid.js 流程图 -->
@@ -33,7 +34,6 @@
             </div>
             <div class="header-right">
                 <div class="user-info">
-                    <span class="status-indicator" id="connectionStatus">离线</span>
                     <button class="btn btn-icon" id="githubBtn" title="GitHub 项目仓库"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.73.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .3.2.66.8.55A10.99 10.99 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg><span class="update-badge" id="updateBadge" style="display:none;"></span></button>
                     <button class="btn btn-icon" id="settingsBtn" title="设置"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
                 </div>
@@ -54,6 +54,7 @@
                     <a href="#" class="nav-item" data-page="scheduled"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="nav-item-text">任务调度</span></a>
                     <a href="#" class="nav-item" data-page="history"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span><span class="nav-item-text">任务记录</span></a>
                     <a href="#" class="nav-item" data-page="ai-logs"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg></span><span class="nav-item-text">AI 请求记录</span></a>
+                    <a href="#" class="nav-item" data-page="statistics"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/></svg></span><span class="nav-item-text">统计看板</span></a>
                 </nav>
             </aside>
 
@@ -64,12 +65,45 @@
                     <div class="page-header">
                         <h2>主机管理</h2>
                         <div class="page-actions">
-                            <button class="btn btn-primary" id="addHostBtn">添加主机</button>
-                            <button class="btn btn-secondary" id="refreshHostsBtn">刷新列表</button>
-                            <button class="btn btn-secondary" id="clearFiltersBtn" title="清空所有搜索与筛选条件">重置全部<span id="resetAllBadge" class="reset-all-badge" style="display:none;">0</span></button>
-                            <button class="btn btn-primary" id="importCsvBtn">导入Excel</button>
-                            <button class="btn btn-secondary" id="exportCsvBtn">导出Excel</button>
-                            <button class="btn btn-success" id="batchConnectBtn">批量连接测试</button>
+                            <button class="btn btn-primary" id="addHostBtn" title="添加主机（支持单台 / 批量录入）">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                添加主机
+                            </button>
+                            <button class="btn btn-secondary" id="refreshHostsBtn" title="刷新主机列表">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                刷新
+                            </button>
+                            <button class="btn btn-secondary" id="clearFiltersBtn" title="清空所有搜索与筛选条件">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                重置
+                                <span id="resetAllBadge" class="reset-all-badge" style="display:none;">0</span>
+                            </button>
+                            <button class="btn btn-success" id="batchConnectBtn" title="批量测试主机连接（Ping / SSH）">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>
+                                批量连接测试
+                            </button>
+                            <!-- Excel 数据下拉：导入 / 导出 / 下载模板 -->
+                            <div class="excel-menu-wrap">
+                                <button type="button" class="btn btn-secondary" id="excelMenuBtn" title="Excel 数据导入 / 导出" aria-expanded="false" aria-haspopup="true">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>
+                                    Excel
+                                    <svg class="excel-menu-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <div class="excel-menu-panel" id="excelMenuPanel" role="menu">
+                                    <button type="button" class="excel-menu-item" id="importCsvBtn" role="menuitem" title="从 Excel 文件批量导入主机">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                                        导入Excel
+                                    </button>
+                                    <button type="button" class="excel-menu-item" id="exportCsvBtn" role="menuitem" title="将主机列表导出为 Excel 文件">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                        导出Excel
+                                    </button>
+                                    <button type="button" class="excel-menu-item" id="excelDownloadTemplateBtn" role="menuitem" title="下载标准导入模板">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                                        下载模板
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -78,8 +112,8 @@
                         <div class="toolbar-left">
                             <div class="search-bar">
                                 <input type="text" class="form-control" placeholder="搜索主机名、IP地址或描述..." id="hostSearchInput">
-                                <button class="btn btn-secondary btn-sm" id="batchSearchBtn" title="批量IP搜索，支持粘贴多个IP" style="margin-left: 4px; white-space: nowrap;">批量IP</button>
                             </div>
+                            <button class="btn btn-secondary" id="batchSearchBtn" title="批量IP搜索，支持粘贴多个IP">批量IP搜索</button>
                         </div>
                         <div class="toolbar-right">
                             <select class="form-control" id="hostSystemNameFilter" autocomplete="off">
@@ -98,15 +132,27 @@
                                 <option value="灰度">灰度</option>
                                 <option value="开发">开发</option>
                             </select>
-                            <select class="form-control" id="hostOwnerFilter" autocomplete="off">
-                                <option value="">全部负责人</option>
-                            </select>
-                            <select class="form-control" id="hostStatusFilter" autocomplete="off">
-                                <option value="">全部状态</option>
-                                <option value="online">在线</option>
-                                <option value="offline">离线</option>
-                                <option value="unknown">未知</option>
-                            </select>
+                            <!-- 更多筛选：展开后挤入首行（负责人 / 状态 / 系统版本） -->
+                            <span class="more-filters-inline" id="moreFiltersInline">
+                                <select class="form-control" id="hostOwnerFilter" autocomplete="off">
+                                    <option value="">全部负责人</option>
+                                </select>
+                                <select class="form-control" id="hostStatusFilter" autocomplete="off">
+                                    <option value="">全部状态</option>
+                                    <option value="online">在线</option>
+                                    <option value="offline">离线</option>
+                                    <option value="unknown">未知</option>
+                                </select>
+                                <select class="form-control" id="hostOsTypeFilter" autocomplete="off">
+                                    <option value="">全部系统版本</option>
+                                </select>
+                            </span>
+                            <button type="button" class="btn btn-secondary more-filters-btn" id="moreFiltersBtn"
+                                title="展开或收起更多筛选（负责人 / 状态 / 系统版本）" aria-expanded="false" aria-controls="moreFiltersInline">
+                                更多筛选
+                                <span id="moreFiltersBadge" class="reset-all-badge" style="display:none;">0</span>
+                                <svg class="more-filters-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
                         </div>
                     </div>
                     
@@ -214,11 +260,26 @@
                     <div class="page-header">
                         <h2>脚本管理</h2>
                         <div class="page-actions">
-                            <button class="btn btn-primary" id="addScriptBtn">添加脚本</button>
-                            <button class="btn btn-secondary" id="refreshScriptsBtn">刷新列表</button>
-                            <button class="btn btn-secondary" id="importSingleScriptBtn">导入 .sh</button>
-                            <button class="btn btn-secondary" id="importScriptJsonBtn">导入备份</button>
-                            <button class="btn btn-secondary" id="exportScriptJsonBtn">导出备份</button>
+                            <button class="btn btn-primary" id="addScriptBtn" title="新建脚本">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                添加脚本
+                            </button>
+                            <button class="btn btn-secondary" id="refreshScriptsBtn" title="刷新脚本列表">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                刷新
+                            </button>
+                            <button class="btn btn-secondary" id="importSingleScriptBtn" title="导入单个 .sh 脚本文件">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                                导入 .sh
+                            </button>
+                            <button class="btn btn-secondary" id="importScriptJsonBtn" title="从备份文件导入脚本">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                导入备份
+                            </button>
+                            <button class="btn btn-secondary" id="exportScriptJsonBtn" title="导出脚本备份文件">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                导出备份
+                            </button>
                         </div>
                     </div>
 
@@ -308,7 +369,10 @@
                     <div class="page-header">
                         <h2>脚本执行</h2>
                         <div class="page-actions">
-                            <button class="btn btn-primary" id="createTaskBtn">创建任务</button>
+                            <button class="btn btn-primary" id="createTaskBtn" title="创建脚本执行任务">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                创建任务
+                            </button>
                         </div>
                     </div>
                     <div class="page-content page-content--scroll">
@@ -447,6 +511,7 @@
                                         <input type="text" class="search-input" id="scriptResultSearch" placeholder="搜索IP或输出内容...">
                                         <div class="te-log-toolbar">
                                             <button class="btn btn-sm btn-info" id="exportResultBtn">导出结果</button>
+                                            <button class="btn btn-sm btn-info" id="analyzeExecutionResultBtn" disabled>AI 分析</button>
                                             <button class="btn btn-sm btn-primary" id="downloadLogBtn">下载日志</button>
                                             <button class="btn btn-sm btn-success" id="copyLogBtn">复制日志</button>
                                             <button class="btn btn-sm btn-secondary" id="clearLogBtn">清空日志</button>
@@ -499,7 +564,10 @@
                     <div class="page-header">
                         <h2>命令执行</h2>
                         <div class="page-actions">
-                            <button class="btn btn-primary" id="createCommandTaskBtn">创建任务</button>
+                            <button class="btn btn-primary" id="createCommandTaskBtn" title="创建命令执行任务">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                创建任务
+                            </button>
                         </div>
                     </div>
                     <div class="page-content page-content--scroll">
@@ -627,6 +695,7 @@
                                         <input type="text" class="search-input" id="commandResultSearch" placeholder="搜索IP或输出内容...">
                                         <div class="te-log-toolbar">
                                             <button class="btn btn-sm btn-info" id="exportCommandResultBtn">导出结果</button>
+                                            <button class="btn btn-sm btn-info" id="analyzeCommandResultBtn" disabled>AI 分析</button>
                                             <button class="btn btn-sm btn-primary" id="downloadCommandLogBtn">下载日志</button>
                                             <button class="btn btn-sm btn-success" id="copyCommandLogBtn">复制日志</button>
                                             <button class="btn btn-sm btn-secondary" id="clearCommandLogBtn">清空日志</button>
@@ -678,7 +747,10 @@
                     <div class="page-header">
                         <h2>文件上传</h2>
                         <div class="page-actions">
-                            <button class="btn btn-primary" id="createFileUploadTaskBtn">创建任务</button>
+                            <button class="btn btn-primary" id="createFileUploadTaskBtn" title="创建文件上传任务">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                创建任务
+                            </button>
                         </div>
                     </div>
                     <div class="page-content page-content--scroll">
@@ -921,7 +993,10 @@
                     <div class="page-header">
                         <h2>任务调度</h2>
                         <div class="page-actions">
-                            <button class="btn btn-secondary" id="refreshScheduledTasksBtn">刷新列表</button>
+                            <button class="btn btn-secondary" id="refreshScheduledTasksBtn" title="刷新定时任务列表">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                刷新
+                            </button>
                         </div>
                     </div>
                     
@@ -953,7 +1028,10 @@
                     <div class="page-header">
                         <h2>任务记录</h2>
                         <div class="page-actions">
-                            <button class="btn btn-secondary" id="refreshHistoryBtn">刷新列表</button>
+                            <button class="btn btn-secondary" id="refreshHistoryBtn" title="刷新任务记录列表">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                刷新
+                            </button>
                         </div>
                     </div>
                     
@@ -1018,8 +1096,14 @@
                     <div class="page-header">
                         <h2>AI 请求记录</h2>
                         <div class="page-actions">
-                            <button class="btn btn-secondary" id="aiLogsRefreshBtn">刷新列表</button>
-                            <button class="btn btn-danger" id="aiLogsClearBtn">清空记录</button>
+                            <button class="btn btn-secondary" id="aiLogsRefreshBtn" title="刷新 AI 请求记录">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                刷新
+                            </button>
+                            <button class="btn btn-danger" id="aiLogsClearBtn" title="清空全部 AI 请求记录（不可恢复）">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                清空记录
+                            </button>
                         </div>
                     </div>
 
@@ -1034,6 +1118,7 @@
                             <select class="form-control" id="aiLogsPurposeFilter" style="min-width: 120px;">
                                 <option value="">全部来源</option>
                                 <option value="analyze">脚本分析</option>
+                                <option value="execution_analysis">执行结果分析</option>
                                 <option value="generate">脚本生成</option>
                                 <option value="test">测试连接</option>
                             </select>
@@ -1073,13 +1158,76 @@
                     </div>
                 </div>
 
+                <!-- 统计看板页面 -->
+                <div class="page" id="page-statistics" style="display: none;">
+                    <div class="page-header">
+                        <h2>统计看板</h2>
+                        <div class="page-actions">
+                            <div class="stats-range-group" id="statsRangeGroup">
+                                <button class="stats-range-btn" data-range="7d">近7天</button>
+                                <button class="stats-range-btn active" data-range="30d">近30天</button>
+                                <button class="stats-range-btn" data-range="90d">近90天</button>
+                                <button class="stats-range-btn" data-range="all">全部</button>
+                            </div>
+                            <button class="btn btn-secondary" id="statsRefreshBtn" title="刷新统计看板">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                刷新
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="page-content page-content--scroll" id="statisticsContent">
+                        <!-- KPI 指标卡行 -->
+                        <div class="stats-kpi-row" id="statsKpiRow"></div>
+
+                        <!-- Section 1: 资产总览（6 个维度图，3 列两行） -->
+                        <div class="stats-section">
+                            <div class="stats-section-title">主机资产总览</div>
+                            <div class="stats-grid stats-grid-3">
+                                <div class="stats-card"><div class="stats-card-title">机房分布</div><div class="stats-chart" id="chartDatacenter"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">系统名称分布</div><div class="stats-chart" id="chartSystem"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">应用节点分布</div><div class="stats-chart" id="chartApp"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">环境分布</div><div class="stats-chart" id="chartEnvironment"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">负责人分布</div><div class="stats-chart" id="chartOwner"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">系统版本分布</div><div class="stats-chart" id="chartOsVersion"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: 执行时间轴（两卡并排一行） -->
+                        <div class="stats-section">
+                            <div class="stats-section-title">执行记录时间轴</div>
+                            <div class="stats-grid stats-grid-2">
+                                <div class="stats-card"><div class="stats-card-title">每日执行次数与成功率趋势</div><div class="stats-chart tall" id="chartDailyTrend"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">执行时段分布（按小时）</div><div class="stats-chart" id="chartHourly"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: AI 与 Token -->
+                        <div class="stats-section">
+                            <div class="stats-section-title">AI 与 Token 用量</div>
+                            <div class="stats-grid stats-grid-2">
+                                <div class="stats-card"><div class="stats-card-title">每日 Token 消耗趋势</div><div class="stats-chart tall" id="chartTokenTrend"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">AI 请求耗时趋势</div><div class="stats-chart" id="chartAiDuration"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">AI 用途分布</div><div class="stats-chart" id="chartAiPurpose"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">模型 Token 对比</div><div class="stats-chart" id="chartModelTokens"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 工程任务页面 -->
                 <div class="page" id="page-project-tasks" style="display: none;">
                     <div class="page-header">
                         <h2>工程任务</h2>
                         <div class="page-actions">
-                            <button class="btn btn-primary" id="createProjectTaskBtn">新建工程</button>
-                            <button class="btn btn-secondary" id="refreshProjectTasksBtn">刷新</button>
+                            <button class="btn btn-primary" id="createProjectTaskBtn" title="新建工程任务">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                新建工程
+                            </button>
+                            <button class="btn btn-secondary" id="refreshProjectTasksBtn" title="刷新工程任务列表">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                刷新
+                            </button>
                         </div>
                     </div>
                     <!-- 工具栏：搜索 -->
@@ -1149,6 +1297,15 @@
                     <i class="fas fa-clock"></i> 定时任务
                     <span class="footer-stat-value" id="totalScheduledTasks">0</span>
                 </span>
+                <!-- 运行状态 -->
+                <span class="footer-stat-item" title="应用启动至今的运行时长">
+                    <i class="fas fa-stopwatch"></i> 运行时间
+                    <span class="footer-stat-value" id="appUptime">-</span>
+                </span>
+                <span class="footer-stat-item" title="最近一次 SSH 连接池活动时间">
+                    <i class="fas fa-history"></i> 最后活动
+                    <span class="footer-stat-value" id="lastActivityTime">-</span>
+                </span>
             </div>
             <div class="footer-right">
                 <span>版本: <span id="appVersion">1.260309.0</span></span>
@@ -1180,9 +1337,12 @@
     <script src="js/scheduledTasks.js"></script>
     <script src="js/taskHistory.js"></script>
     <script src="js/aiRequestLogs.js"></script>
+<script src="lib/echarts.min.js"></script>
+<script src="js/statistics.js"></script>
     <script src="js/projectTaskManagement.js"></script>
     <script src="js/projectTaskExecution.js"></script>
     <script src="js/navigation.js"></script>
+    <script src="js/osLogos.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

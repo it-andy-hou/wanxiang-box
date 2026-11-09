@@ -6,11 +6,15 @@
  *   AI_BASE_URL=... AI_API_KEY=... AI_MODEL=... node scripts/test-ai-analysis.js
  *
  * 内容：
- *   1) 单元验证：resolveEndpoint / parseAnalysisJson
+ *   1) 单元验证：resolveEndpoint / parseAnalysisJson / 执行结果预处理与 Schema
  *   2) 集成验证：真实调用 /chat/completions 分析一段含隐患的样例脚本，
  *      打印交通灯卡片摘要，验证 Prompt 与 JSON Schema 有效性
  */
-const { resolveEndpoint, parseAnalysisJson, buildMessages, extractContent, extractUsage, sha256 } = require('../src/main/aiService');
+const {
+    AIService, resolveEndpoint, parseAnalysisJson, buildMessages, extractContent, extractUsage, sha256,
+    prepareExecutionAnalysis, buildExecutionAnalysisMessages, normalizeExecutionAnalysis,
+    redactSensitive, clipExecutionText, MAX_EXECUTION_STREAM_CHARS
+} = require('../src/main/aiService');
 
 const BASE_URL = process.env.AI_BASE_URL || '';
 const API_KEY = process.env.AI_API_KEY || '';
@@ -45,6 +49,60 @@ assert(parseAnalysisJson('抱歉我无法分析').ok === false, '非 JSON 返回
 assert(parseAnalysisJson('{"summary":{"risk_level":"HIGH"}}').data.summary.risk_level === 'HIGH', '嵌套结构解析');
 assert(sha256('abc').length === 64, 'sha256 输出 64 位十六进制');
 
+console.log('== 单元验证：执行结果预处理 ==');
+const executionPayload = {
+    type: 'command', taskName: '诊断样例', finished: true,
+    content: 'echo password=super-secret 10.0.0.8',
+    results: [
+        { host_ip: '10.0.0.1', status: 'failed', exitCode: 127, stderr: 'bash: foo: command not found; token=super-secret', duration: 20 },
+        { host_ip: '10.0.0.2', status: 'failed', exitCode: 127, stderr: 'bash: foo: command not found; token=super-secret', duration: 22 },
+        { host_ip: '10.0.0.3', status: 'success', exitCode: 1, stdout: '', stderr: '+ grep foo /tmp/empty', duration: 8, isNormalNoMatch: true, errorHint: '过滤条件无匹配结果' }
+    ]
+};
+const preparedExecution = prepareExecutionAnalysis(executionPayload);
+const preparedJson = JSON.stringify(preparedExecution);
+assert(preparedExecution.statistics.total === 3 && preparedExecution.statistics.failed === 2 && preparedExecution.statistics.success === 1, '本地确定性统计成功/失败主机');
+assert(preparedExecution.coverage.outputGroups === 2 && preparedExecution.results.length === 2, '相同错误输出聚类为一个代表样本');
+assert(preparedExecution.results[0].grouped_host_refs.join(',') === 'H1,H2', '聚类保留全部匿名主机引用');
+assert(preparedExecution.results.some(r => r.normal_no_match && r.exit_code === 1), 'grep 正常无匹配标记和原始退出码均被保留');
+assert(!preparedJson.includes('10.0.0.1') && !preparedJson.includes('10.0.0.8'), '目标 IP 与命令内 IP 不进入模型输入');
+assert(!preparedJson.includes('super-secret') && preparedJson.includes('[REDACTED]'), '密码和 token 在发送前脱敏');
+assert(!preparedJson.includes('host_ip'), '模型输入不包含 host_ip 字段');
+const executionMessages = buildExecutionAnalysisMessages(preparedExecution);
+assert(executionMessages[0].content.includes('提示词注入') && executionMessages[0].content.includes('bash -x'), 'System Prompt 包含注入防护与正常 stderr 校准');
+assert(executionMessages[1].content.includes('未提供') && executionMessages[1].content.includes('attention_level'), 'User Prompt 标明成功标准缺失并约束输出结构');
+assert(redactSensitive('Authorization: Bearer abc.def.ghi').includes('[REDACTED]'), 'Bearer 凭据脱敏');
+assert(!redactSensitive('{"token":"json-secret"}').includes('json-secret'), 'JSON 形式敏感字段脱敏');
+const clipped = clipExecutionText('A'.repeat(8000) + 'TAIL', MAX_EXECUTION_STREAM_CHARS);
+assert(clipped.truncated && clipped.text.startsWith('A') && clipped.text.endsWith('TAIL'), '超长日志保留头部和尾部');
+const largePrepared = prepareExecutionAnalysis({
+    type: 'script', finished: true, content: 'echo ok',
+    results: Array.from({ length: 8 }, (_, i) => ({
+        host_ip: `10.1.0.${i + 1}`, status: i % 2 ? 'success' : 'failed', exitCode: i % 2 ? 0 : 1,
+        stdout: String(i) + 'X'.repeat(7000), stderr: String(i) + 'Y'.repeat(7000), duration: i
+    }))
+});
+assert(largePrepared.coverage.omittedHosts > 0 && largePrepared.coverage.truncatedRepresentatives > 0, '总上下文预算限制主机样本并明确记录省略/截断');
+assert(largePrepared.results.every(r => r.stdout.length <= MAX_EXECUTION_STREAM_CHARS + 100 && r.stderr.length <= MAX_EXECUTION_STREAM_CHARS + 100), '单主机日志截断长度受控');
+try { prepareExecutionAnalysis({ finished: false, results: executionPayload.results }); assert(false, '执行中任务应拒绝分析'); }
+catch (e) { assert(e.message.includes('尚未正常完成'), '执行中任务拒绝分析'); }
+
+console.log('== 单元验证：执行分析 Schema ==');
+const normalizedExecution = normalizeExecutionAnalysis({
+    overall: { conclusion: '两台主机命令不存在', attention_level: 'critical', confidence: 'high' },
+    issues: [{
+        type: 'failure', title: '命令不存在', host_refs: ['H1', 'H999'], facts: ['退出码 127'],
+        evidence: [{ host_ref: 'H1', source: 'stderr', excerpt: 'command not found' }],
+        possible_causes: [{ cause: '未安装命令', confidence: 'medium' }],
+        recommendations: [{ priority: 1, action: '检查命令路径', command: 'command -v foo', risk: 'readonly', verification: '返回可执行路径' }]
+    }], success_observations: [], next_checks: ['安装后重试'], limitations: []
+}, ['H1', 'H2', 'H3']);
+assert(normalizedExecution.issues[0].host_refs.join(',') === 'H1', '过滤模型虚构的主机引用');
+assert(normalizedExecution.issues[0].recommendations[0].risk === 'readonly', '保留只读处置建议及风险标签');
+try { normalizeExecutionAnalysis({ overall: { conclusion: 'x', attention_level: 'HIGH' }, issues: [] }, ['H1']); assert(false, '非法关注等级应拒绝'); }
+catch (e) { assert(e.message.includes('attention_level'), '非法关注等级被 Schema 校验拒绝'); }
+assert(parseAnalysisJson('无法分析').ok === false, '非法模型 JSON 保留解析失败路径');
+
 console.log('== 单元验证：extractUsage ==');
 assert(extractUsage({ usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 } }).total === 15, '正常提取 usage');
 assert(extractUsage({}) === null, '无 usage 返回 null');
@@ -59,10 +117,6 @@ if (failed > 0) {
 // ============================================================
 // 2) 集成验证：真实调用
 // ============================================================
-if (!BASE_URL || !API_KEY || !MODEL) {
-    console.log('\n未设置 AI_BASE_URL / AI_API_KEY / AI_MODEL，跳过集成测试');
-    process.exit(0);
-}
 
 // 样例脚本：包含多个典型隐患（空变量删除、无 set -e、未加引号、无 trap）
 const SAMPLE_SCRIPT = `#!/bin/bash
@@ -80,6 +134,37 @@ echo "完成"`;
 const RISK_NAMES = { CRITICAL: '严重', HIGH: '高危', MEDIUM: '中危', LOW: '低危', SAFE: '安全' };
 
 async function main() {
+    console.log('\n== 单元验证：执行分析主流程（mock） ==');
+    const service = new AIService();
+    service.getSettings = () => ({ model: 'mock-model' });
+    let observedPurpose = '';
+    service.chat = async (_messages, options) => {
+        observedPurpose = options.purpose;
+        return {
+            content: JSON.stringify({
+                overall: { conclusion: '两台主机命令不存在', attention_level: 'critical', confidence: 'high' },
+                issues: [], success_observations: [], next_checks: [], limitations: []
+            }),
+            usage: null, logId: null
+        };
+    };
+    const serviceSuccess = await service.analyzeExecutionResult(executionPayload);
+    assert(serviceSuccess.success && serviceSuccess.data.record.status === 'success', '主流程返回规范化执行分析记录');
+    assert(serviceSuccess.data.record.execution.statistics.failed === 2, '分析记录附带本地执行统计');
+    assert(observedPurpose === 'execution_analysis', '请求日志来源标记为执行结果分析');
+    service.chat = async () => ({ content: '不是 JSON', usage: null, logId: null });
+    const serviceParseError = await service.analyzeExecutionResult(executionPayload);
+    assert(!serviceParseError.success && serviceParseError.data.record.status === 'parse_error' && serviceParseError.data.record.raw === '不是 JSON', '非法 JSON 保留原始返回且不改变任务结果');
+    service.chat = async () => { throw new Error('mock timeout'); };
+    const serviceRequestError = await service.analyzeExecutionResult(executionPayload);
+    assert(!serviceRequestError.success && serviceRequestError.data.record.status === 'error', '模型请求异常仅返回分析错误记录');
+    if (failed > 0) throw new Error(`单元验证有 ${failed} 项失败`);
+
+    if (!BASE_URL || !API_KEY || !MODEL) {
+        console.log('\n未设置 AI_BASE_URL / AI_API_KEY / AI_MODEL，跳过集成测试');
+        return;
+    }
+
     console.log('\n== 集成验证：测试连接 ==');
     const { endpoint } = resolveEndpoint(BASE_URL);
     console.log(`  endpoint: ${endpoint}`);

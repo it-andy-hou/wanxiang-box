@@ -12,6 +12,7 @@ const { ProjectTaskExecutor } = require('./projectTaskExecutor');
 const { WechatNotifier } = require('./wechatNotifier');
 const { BackupService } = require('./backupService');
 const { AIService } = require('./aiService');
+const statsService = require('./statsService');
 
 // 全局连接池状态管理器
 class ConnectionPoolMonitor {
@@ -1460,6 +1461,12 @@ ipcMain.handle('ai:analyze', async (event, payload) => {
   catch (e) { console.error('AI 分析失败:', e); return { success: false, message: e.message }; }
 });
 
+// AI 执行结果诊断（当前批次一次性分析，不落库）
+ipcMain.handle('ai:analyzeExecutionResult', async (event, payload) => {
+  try { return await aiService.analyzeExecutionResult(payload || {}); }
+  catch (e) { console.error('AI 执行结果分析失败:', e); return { success: false, message: e.message }; }
+});
+
 // AI 生成脚本草稿（一次性调用，不落库不缓存）
 ipcMain.handle('ai:generateScript', async (event, payload) => {
   try { return await aiService.generateScript(payload || {}); }
@@ -1516,6 +1523,18 @@ ipcMain.handle('ai:getRequestLogs', () => {
 ipcMain.handle('ai:clearRequestLogs', async () => {
   try { return { success: true, data: await aiService.clearRequestLogs() }; }
   catch (e) { return { success: false, message: e.message }; }
+});
+
+// 统计看板：一次性返回全量聚合数据（range: '7d' | '30d' | '90d' | 'all'）
+// 先兑底回填 AI 用量日汇总（首次访问且请求日志非空时执行一次）
+ipcMain.handle('stats:getAll', async (event, range) => {
+  try {
+    await aiService.backfillUsageDaily();
+    return { success: true, data: statsService.getStatistics(range) };
+  } catch (e) {
+    console.error('统计看板数据聚合失败:', e);
+    return { success: false, message: e.message };
+  }
 });
 
 ipcMain.handle('script:search', async (event, keyword) => {

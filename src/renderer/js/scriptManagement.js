@@ -803,8 +803,22 @@
         }
     }
 
+    function getScriptLineCount(content) {
+        return String(content ?? '').split(/\r\n|\r|\n/).length;
+    }
+
+    function renderLineNumbers(element, lineCount) {
+        element.textContent = Array.from({ length: lineCount }, (_, index) => index + 1).join('\n');
+    }
+
+    function syncLineNumberScroll(source, lineNumbers) {
+        lineNumbers.style.transform = `translateY(${-source.scrollTop}px)`;
+    }
+
     // 创建查看脚本对话框
     function createViewScriptDialog(script) {
+        const content = script.content || '';
+        const lineCount = getScriptLineCount(content);
         const modalOverlay = document.createElement('div');
         modalOverlay.className = 'modal-overlay';
         
@@ -830,7 +844,13 @@
                             <strong>脚本内容：</strong>
                             <button class="btn btn-secondary btn-sm" id="copyScriptContentBtn" title="复制脚本内容" style="padding: 4px 12px;">${Utils.icon('copy', 12)} 复制</button>
                         </div>
-                        <pre style="margin: 0; border-radius: 8px; overflow: hidden;"><code class="language-bash" style="display: block; padding: 1.25rem; font-size: 14px; line-height: 1.6; max-height: 500px; overflow-y: auto;">${escapeHtml(script.content)}</code></pre>
+                        <div class="script-code-panel">
+                            <div class="script-code-viewer">
+                                <div class="script-line-numbers" aria-hidden="true"><pre id="viewScriptLineNumbers"></pre></div>
+                                <pre class="script-code-scroll"><code class="language-bash">${escapeHtml(content)}</code></pre>
+                            </div>
+                            <div class="script-line-status">共 ${lineCount} 行</div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -838,6 +858,11 @@
                 </div>
             </div>
         `;
+
+        const viewCodeScroll = modalOverlay.querySelector('.script-code-scroll');
+        const viewLineNumbers = modalOverlay.querySelector('#viewScriptLineNumbers');
+        renderLineNumbers(viewLineNumbers, lineCount);
+        viewCodeScroll.addEventListener('scroll', () => syncLineNumberScroll(viewCodeScroll, viewLineNumbers));
 
         // 绑定关闭事件
         modalOverlay.querySelector('.modal-close').addEventListener('click', () => modalOverlay.remove());
@@ -990,11 +1015,15 @@
                             </div>
                             <div id="autoRiskFindings" style="display:none;margin-bottom:0.5rem;padding:0.4rem 0.6rem;background:var(--surface-subtle);border:1px solid var(--border-subtle);border-radius:6px;"></div>
                             <div style="display: flex; gap: 1rem; height: 460px;">
-                                <div style="flex: 1; display: flex; flex-direction: column;">
-                                    <textarea class="form-control" id="scriptContent"
-                                              placeholder="请输入脚本内容"
-                                              style="font-family: var(--font-mono); font-size: 14px; line-height: 1.6; resize: none; flex: 1; height: 100%;"
-                                              required>${isEdit ? escapeHtml(script.content) : '#!/bin/bash\n\n'}</textarea>
+                                <div class="script-editor">
+                                    <div class="script-editor-body">
+                                        <div class="script-line-numbers" aria-hidden="true"><pre id="scriptLineNumbers"></pre></div>
+                                        <textarea class="form-control script-code-input" id="scriptContent"
+                                                  placeholder="请输入脚本内容" wrap="off"
+                                                  style="font-family: var(--font-mono); font-size: 14px; line-height: 1.6; resize: none; flex: 1; height: 100%; padding: 10px 12px; border: 0; border-radius: 0;"
+                                                  required>${isEdit ? escapeHtml(script.content) : '#!/bin/bash\n\n'}</textarea>
+                                    </div>
+                                    <div class="script-line-status" id="scriptLineCount"></div>
                                 </div>
                                 <div id="scriptPreview" style="flex: 1; display: none; border-radius: 8px; overflow: hidden;">
                                     <pre style="margin: 0; height: 100%;"><code class="language-bash" style="display: block; padding: 1rem; font-size: 14px; line-height: 1.6; height: 100%; overflow-y: auto;">${isEdit ? escapeHtml(script.content) : '#!/bin/bash\n\n'}</code></pre>
@@ -1140,6 +1169,18 @@
         const preview  = modalOverlay.querySelector('#scriptPreview');
         const previewCode = modalOverlay.querySelector('#scriptPreview code');
         const showPreviewCheckbox = modalOverlay.querySelector('#showPreview');
+        const lineNumbers = modalOverlay.querySelector('#scriptLineNumbers');
+        const lineCount = modalOverlay.querySelector('#scriptLineCount');
+
+        function updateEditorLineMeta() {
+            const count = getScriptLineCount(textarea.value);
+            renderLineNumbers(lineNumbers, count);
+            lineCount.textContent = `共 ${count} 行`;
+            syncLineNumberScroll(textarea, lineNumbers);
+        }
+
+        textarea.addEventListener('scroll', () => syncLineNumberScroll(textarea, lineNumbers));
+        updateEditorLineMeta();
 
         // 风险自动评估：按当前脚本内容实时更新只读徽标与命中明细
         function updateRiskBadge() {
@@ -1175,6 +1216,7 @@
         });
         let updateTimer;
         textarea.addEventListener('input', () => {
+            updateEditorLineMeta();
             clearTimeout(updateTimer);
             updateTimer = setTimeout(() => {
                 updateRiskBadge();

@@ -264,6 +264,106 @@ select.form-control option {
     color: var(--text-body);
 }
 
+/* Excel 导出设置：区块标题旁的全选/全不选切换链接 */
+.select-all-link {
+    float: right;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted, #999);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.select-all-link:hover {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+/* 脚本内容：行号、代码区与总行数 */
+.script-code-panel,
+.script-editor {
+    min-width: 0;
+    overflow: hidden;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+}
+
+.script-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.script-code-viewer,
+.script-editor-body {
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.script-code-viewer {
+    max-height: 500px;
+}
+
+.script-editor-body {
+    flex: 1;
+    min-height: 0;
+}
+
+.script-line-numbers {
+    flex: 0 0 auto;
+    min-width: 44px;
+    overflow: hidden;
+    color: var(--text-faint);
+    background: var(--surface-active);
+    border-right: 1px solid var(--border-subtle);
+    text-align: right;
+    user-select: none;
+}
+
+.script-line-numbers pre {
+    margin: 0;
+    padding: 10px 8px 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.6;
+    font-feature-settings: "tabular-nums" 1;
+    font-variant-numeric: tabular-nums;
+    white-space: pre;
+    will-change: transform;
+}
+
+.script-code-scroll {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    overflow: auto;
+}
+
+.script-code-scroll code {
+    display: block;
+    min-width: max-content;
+    min-height: 100%;
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre;
+}
+
+.script-line-status {
+    padding: 4px 10px;
+    color: var(--text-muted);
+    background: var(--surface-subtle);
+    border-top: 1px solid var(--border-subtle);
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: right;
+    font-feature-settings: "tabular-nums" 1;
+    font-variant-numeric: tabular-nums;
+}
+
 /* 模态框样式 */
 .modal-overlay {
     position: fixed;
@@ -1615,6 +1715,17 @@ select.form-control option {
 
 .search-bar .btn:last-child {
     right: 32px;
+}
+
+/* 主机管理：批量IP搜索按钮移出搜索框成为独立按钮，搜索框收窄 */
+#hostSearchInput {
+    width: 220px;
+    padding-right: 12px;
+}
+
+.toolbar-left > #batchSearchBtn {
+    height: 38px;
+    white-space: nowrap;
 }
 
 

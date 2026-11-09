@@ -765,6 +765,77 @@ body {
     vertical-align: middle;
 }
 
+/* 页头「重置」按钮：角标绝对定位右上角 */
+#clearFiltersBtn {
+    position: relative;
+}
+
+#clearFiltersBtn .reset-all-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    margin-left: 0;
+    padding: 0 5px;
+    font-size: 10px;
+    line-height: 1.4;
+    pointer-events: none;
+}
+
+/* Excel 数据下拉（导入 / 导出 / 下载模板）：悬浮面板，不挤压页头布局 */
+.excel-menu-wrap {
+    position: relative;
+}
+
+.excel-menu-wrap .excel-menu-chevron {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.excel-menu-wrap.open .excel-menu-chevron {
+    transform: rotate(180deg);
+}
+
+.excel-menu-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    flex-direction: column;
+    min-width: 156px;
+    padding: 6px;
+    background: var(--surface-float);
+    border: 1px solid var(--border-default);
+    border-radius: var(--rounded-md);
+    box-shadow: var(--shadow-modal);
+    z-index: 300;
+}
+
+.excel-menu-panel.open {
+    display: flex;
+}
+
+.excel-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-body);
+    background: none;
+    border: none;
+    border-radius: var(--rounded-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    text-align: left;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.excel-menu-item:hover {
+    background: var(--surface-subtle);
+    color: var(--primary);
+}
+
 /* 响应式设计 */
 @media (max-width: 1024px) {
     .toolbar {

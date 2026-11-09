@@ -607,3 +607,226 @@ window.Utils = {
         }
     }
 };
+
+// 可搜索下拉面板：全局单例，主机管理页工具栏与各主机选择弹窗共用
+// 拦截原生 select 的 mousedown，弹出带关键词过滤的面板；原生 select 仍承载数据与 change 事件
+window.SelectSearch = (function() {
+    let panel = null;
+    let anchor = null;
+    let cleanup = null;
+
+    function close() {
+        if (panel) {
+            panel.remove();
+            panel = null;
+        }
+        if (cleanup) {
+            cleanup();
+            cleanup = null;
+        }
+        anchor = null;
+    }
+
+    // 打开某个筛选下拉的搜索面板
+    function open(select) {
+        close();
+        anchor = select;
+
+        const escapeHtml = (str) => String(str == null ? '' : str)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+        // 每次打开时从原生 select 现有 option 读取（选项被重写后自动同步）
+        const allOption = Array.from(select.options)
+            .find(o => o.value === '') || { value: '', label: '全部' };
+        const valueOptions = Array.from(select.options)
+            .filter(o => o.value !== '')
+            .map(o => ({ value: o.value, label: o.textContent }));
+
+        const rect = select.getBoundingClientRect();
+        const el = document.createElement('div');
+        el.className = 'select-search-panel';
+        // 面板最小宽度 200px：保证占位文案与选项文字完整展示，不被裁切
+        el.style.left = `${rect.left}px`;
+        el.style.top = `${rect.bottom + 4}px`;
+        el.style.minWidth = `${Math.max(rect.width, 200)}px`;
+        el.innerHTML = `
+            <input type="text" class="form-control select-search-input" placeholder="输入关键词过滤" autocomplete="off">
+            <div class="select-search-list"></div>
+        `;
+        document.body.appendChild(el);
+        // 视口钳制：右缘放不下则左移；下方空间不足则翻转到 select 上方，避免文字被窗口裁切
+        const maxLeft = window.innerWidth - el.offsetWidth - 8;
+        if (maxLeft >= 0) {
+            el.style.left = `${Math.min(rect.left, maxLeft)}px`;
+        }
+        if (rect.bottom + el.offsetHeight + 8 > window.innerHeight && rect.top - el.offsetHeight > 8) {
+            el.style.top = `${rect.top - el.offsetHeight - 4}px`;
+        }
+        panel = el;
+
+        const input = el.querySelector('.select-search-input');
+        const listEl = el.querySelector('.select-search-list');
+        let matched = [];       // 当前关键词过滤后的选项
+        let activeIndex = -1;   // 键盘上下键高亮项
+
+        // 选中某项：写回原生 select 并触发 change，复用既有筛选链路
+        const chooseOption = (value) => {
+            close();
+            if (select.value !== value) {
+                select.value = value;
+                select.dispatchEvent(new Event('change'));
+            }
+        };
+
+        // 渲染选项列表
+        const renderList = () => {
+            const kw = input.value.trim().toLowerCase();
+            matched = valueOptions.filter(o =>
+                o.label.toLowerCase().includes(kw) || o.value.toLowerCase().includes(kw));
+            activeIndex = -1;
+            if (matched.length === 0) {
+                listEl.innerHTML = '<div class="select-search-empty">无匹配选项</div>';
+                return;
+            }
+            listEl.innerHTML = matched.map((o, i) => `
+                <div class="select-search-item${o.value === select.value ? ' selected' : ''}" data-idx="${i}">${escapeHtml(o.label)}</div>
+            `).join('');
+        };
+
+        // 顶部固定一行「全部XX」，不受关键词影响，便于快速清除该筛选
+        const allRow = document.createElement('div');
+        allRow.className = 'select-search-all' + (select.value === '' ? ' selected' : '');
+        allRow.textContent = allOption.label;
+        allRow.addEventListener('click', () => chooseOption(''));
+        el.insertBefore(allRow, listEl);
+
+        renderList();
+
+        // 点击选项
+        listEl.addEventListener('click', (e) => {
+            const item = e.target.closest('.select-search-item');
+            if (!item) return;
+            const idx = parseInt(item.dataset.idx, 10);
+            if (matched[idx]) chooseOption(matched[idx].value);
+        });
+
+        // 输入关键词实时过滤
+        input.addEventListener('input', renderList);
+
+        // 键盘操作：上下移动高亮，Enter 选中，Esc 关闭
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (matched.length === 0) return;
+                activeIndex = e.key === 'ArrowDown'
+                    ? Math.min(activeIndex + 1, matched.length - 1)
+                    : Math.max(activeIndex - 1, 0);
+                listEl.querySelectorAll('.select-search-item').forEach((node, i) => {
+                    node.classList.toggle('active', i === activeIndex);
+                    if (i === activeIndex) node.scrollIntoView({ block: 'nearest' });
+                });
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (matched.length > 0) {
+                    chooseOption(matched[Math.max(activeIndex, 0)].value);
+                }
+            } else if (e.key === 'Escape') {
+                close();
+            }
+        });
+
+        // 关闭时机：点击面板与下拉外部、面板外部滚动（避免面板与 select 脱节）；
+        // 面板内部列表滚动（拖滚动条/滚轮）不关闭，否则滚动条一拖面板就被误关
+        const onDocMousedown = (e) => {
+            if (el.contains(e.target) || select.contains(e.target)) return;
+            close();
+        };
+        const onScroll = (e) => {
+            if (el.contains(e.target)) return; // 仅面板外部滚动才关闭
+            close();
+        };
+        document.addEventListener('mousedown', onDocMousedown);
+        window.addEventListener('scroll', onScroll, true);
+        cleanup = () => {
+            document.removeEventListener('mousedown', onDocMousedown);
+            window.removeEventListener('scroll', onScroll, true);
+        };
+
+        setTimeout(() => input.focus(), 0);
+    }
+
+    // 绑定到某个原生 select
+    function attach(select) {
+        if (!select) return;
+        select.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // 阻止原生下拉展开
+            // 再次点击已打开的下拉则收起
+            if (anchor === select && panel) {
+                close();
+            } else {
+                open(select);
+            }
+        });
+    }
+
+    return { attach, open, close };
+})();
+
+// 主机筛选选项构建：与主机管理页 updateFilters 同口径
+// 双向级联：每个筛选项的可选值由「除自身外的所有筛选条件」计算，并附带主机数量统计
+window.HostFilterOptions = (function() {
+    const KEYS = ['systemName', 'appName', 'datacenter', 'environment', 'owner', 'osType'];
+
+    // 兼容驼峰（hostService 转换后）与下划线（数据库原始行）两种字段命名
+    const getValue = (host, key) => {
+        if (key === 'systemName') return host.systemName || host.system_name || '';
+        if (key === 'appName') return host.appName || host.app_name || '';
+        if (key === 'osType') return host.osType || host.os_type || '';
+        return host[key] || '';
+    };
+
+    const escapeHtml = (str) => String(str == null ? '' : str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // hosts 为主机数组，filters 为当前筛选值（缺省键视为不过滤）
+    // 返回 { key: [{ value, label, count }] }，负责人按名称排序，其余按出现顺序
+    function build(hosts, filters) {
+        const result = {};
+        KEYS.forEach(excludeKey => {
+            const subset = hosts.filter(host => KEYS.every(key => {
+                if (key === excludeKey || !filters[key]) return true;
+                return getValue(host, key) === filters[key];
+            }));
+            const counts = {};
+            subset.forEach(host => {
+                const val = getValue(host, excludeKey);
+                if (val) counts[val] = (counts[val] || 0) + 1;
+            });
+            let values = Object.keys(counts);
+            if (excludeKey === 'owner') values = values.sort();
+            result[excludeKey] = values.map(v => ({ value: v, label: v, count: counts[v] }));
+        });
+        return result;
+    }
+
+    // 将选项渲染进原生 select（含「全部XX」默认项与数量统计）
+    // 若当前选中值不在可用选项中则回退为空，返回 true 表示发生了回退
+    function render(selectEl, options, selectedValue, allLabel) {
+        if (!selectEl) return false;
+        const optionsHTML = [
+            `<option value="">${escapeHtml(allLabel)}</option>`,
+            ...options.map(opt =>
+                `<option value="${escapeHtml(opt.value)}"${opt.value === selectedValue ? ' selected' : ''}>${escapeHtml(opt.label)}${opt.count != null ? ` (${opt.count})` : ''}</option>`)
+        ].join('');
+        selectEl.innerHTML = optionsHTML;
+        if (selectedValue && !options.some(opt => opt.value === selectedValue)) {
+            selectEl.value = '';
+            return true;
+        }
+        return false;
+    }
+
+    return { build, render, getValue };
+})();

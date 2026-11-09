@@ -4,6 +4,7 @@
 
     const RISK_NAMES = { CRITICAL: '严重', HIGH: '高危', MEDIUM: '中危', LOW: '低危', SAFE: '安全' };
     const RISK_ORDER = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'SAFE'];
+    const executionAnalysisCache = new Map();
 
     function esc(text) {
         const div = document.createElement('div');
@@ -412,6 +413,209 @@
     }
 
     // ============================================================
+    // 执行结果 AI 分析
+    // ============================================================
+
+    const EXECUTION_ATTENTION = {
+        normal: ['正常', 'normal'], warning: ['需要关注', 'warning'], critical: ['严重异常', 'critical']
+    };
+    const EXECUTION_ISSUE_TYPES = {
+        failure: '执行失败', suspected_failure: '疑似隐性失败', inconsistency: '多机差异', performance: '耗时异常'
+    };
+    const EXECUTION_CONFIDENCE = { high: '高', medium: '中', low: '低' };
+    const EXECUTION_RECOMMENDATION_RISK = { readonly: '只读', caution: '谨慎操作', destructive: '高风险' };
+
+    function executionStats(results) {
+        return {
+            total: results.length,
+            success: results.filter(r => r.status === 'success').length,
+            failed: results.filter(r => r.status === 'failed').length,
+            cancelled: results.filter(r => r.status === 'cancelled').length
+        };
+    }
+
+    function renderExecutionStats(stats) {
+        return `<div class="ai-execution-stats">
+            <span>主机 <strong>${stats.total}</strong></span>
+            <span class="text-success">成功 <strong>${stats.success}</strong></span>
+            <span class="text-danger">失败 <strong>${stats.failed}</strong></span>
+            ${stats.cancelled ? `<span>取消 <strong>${stats.cancelled}</strong></span>` : ''}
+        </div>`;
+    }
+
+    function renderExecutionAnalysis(record, results) {
+        if (!record) return '';
+        if (!record.result) {
+            return `<div class="ai-analysis-card ai-card-error">
+                <div class="ai-card-title"><span class="ai-risk-badge ai-risk-error">${record.status === 'parse_error' ? '解析失败' : '分析失败'}</span></div>
+                <div class="ai-card-raw">${esc(record.error || record.raw || '未知错误')}</div>
+                ${record.raw && record.error ? `<details class="ai-execution-raw"><summary>查看模型原始返回</summary><pre>${esc(record.raw)}</pre></details>` : ''}
+            </div>`;
+        }
+        const r = record.result;
+        const hostMap = new Map(results.map((item, index) => [`H${index + 1}`, item.host_ip || `主机 ${index + 1}`]));
+        const hostText = ref => `${esc(ref)}${hostMap.has(ref) ? ` · ${esc(hostMap.get(ref))}` : ''}`;
+        const refsHtml = refs => refs && refs.length ? refs.map(ref => `<span class="ai-execution-host">${hostText(ref)}</span>`).join('') : '<span class="ai-execution-muted">全局问题</span>';
+        const listHtml = items => items && items.length ? `<ul>${items.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : '';
+        const attention = EXECUTION_ATTENTION[r.overall.attention_level] || EXECUTION_ATTENTION.warning;
+        const coverage = record.execution && record.execution.coverage;
+        const coverageHtml = coverage ? `<div class="ai-execution-coverage">本次输入覆盖 ${coverage.includedHosts}/${coverage.totalHosts} 台主机，${coverage.outputGroups} 组不同输出${coverage.omittedHosts ? `；${coverage.omittedHosts} 台因上下文限制未发送` : ''}${coverage.truncatedRepresentatives ? `；${coverage.truncatedRepresentatives} 份代表日志已截断` : ''}</div>` : '';
+        const issuesHtml = r.issues.length ? r.issues.map(issue => `
+            <section class="ai-execution-issue ai-execution-issue-${esc(issue.type)}">
+                <div class="ai-execution-issue-head"><span class="ai-execution-issue-type">${esc(EXECUTION_ISSUE_TYPES[issue.type] || issue.type)}</span><strong>${esc(issue.title)}</strong></div>
+                <div class="ai-execution-hosts">${refsHtml(issue.host_refs)}</div>
+                ${issue.facts.length ? `<div class="ai-execution-block"><h4>确定事实</h4>${listHtml(issue.facts)}</div>` : ''}
+                ${issue.evidence.length ? `<div class="ai-execution-block"><h4>原始证据</h4>${issue.evidence.map(e => `<div class="ai-execution-evidence"><span>${hostText(e.host_ref)} · ${esc(e.source)}</span><pre>${esc(e.excerpt)}</pre></div>`).join('')}</div>` : ''}
+                ${issue.possible_causes.length ? `<div class="ai-execution-block"><h4>可能原因</h4><ul>${issue.possible_causes.map(c => `<li>${esc(c.cause)} <span class="ai-execution-muted">（置信度：${esc(EXECUTION_CONFIDENCE[c.confidence] || c.confidence)}）</span></li>`).join('')}</ul></div>` : ''}
+                ${issue.recommendations.length ? `<div class="ai-execution-block"><h4>处置建议</h4>${issue.recommendations.map(item => `<div class="ai-execution-recommendation ai-recommendation-${esc(item.risk)}"><div><strong>${item.priority}. ${esc(item.action)}</strong><span class="ai-execution-risk">${esc(EXECUTION_RECOMMENDATION_RISK[item.risk] || item.risk)}</span></div>${item.command ? `<pre><code>${esc(item.command)}</code></pre>` : ''}${item.verification ? `<p>验证：${esc(item.verification)}</p>` : ''}</div>`).join('')}</div>` : ''}
+            </section>`).join('') : '<div class="ai-execution-empty">未发现需要单列的异常问题</div>';
+        const u = record.usage;
+        const meta = `<div class="ai-card-meta">分析时间: ${esc(new Date(record.created_at).toLocaleString('zh-CN'))} · 模型: ${esc(record.model || '-')}${u && u.total ? ` · ${u.total.toLocaleString()} tokens` : ''}</div>`;
+        return `<div class="ai-execution-result">
+            <div class="ai-execution-overall ai-execution-attention-${attention[1]}">
+                <span class="ai-execution-attention">${attention[0]}</span>
+                <strong>${esc(r.overall.conclusion)}</strong>
+                <span class="ai-execution-muted">结论置信度：${esc(EXECUTION_CONFIDENCE[r.overall.confidence] || r.overall.confidence)}</span>
+            </div>
+            ${coverageHtml}${issuesHtml}
+            ${r.success_observations.length ? `<section class="ai-execution-summary"><h3>正常结果发现</h3>${listHtml(r.success_observations)}</section>` : ''}
+            ${r.next_checks.length ? `<section class="ai-execution-summary"><h3>后续核验</h3>${listHtml(r.next_checks)}</section>` : ''}
+            ${r.limitations.length ? `<section class="ai-execution-limitations"><h3>分析限制</h3>${listHtml(r.limitations)}</section>` : ''}
+            ${meta}
+        </div>`;
+    }
+
+    function executionCacheKey(payload) {
+        return JSON.stringify({ type: payload.type, taskName: payload.taskName, content: payload.content, intent: payload.intent, results: payload.results });
+    }
+
+    async function showExecutionDialog(payload = {}) {
+        const baseResults = Array.isArray(payload.results) ? payload.results.map(r => ({ ...r })) : [];
+        if (!baseResults.length) { notify('没有可分析的执行结果', 'warning'); return; }
+        if (payload.finished === false) { notify('任务尚未正常完成，暂不能分析', 'warning'); return; }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `<div class="modal ai-execution-modal">
+            <div class="modal-header"><h2>AI 分析执行结果</h2><button class="modal-close">&times;</button></div>
+            <div class="modal-body">
+                <div class="ai-execution-task"><strong>${esc(payload.taskName || '未命名任务')}</strong><span>${payload.type === 'command' ? '临时命令' : '脚本任务'}</span></div>
+                <div class="ai-execution-controls">
+                    <label>分析范围<select class="form-control" id="aiExecutionScope"><option value="all">全部结果</option><option value="failed">仅失败主机</option></select></label>
+                    <label class="ai-execution-intent">执行目的 / 成功标准（可选）<textarea class="form-control" id="aiExecutionIntent" rows="2" maxlength="1000" placeholder="例：确认 nginx 已启动且监听 80 端口；留空则仅根据命令和输出分析"></textarea></label>
+                </div>
+                <div class="ai-execution-privacy">日志将在本地脱敏、分组和必要截断后发送至当前配置的大模型服务。AI 结论仅作辅助，不会自动执行修复命令。</div>
+                <div id="aiExecutionStats"></div>
+                <div id="aiExecutionReport" class="ai-execution-report"><div class="ai-analysis-loading">请选择范围并点击“开始分析”</div></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" id="aiExecutionCopy" disabled>复制分析报告</button><button class="btn btn-secondary" id="aiExecutionClose">关闭</button><button class="btn btn-primary" id="aiExecutionRun">开始分析</button></div>
+        </div>`;
+        document.body.appendChild(overlay);
+        const scopeEl = overlay.querySelector('#aiExecutionScope');
+        const intentEl = overlay.querySelector('#aiExecutionIntent');
+        const statsEl = overlay.querySelector('#aiExecutionStats');
+        const reportEl = overlay.querySelector('#aiExecutionReport');
+        const runBtn = overlay.querySelector('#aiExecutionRun');
+        const copyBtn = overlay.querySelector('#aiExecutionCopy');
+        let running = false;
+        let hasResult = false;
+
+        const selectedResults = () => scopeEl.value === 'failed' ? baseResults.filter(r => r.status === 'failed') : baseResults;
+        const resetResult = () => {
+            hasResult = false;
+            runBtn.textContent = '开始分析';
+            copyBtn.disabled = true;
+            reportEl.innerHTML = '<div class="ai-analysis-loading">范围或成功标准已变化，请重新分析</div>';
+        };
+        const refreshStats = () => { statsEl.innerHTML = renderExecutionStats(executionStats(selectedResults())); };
+        const close = () => overlay.remove();
+        overlay.querySelector('.modal-close').addEventListener('click', close);
+        overlay.querySelector('#aiExecutionClose').addEventListener('click', close);
+        overlay.addEventListener('click', e => { if (e.target === overlay && !running) close(); });
+        scopeEl.addEventListener('change', () => { refreshStats(); resetResult(); });
+        intentEl.addEventListener('input', resetResult);
+        refreshStats();
+
+        copyBtn.addEventListener('click', async () => {
+            const text = `任务：${payload.taskName || '未命名任务'}\n${statsEl.innerText}\n\n${reportEl.innerText}`;
+            try {
+                await navigator.clipboard.writeText(text);
+                notify('分析报告已复制', 'success');
+            } catch (e) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                textarea.remove();
+                notify('分析报告已复制', 'success');
+            }
+        });
+
+        runBtn.addEventListener('click', async () => {
+            if (running) return;
+            const results = selectedResults();
+            if (!results.length) { notify('当前没有失败主机，可切换为全部结果分析', 'warning'); return; }
+            const cfg = await isConfigured();
+            if (!cfg.ok) { notify(cfg.msg, 'warning'); return; }
+            const request = {
+                type: payload.type, taskName: payload.taskName, content: payload.content || '',
+                intent: intentEl.value.trim(), finished: true, results
+            };
+            const cacheKey = executionCacheKey(request);
+            const force = hasResult;
+            if (!force && executionAnalysisCache.has(cacheKey)) {
+                const cached = executionAnalysisCache.get(cacheKey);
+                reportEl.innerHTML = renderExecutionAnalysis(cached.data.record, results);
+                hasResult = true;
+                runBtn.textContent = '重新分析';
+                copyBtn.disabled = false;
+                notify('已复用当前页面内的分析结果，未消耗 token', 'info');
+                return;
+            }
+
+            running = true;
+            runBtn.disabled = true;
+            scopeEl.disabled = true;
+            intentEl.disabled = true;
+            copyBtn.disabled = true;
+            reportEl.innerHTML = '<div class="ai-analysis-loading"><span class="ai-spin"></span> 正在分析执行结果，复杂日志可能需要数十秒到数分钟…</div>';
+            try {
+                const response = await svc().analyzeExecutionResult(request);
+                afterModelCall();
+                if (!document.body.contains(overlay)) return;
+                if (response.data && response.data.record) {
+                    reportEl.innerHTML = renderExecutionAnalysis(response.data.record, results);
+                    hasResult = !!response.data.record.result;
+                    copyBtn.disabled = !hasResult;
+                    if (hasResult) {
+                        executionAnalysisCache.set(cacheKey, response);
+                        if (executionAnalysisCache.size > 5) executionAnalysisCache.delete(executionAnalysisCache.keys().next().value);
+                    }
+                    if (!response.success) notify(response.message || '分析失败', 'error');
+                } else {
+                    reportEl.innerHTML = `<div class="ai-analysis-loading ai-load-error">${esc(response.message || '分析失败')}</div>`;
+                }
+            } catch (e) {
+                if (document.body.contains(overlay)) reportEl.innerHTML = `<div class="ai-analysis-loading ai-load-error">${esc(e.message)}</div>`;
+            } finally {
+                running = false;
+                runBtn.disabled = false;
+                runBtn.textContent = hasResult ? '重新分析' : '开始分析';
+                scopeEl.disabled = false;
+                intentEl.disabled = false;
+            }
+        });
+    }
+
+    function closeExecutionDialogs() {
+        document.querySelectorAll('.ai-execution-modal').forEach(modal => {
+            const overlay = modal.closest('.modal-overlay');
+            if (overlay) overlay.remove();
+        });
+    }
+
+    // ============================================================
     // 批量分析弹窗
     // ============================================================
 
@@ -628,6 +832,8 @@
         attachEditSection,
         attachGenerateSection,
         showBatchDialog,
+        showExecutionDialog,
+        closeExecutionDialogs,
         isConfigured,
         refreshTokenStats
     };

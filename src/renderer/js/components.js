@@ -2100,7 +2100,7 @@ class ExcelExportDialog {
         return `
             <div class="csv-export-form">
                 <div class="export-section">
-                    <h5>选择导出字段</h5>
+                    <h5>选择导出字段 <a href="javascript:void(0)" class="select-all-link">全选</a></h5>
                     <div class="field-selection">
                         <label class="field-checkbox">
                             <input type="checkbox" name="ip" checked> IP地址
@@ -2136,7 +2136,7 @@ class ExcelExportDialog {
                 </div>
 
                 <div class="export-section">
-                    <h5>执行环境 <small class="text-muted">(采集后可导出)</small></h5>
+                    <h5>执行环境 <small class="text-muted">(采集后可导出)</small> <a href="javascript:void(0)" class="select-all-link">全选</a></h5>
                     <div class="field-selection">
                         <label class="field-checkbox">
                             <input type="checkbox" name="os_type"> 系统类型
@@ -2194,11 +2194,37 @@ class ExcelExportDialog {
         
         // 字段选择变化事件
         fieldCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', () => this.updatePreview());
+            checkbox.addEventListener('change', () => {
+                this.updateSelectAllLinks();
+                this.updatePreview();
+            });
+        });
+        
+        // 一键全选/全不选切换
+        document.querySelectorAll('.select-all-link').forEach(link => {
+            link.addEventListener('click', () => {
+                const checkboxes = link.closest('.export-section')
+                    .querySelectorAll('input[type="checkbox"]');
+                const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+                checkboxes.forEach(checkbox => { checkbox.checked = !allChecked; });
+                this.updateSelectAllLinks();
+                this.updatePreview();
+            });
         });
         
         // 初始化预览
+        this.updateSelectAllLinks();
         this.updatePreview();
+    }
+    
+    // 根据各区块勾选状态刷新全选链接文案
+    updateSelectAllLinks() {
+        document.querySelectorAll('.select-all-link').forEach(link => {
+            const checkboxes = link.closest('.export-section')
+                .querySelectorAll('input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+            link.textContent = allChecked ? '全不选' : '全选';
+        });
     }
     
     updatePreview() {
