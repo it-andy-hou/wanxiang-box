@@ -266,7 +266,7 @@ function statsAi(db, start) {
     const totalRequests = sum('requests');
     const totalSuccess = sum('success');
 
-    const PURPOSE_NAMES = { analyze: '脚本分析', execution_analysis: '执行结果分析', generate: '脚本生成', test: '测试连接', other: '其他' };
+    const PURPOSE_NAMES = { analyze: '脚本分析', execution_analysis: '执行结果分析', terminal_analysis: '终端输出分析', generate: '脚本生成', test: '测试连接', other: '其他' };
     const purposeMap = new Map();
     const modelMap = new Map();
     for (const r of scoped) {

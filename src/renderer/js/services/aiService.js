@@ -45,6 +45,18 @@
             return await this.ipcRenderer.invoke('ai:analyzeExecutionResult', payload);
         }
 
+        /** 远程终端输出分析（多轮对话，不落库） */
+        async terminalChat(payload) {
+            if (!this.isElectron) return { success: false, message: '仅支持 Electron 环境' };
+            return await this.ipcRenderer.invoke('ai:terminalChat', payload);
+        }
+
+        /** 取消进行中的终端分析请求 */
+        async terminalCancel(requestId) {
+            if (!this.isElectron) return { success: false, message: '仅支持 Electron 环境' };
+            return await this.ipcRenderer.invoke('ai:terminalCancel', requestId);
+        }
+
         /** AI 生成脚本草稿（一次性调用，不落库不缓存） */
         async generateScript(payload) {
             if (!this.isElectron) return { success: false, message: '仅支持 Electron 环境' };

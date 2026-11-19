@@ -295,24 +295,7 @@ class SSHService {
         try {
             connection = new NodeSSH();
             
-            const config = {
-                host: hostData.ip,
-                port: hostData.port || 22,
-                username: hostData.username,
-                keepaliveInterval: 60000,
-                readyTimeout: 15000,
-                // 兼容性配置：支持老旧Linux系统
-                algorithms: this.getCompatibilityAlgorithms(),
-            };
-
-            const privateKeyPath = hostData.privateKeyPath || hostData.private_key_path;
-            if (privateKeyPath && fs.existsSync(privateKeyPath)) {
-                config.privateKeyPath = privateKeyPath;
-            } else if (hostData.password) {
-                config.password = hostData.password;
-            } else {
-                throw new Error('未提供有效的认证方式');
-            }
+            const config = this.buildConnectConfig(hostData);
 
             await connection.connect(config);
             
@@ -428,24 +411,7 @@ class SSHService {
         try {
             connection = new NodeSSH();
             
-            const config = {
-                host: hostData.ip,
-                port: hostData.port || 22,
-                username: hostData.username,
-                keepaliveInterval: 60000,
-                readyTimeout: 15000,
-                // 兼容性配置：支持老旧Linux系统
-                algorithms: this.getCompatibilityAlgorithms(),
-            };
-
-            const privateKeyPath = hostData.privateKeyPath || hostData.private_key_path;
-            if (privateKeyPath && fs.existsSync(privateKeyPath)) {
-                config.privateKeyPath = privateKeyPath;
-            } else if (hostData.password) {
-                config.password = hostData.password;
-            } else {
-                throw new Error('未提供有效的认证方式');
-            }
+            const config = this.buildConnectConfig(hostData);
 
             await connection.connect(config);
             
@@ -487,17 +453,44 @@ class SSHService {
     }
 
     // 检查是否为可能导致连接断开的命令
+    // 仅匹配“命令位置”的破坏性命令：逐行剥离引号内字符串与 # 注释，
+    // 再按 ;/&&/||/| 拆分命令段，判断段首是否为破坏性命令（允许 sudo/nohup/env 等前缀）。
+    // 避免 `last reboot`、`# 不要 shutdown`、`echo "reboot"` 这类误报。
     isDisruptiveCommand(scriptContent) {
         const disruptivePatterns = [
-            /\bshutdown\b/i,
-            /\breboot\b/i,
-            /\bpoweroff\b/i,
-            /\bhalt\b/i,
-            /\binit\s+[06]\b/i,
-            /\bsystemctl\s+(reboot|poweroff|halt)\b/i
+            /^(shutdown|reboot|poweroff|halt)\b/i,
+            /^init\s+[06]\b/i,
+            /^systemctl\s+(reboot|poweroff|halt)\b/i
         ];
-        
-        return disruptivePatterns.some(pattern => pattern.test(scriptContent));
+        // 允许的命令前缀（可叠加，如 sudo nohup）
+        const prefixPattern = /^(sudo|nohup|env|exec|command|time)\s+/i;
+
+        const lines = String(scriptContent || '').split('\n');
+        for (const rawLine of lines) {
+            // 先剥离引号内字符串（防止 echo "..." 中的词误报），再截掉注释
+            let line = rawLine.replace(/"[^"]*"|'[^']*'/g, '""');
+            const commentIndex = line.indexOf('#');
+            if (commentIndex !== -1) {
+                line = line.substring(0, commentIndex);
+            }
+            // 按 ; && || | 拆分为命令段
+            const segments = line.split(/&&|\|\||[;|]/);
+            for (let segment of segments) {
+                segment = segment.trim();
+                // 剥离 sudo/nohup/env 等前缀
+                let prev;
+                do {
+                    prev = segment;
+                    segment = segment.replace(prefixPattern, '').trim();
+                } while (segment !== prev);
+                // 跳过 FOO=bar 形式的变量赋值前缀
+                segment = segment.replace(/^(\w+=\S*\s+)+/, '').trim();
+                if (disruptivePatterns.some(pattern => pattern.test(segment))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // 执行命令（带超时处理）
@@ -514,6 +507,38 @@ class SSHService {
         ]);
     }
 
+    /**
+     * 终止 executeScript 在该连接上启动的远端脚本进程组，并清理临时文件。
+     * 断开 SSH 不会让远端非 pty 进程退出（sshd 不发 SIGHUP），必须显式 kill。
+     * 需在 dispose() 之前调用；没有登记的远端进程时直接返回。
+     * @returns {Promise<boolean>} 是否发出了终止命令
+     */
+    async terminateRemoteProcess(connection, { timeout = 8000 } = {}) {
+        const proc = connection && connection._wxRemoteProc;
+        if (!proc) return false;
+        connection._wxRemoteProc = null; // 防止停止与超时路径重复执行
+        // 脚本由 sh -c 内 exec 启动，PID 即 sshd setsid 后的进程组 ID：
+        // 先 TERM 整个进程组，2 秒后仍存活则 KILL；sudo 执行时用 sudo -n 发信号
+        const k = proc.useSudo ? 'sudo -n kill' : 'kill';
+        const cmd = [
+            `PID=$(cat ${proc.pidPath} 2>/dev/null)`,
+            `if [ -n "$PID" ]; then`,
+            `  ${k} -TERM -- -"$PID" 2>/dev/null || ${k} -TERM "$PID" 2>/dev/null`,
+            `  for i in 1 2; do kill -0 "$PID" 2>/dev/null || break; sleep 1; done`,
+            `  ${k} -KILL -- -"$PID" 2>/dev/null || ${k} -KILL "$PID" 2>/dev/null`,
+            `fi`,
+            `rm -f ${proc.pidPath} ${proc.scriptPath}`
+        ].join('\n');
+        try {
+            await this.execCommandWithTimeout(connection, cmd, { timeout });
+            console.log(`[SSH] 已终止远端脚本进程: ${proc.scriptPath}`);
+            return true;
+        } catch (e) {
+            console.warn(`[SSH] 终止远端脚本进程失败（连接可能已断开）: ${e.message}`);
+            return false;
+        }
+    }
+
     // 执行脚本（先传输到远程主机，再执行）
     async executeScript(hostData, scriptContent, options = {}) {
         let connection = options.connection || null; // 支持外部传入连接
@@ -527,24 +552,7 @@ class SSHService {
             if (!connection) {
                 connection = new NodeSSH();
             
-                const config = {
-                    host: hostData.ip,
-                    port: hostData.port || 22,
-                    username: hostData.username,
-                    keepaliveInterval: 60000,
-                    readyTimeout: options.timeout || 15000,
-                    // 兼容性配置：支持老旧Linux系统
-                    algorithms: this.getCompatibilityAlgorithms(),
-                };
-
-                const privateKeyPath = hostData.privateKeyPath || hostData.private_key_path;
-            if (privateKeyPath && fs.existsSync(privateKeyPath)) {
-                    config.privateKeyPath = privateKeyPath;
-                } else if (hostData.password) {
-                    config.password = hostData.password;
-                } else {
-                    throw new Error('未提供有效的认证方式');
-                }
+                const config = this.buildConnectConfig(hostData, { readyTimeout: options.timeout || 15000 });
 
                 await connection.connect(config);
             }
@@ -569,6 +577,7 @@ class SSHService {
             const timestamp = Date.now();
             const randomStr = Math.random().toString(36).substring(7);
             const remoteScriptPath = `/tmp/ssh_script_${timestamp}_${randomStr}.sh`;
+            const remotePidPath = remoteScriptPath.replace(/\.sh$/, '.pid');
             
             // 生成随机的 Heredoc 分隔符,避免与脚本内容冲突
             const crypto = require('crypto');
@@ -601,9 +610,12 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
             if (isDisruptive) {
                 // 对于破坏性命令，使用后台执行并立即返回
                 console.log('以后台模式执行破坏性命令');
+                // 日志文件名随机化（与临时脚本同基名），避免固定 /tmp/shutdown.log 被覆盖
+                const remoteLogPath = remoteScriptPath.replace(/\.sh$/, '.log');
                 try {
-                    // 使用 nohup 在后台执行，并立即返回
-                    result = await this.execCommandWithTimeout(connection, `nohup bash -x ${remoteScriptPath} > /tmp/shutdown.log 2>&1 &`, {
+                    // 使用 nohup 在后台执行，并立即返回；尊重 useSudo 选项
+                    const sudoPrefix = options.useSudo ? 'sudo ' : '';
+                    result = await this.execCommandWithTimeout(connection, `nohup ${sudoPrefix}bash -x ${remoteScriptPath} > ${remoteLogPath} 2>&1 &`, {
                         cwd: options.cwd || '/tmp',
                         timeout: 10000
                     });
@@ -611,19 +623,35 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
                     // 给命令一点执行时间
                     await new Promise(resolve => setTimeout(resolve, 500));
                     
-                    // 连接可能已断开，这是正常的
+                    // best-effort 回读日志开头（连接可能已断开，失败则忽略）
+                    let logHead = '';
+                    try {
+                        const logResult = await this.execCommandWithTimeout(connection, `head -n 20 ${remoteLogPath} 2>/dev/null`, { timeout: 5000 });
+                        logHead = logResult.stdout || '';
+                    } catch (readError) {
+                        console.log('无法回读执行日志（连接可能已断开）:', readError.message);
+                    }
+                    
+                    // 后台提交只代表“命令已发出”，不代表脚本真实执行成功
+                    result = {
+                        code: 0,
+                        stdout: `⚠ 破坏性命令已提交后台执行，无法确认实际执行结果。\n远程日志: ${hostData.ip}:${remoteLogPath}` + (logHead ? `\n日志摘录:\n${logHead}` : ''),
+                        stderr: '',
+                        submittedOnly: true
+                    };
                     console.log('破坏性命令已提交执行');
                 } catch (execError) {
-                    // 如果是连接断开错误，视为成功
+                    // 如果是连接断开错误，视为已提交（同样无法确认实际结果）
                     if (execError.message.includes('ECONNRESET') || 
                         execError.message.includes('Connection reset') ||
                         execError.message.includes('Broken pipe') ||
                         execError.message.includes('EPIPE')) {
-                        console.log('连接已断开（预期行为），命令已成功提交');
+                        console.log('连接已断开（预期行为），命令已提交');
                         result = {
                             code: 0,
-                            stdout: '命令已执行，主机正在关机/重启',
-                            stderr: ''
+                            stdout: `⚠ 破坏性命令已提交，主机正在关机/重启，无法确认实际执行结果。\n远程日志: ${hostData.ip}:${remoteLogPath}`,
+                            stderr: '',
+                            submittedOnly: true
                         };
                     } else {
                         throw execError;
@@ -632,14 +660,23 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
             } else {
                 // 正常命令，标准执行
                 // 根据useSudo参数决定是否使用sudo
-                const executeCommand = options.useSudo 
+                // 先把外层 shell 的 PID（= 进程组 ID）写入 pid 文件，再 exec 成脚本进程，
+                // 停止/超时时据此 kill 整个进程组（见 terminateRemoteProcess）
+                const runner = options.useSudo 
                     ? `sudo bash -x ${remoteScriptPath}` 
                     : `bash -x ${remoteScriptPath}`;
+                const executeCommand = `echo $$ > ${remotePidPath}; exec ${runner}`;
                 
+                connection._wxRemoteProc = {
+                    pidPath: remotePidPath,
+                    scriptPath: remoteScriptPath,
+                    useSudo: !!options.useSudo
+                };
                 result = await this.execCommandWithTimeout(connection, executeCommand, {
                     cwd: options.cwd || '/tmp',
                     timeout: options.timeout || this.timeout || 300000
                 });
+                connection._wxRemoteProc = null; // 正常结束，无需再 kill
             }
             
             console.log('脚本执行完成:');
@@ -665,7 +702,7 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
             // 步骤4: 清理临时脚本文件（如果连接仍然存在）
             if (!isDisruptive) {
                 try {
-                    await this.execCommandWithTimeout(connection, `rm -f ${remoteScriptPath}`, { timeout: 10000 });
+                    await this.execCommandWithTimeout(connection, `rm -f ${remoteScriptPath} ${remotePidPath}`, { timeout: 10000 });
                     console.log('临时脚本已清理');
                 } catch (cleanupError) {
                     console.warn('清理临时脚本失败（可能连接已断开）:', cleanupError.message);
@@ -745,11 +782,17 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
                 exitCode: result.code,
                 errorHint: errorHint,
                 isNormalNoMatch: isNormalNoMatch, // 标记是否为正常的无匹配结果
+                submittedOnly: !!result.submittedOnly, // 破坏性命令后台提交：无法确认实际结果
                 timestamp: new Date().toISOString()
             };
             
         } catch (error) {
             console.error('执行脚本失败:', error);
+
+            // 超时等异常时远端脚本可能仍在运行（连接重试会导致重复执行），先终止
+            if (connection && connection._wxRemoteProc) {
+                await this.terminateRemoteProcess(connection);
+            }
             
             // 检查是否为破坏性命令导致的连接断开
             const isDisruptive = this.isDisruptiveCommand(scriptContent);
@@ -771,10 +814,11 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
                 
                 return {
                     success: true,
-                    stdout: '命令已执行，主机正在关机/重启，连接已断开',
+                    stdout: '⚠ 破坏性命令导致连接断开（主机可能正在关机/重启），无法确认实际执行结果',
                     stderr: '',
                     exitCode: 0,
-                    errorHint: '提示: 这是关机/重启命令，连接断开是正常现象',
+                    submittedOnly: true,
+                    errorHint: '提示: 这是关机/重启命令，连接断开是正常现象，但无法确认执行结果',
                     timestamp: new Date().toISOString()
                 };
             }
@@ -797,6 +841,35 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
                 timestamp: new Date().toISOString()
             };
         }
+    }
+
+    /**
+     * 构建 SSH 连接配置（node-ssh / ssh2 通用字段）：主机地址、兼容算法、认证方式。
+     * 私钥优先（文件存在时），否则使用密码；两者都没有时抛错。
+     * @param {Object} hostData - 主机数据（需含 ip/port/username，及 password 或私钥路径）
+     * @param {Object} overrides - 覆盖默认值，如 { readyTimeout: 5000 }
+     */
+    buildConnectConfig(hostData, overrides = {}) {
+        const config = {
+            host: hostData.ip,
+            port: hostData.port || 22,
+            username: hostData.username,
+            keepaliveInterval: 60000,
+            readyTimeout: 15000,
+            // 兼容性配置：支持老旧Linux系统
+            algorithms: this.getCompatibilityAlgorithms(),
+            ...overrides
+        };
+
+        const privateKeyPath = hostData.privateKeyPath || hostData.private_key_path;
+        if (privateKeyPath && fs.existsSync(privateKeyPath)) {
+            config.privateKeyPath = privateKeyPath;
+        } else if (hostData.password) {
+            config.password = hostData.password;
+        } else {
+            throw new Error('未提供有效的认证方式');
+        }
+        return config;
     }
 
     // 获取兼容性算法配置（支持老旧Linux系统）
@@ -889,24 +962,7 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
         try {
             connection = new NodeSSH();
             
-            const config = {
-                host: hostData.ip,
-                port: hostData.port || 22,
-                username: hostData.username,
-                keepaliveInterval: 60000,
-                readyTimeout: 15000,
-                // 兼容性配置：支持老旧Linux系统
-                algorithms: this.getCompatibilityAlgorithms(),
-            };
-
-            const privateKeyPath = hostData.privateKeyPath || hostData.private_key_path;
-            if (privateKeyPath && fs.existsSync(privateKeyPath)) {
-                config.privateKeyPath = privateKeyPath;
-            } else if (hostData.password) {
-                config.password = hostData.password;
-            } else {
-                throw new Error('未提供有效的认证方式');
-            }
+            const config = this.buildConnectConfig(hostData);
 
             await connection.connect(config);
             
@@ -1095,24 +1151,7 @@ ${heredocDelimiter}`, { timeout: options.timeout || 15000 });
         try {
             connection = new NodeSSH();
             
-            const config = {
-                host: hostData.ip,
-                port: hostData.port || 22,
-                username: hostData.username,
-                keepaliveInterval: 60000,
-                readyTimeout: options.connectTimeout || 15000,
-                // 兼容性配置：支持老旧Linux系统
-                algorithms: this.getCompatibilityAlgorithms(),
-            };
-
-            const privateKeyPath = hostData.privateKeyPath || hostData.private_key_path;
-            if (privateKeyPath && fs.existsSync(privateKeyPath)) {
-                config.privateKeyPath = privateKeyPath;
-            } else if (hostData.password) {
-                config.password = hostData.password;
-            } else {
-                throw new Error('未提供有效的认证方式');
-            }
+            const config = this.buildConnectConfig(hostData, { readyTimeout: options.connectTimeout || 15000 });
 
             await connection.connect(config);
             

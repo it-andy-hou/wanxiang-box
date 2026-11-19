@@ -3715,3 +3715,72 @@ select.form-control option {
     line-height: 1.6;
     border: 1px solid var(--border-subtle);
 }
+
+/* IP 复制拆分按钮：主体按默认格式复制，▾ 选择格式 */
+.ip-copy-split {
+    display: inline-flex;
+    align-items: stretch;
+    vertical-align: middle;
+}
+
+.ip-copy-split > button.ip-copy-main {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.ip-copy-split > button.ip-copy-caret {
+    margin-left: 0;
+    padding: 0 6px;
+    border-left-width: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.12);
+}
+
+.ip-copy-menu {
+    position: fixed;
+    z-index: 20000;
+    min-width: 200px;
+    background: var(--surface-float);
+    border: 1px solid var(--border-default);
+    border-radius: var(--rounded-sm);
+    box-shadow: var(--shadow-modal);
+    padding: 4px 0;
+}
+
+.ip-copy-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    color: var(--text-body);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.15s;
+}
+
+.ip-copy-menu-item:hover {
+    background: var(--primary-glow);
+    color: var(--primary);
+}
+
+.ip-copy-menu-item.active {
+    color: var(--primary);
+}
+
+.ip-copy-menu-check {
+    width: 12px;
+    text-align: center;
+}
+
+.ip-copy-menu-example {
+    margin-left: auto;
+    padding-left: 12px;
+    font-family: var(--font-mono, monospace);
+    font-size: 11px;
+    color: var(--text-muted, #888);
+}

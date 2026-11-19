@@ -1,5 +1,6 @@
 const { getDatabase } = require('./simple-db');
 const { LogService } = require('../main/logService');
+const { encryptSecret, decryptSecret, isEncrypted, isEncryptionAvailable } = require('./credentialVault');
 function safeJsonParse(value, fallback) {
     if (value === undefined || value === null || value === '') return fallback;
     if (typeof value !== 'string') return value;
@@ -46,7 +47,7 @@ class HostModel {
                 ip: hostData.ip,
                 port: hostData.port || 22,
                 username: hostData.username,
-                password: hostData.password || '',
+                password: encryptSecret(hostData.password || ''),
                 private_key_path: hostData.private_key_path || '',
                 public_key_path: hostData.public_key_path || '',
                 description: hostData.description || '',
@@ -74,7 +75,9 @@ class HostModel {
                 last_connected_at: null
             };
             
-            return await db.insert('hosts', host);
+            const inserted = await db.insert('hosts', host);
+            // 返回结构保持不变，仅把密文换回明文供调用方使用（不改动库内记录）
+            return { ...inserted, password: hostData.password || '' };
         } catch (error) {
             console.error('创建主机失败:', error);
             throw error;
@@ -122,8 +125,18 @@ class HostModel {
                     delete updates[key];
                 }
             });
+
+            if (updates.password !== undefined) {
+                const stored = (db.findById('hosts', parseInt(id)) || {}).password;
+                // 库中密文在本机无法解密时，界面拿到的是空串；回传空串不应覆盖原密文
+                if (updates.password === '' && isEncrypted(stored) && !decryptSecret(stored).ok) {
+                    delete updates.password;
+                } else {
+                    updates.password = encryptSecret(updates.password);
+                }
+            }
             
-            console.log('更新主机数据:', { id, updates });
+            console.log('更新主机数据:', { id, updates: { ...updates, password: updates.password ? '***' : updates.password } });
             
             // update现在返回更新后的记录，直接格式化
             const result = await db.update('hosts', parseInt(id), updates);
@@ -137,7 +150,35 @@ class HostModel {
     static async delete(id) {
         try {
             const db = getDatabase();
-            return await db.delete('hosts', parseInt(id));
+            const hostId = parseInt(id);
+
+            // 级联清理主机引用，防止删除后 ID 被新主机复用导致任务/步骤错配执行
+            // 1) 任务：从 host_ids 移除该主机；定时任务主机列表被清空时取消，避免调度器继续触发
+            const tasks = db.getTable('task_executions');
+            for (const task of tasks) {
+                const hostIds = safeJsonParse(task.host_ids, []);
+                if (!Array.isArray(hostIds) || !hostIds.some(h => h == hostId)) continue;
+                const remaining = hostIds.filter(h => h != hostId);
+                const updates = {
+                    host_ids: JSON.stringify(remaining),
+                    total_hosts: remaining.length
+                };
+                if (remaining.length === 0 && task.status === 'scheduled') {
+                    updates.status = 'cancelled';
+                }
+                await db.update('task_executions', task.id, updates);
+            }
+
+            // 2) 工程步骤：从 host_ids 移除该主机（空列表步骤执行时会报无目标主机）
+            const steps = db.getTable('project_steps');
+            for (const step of steps) {
+                const hostIds = safeJsonParse(step.host_ids, []);
+                if (!Array.isArray(hostIds) || !hostIds.some(h => h == hostId)) continue;
+                const remaining = hostIds.filter(h => h != hostId);
+                await db.update('project_steps', step.id, { host_ids: JSON.stringify(remaining) });
+            }
+
+            return await db.delete('hosts', hostId);
         } catch (error) {
             console.error('删除主机失败:', error);
             throw error;
@@ -159,10 +200,43 @@ class HostModel {
         }
     }
     
+    /**
+     * 启动迁移：把库中旧版明文密码批量加密（加密不可用时跳过）
+     * @returns {number} 本次加密的主机数
+     */
+    static async encryptLegacyPasswords() {
+        if (!isEncryptionAvailable()) {
+            console.warn('safeStorage 不可用，主机密码保持明文存储');
+            return 0;
+        }
+        const db = getDatabase();
+        let count = 0;
+        // getTable 返回表引用，原地改写以免刷新 updated_at
+        for (const host of db.getTable('hosts')) {
+            if (host.password && !isEncrypted(host.password)) {
+                host.password = encryptSecret(host.password);
+                count++;
+            }
+        }
+        if (count > 0) await db.save();
+        return count;
+    }
+
+    /** 统计无法在本机解密的主机密码数（跨机器导入备份时出现） */
+    static countUndecryptablePasswords() {
+        const db = getDatabase();
+        return db.getTable('hosts')
+            .filter(h => isEncrypted(h.password) && !decryptSecret(h.password).ok)
+            .length;
+    }
+
     static formatHost(row) {
         if (!row) return null;
+        const pw = decryptSecret(row.password);
         return {
             ...row,
+            password: pw.value,
+            password_unreadable: !pw.ok,
             // 确保字段映射正确
             systemName: row.system_name || row.systemName || '',
             appName: row.app_name || row.appName || '',
@@ -294,7 +368,7 @@ class ScriptModel {
             const db = getDatabase();
             let moved = 0;
             for (const id of ids) {
-                const result = await db.update('scripts', id, { category_id });
+                const result = await db.update('scripts', id, { category_id: categoryId });
                 if (result) moved++;
             }
             return { total: ids.length, moved };
@@ -855,12 +929,24 @@ class ProjectTaskModel {
     static async delete(id) {
         try {
             const db = getDatabase();
+            const projectId = parseInt(id);
             // 级联删除步骤
-            const steps = db.getTable('project_steps').filter(s => s.project_task_id === parseInt(id));
+            const steps = db.getTable('project_steps').filter(s => s.project_task_id === projectId);
             for (const step of steps) {
                 await db.delete('project_steps', step.id);
             }
-            return await db.delete('project_tasks', parseInt(id));
+            // 级联删除执行记录（含 scheduled 残留）及步骤执行详情，
+            // 防止残留的定时执行记录在 ID 复用后错配到新工程
+            const executions = db.getTable('project_executions').filter(e => e.project_task_id === projectId);
+            for (const execution of executions) {
+                const stepExecutions = db.getTable('project_step_executions')
+                    .filter(se => se.project_execution_id === execution.id);
+                for (const se of stepExecutions) {
+                    await db.delete('project_step_executions', se.id);
+                }
+                await db.delete('project_executions', execution.id);
+            }
+            return await db.delete('project_tasks', projectId);
         } catch (error) {
             console.error('删除工程任务失败:', error);
             throw error;

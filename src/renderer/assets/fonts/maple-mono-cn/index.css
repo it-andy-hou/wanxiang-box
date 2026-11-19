@@ -1,0 +1,23 @@
+/* Maple Mono NL CN（无连字版，中英文 2:1 等宽，自带简体中文字形）
+   来源：https://github.com/subframe7536/maple-font  许可：SIL Open Font License 1.1（见 OFL.txt）
+   字体文件由 scripts/fetch-terminal-font.js 下载到 ./files/；
+   优先 woff2，没有时用 ttf；本机已安装同名字体时直接使用本机字体 */
+@font-face {
+  font-family: 'Maple Mono NL CN';
+  font-style: normal;
+  font-display: block;
+  font-weight: 400;
+  src: local('Maple Mono NL CN'), local('MapleMonoNL-CN-Regular'),
+       url(./files/MapleMonoNL-CN-Regular.woff2) format('woff2'),
+       url(./files/MapleMonoNL-CN-Regular.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Maple Mono NL CN';
+  font-style: normal;
+  font-display: block;
+  font-weight: 700;
+  src: local('Maple Mono NL CN Bold'), local('MapleMonoNL-CN-Bold'),
+       url(./files/MapleMonoNL-CN-Bold.woff2) format('woff2'),
+       url(./files/MapleMonoNL-CN-Bold.ttf) format('truetype');
+}

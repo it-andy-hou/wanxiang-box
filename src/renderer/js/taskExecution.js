@@ -2413,7 +2413,10 @@
         // 复制失败IP
         const copyFailedIpsBtn = document.getElementById('scriptCopyFailedIpsBtn');
         if (copyFailedIpsBtn) {
-            copyFailedIpsBtn.addEventListener('click', () => copyFailedHostIps('script', copyFailedIpsBtn));
+            IpCopy.attach(copyFailedIpsBtn, {
+                label: '复制失败IP',
+                onCopy: (format) => copyFailedHostIps('script', copyFailedIpsBtn, format)
+            });
         }
 
         // 搜索
@@ -2432,7 +2435,7 @@
     }
 
     // 一键复制所有失败主机的IP（可粘贴到主机选择的IP批量输入框重跑）
-    function copyFailedHostIps(prefix, btn) {
+    function copyFailedHostIps(prefix, btn, format = IpCopy.getFormat()) {
         const container = document.getElementById(prefix + 'ResultContainer');
         if (!container) return;
 
@@ -2445,17 +2448,17 @@
             return;
         }
 
-        copyToClipboard(failedIps.join(','));
+        const { text, count, label } = IpCopy.format(failedIps, format);
+        copyToClipboard(text);
 
-        const originalText = btn.textContent;
-        btn.textContent = `已复制 ${failedIps.length} 个`;
+        btn.textContent = `已复制 ${count} 个`;
         btn.disabled = true;
         setTimeout(() => {
-            btn.textContent = originalText;
+            IpCopy.refreshLabel(btn);
             btn.disabled = false;
         }, 1500);
 
-        showMessage(`已复制 ${failedIps.length} 个失败IP，可粘贴到IP批量输入框重新选择主机`, 'success');
+        showMessage(`已复制 ${count} 个失败IP（${label}），可粘贴到IP批量输入框重新选择主机`, 'success');
     }
 
     // 有失败结果时才显示「复制失败IP」按钮
@@ -2464,7 +2467,7 @@
         if (!btn) return;
         const container = document.getElementById(prefix + 'ResultContainer');
         const hasFailed = !!(container && container.querySelector('.result-card[data-status="failed"]'));
-        btn.style.display = hasFailed ? '' : 'none';
+        IpCopy.setVisible(btn, hasFailed);
     }
 
     // 切换视图

@@ -4,6 +4,7 @@ const fs = require('fs');
 const { initDatabase } = require('../database/simple-db');
 const { loadConfig, getConfig, setConfig } = require('../config/config');
 const { HostModel, ScriptModel, TaskModel, TaskResultModel, ScriptCategoryModel, TagTypeModel, ScriptShortcutModel } = require('../database/models');
+const { encryptSecret } = require('../database/credentialVault');
 const { SSHService } = require('./sshService');
 const { TaskExecutor } = require('./taskExecutor');
 const { TaskScheduler } = require('./taskScheduler');
@@ -13,6 +14,9 @@ const { WechatNotifier } = require('./wechatNotifier');
 const { BackupService } = require('./backupService');
 const { AIService } = require('./aiService');
 const statsService = require('./statsService');
+const { Client: SSH2Client } = require('ssh2');
+const { TerminalSessionManager, KnownHostsStore } = require('./terminalService');
+const terminalExtras = require('./terminalExtras');
 
 // 全局连接池状态管理器
 class ConnectionPoolMonitor {
@@ -265,6 +269,36 @@ let backupService;
 // AI 脚本分析服务实例
 let aiService;
 
+// 远程终端会话管理器
+let terminalManager = null;
+// 终端历史命令（全局共享，单独文件存储）
+let terminalHistory = null;
+// 用户已确认断开终端会话（避免窗口关闭与退出流程重复询问）
+let terminalCloseConfirmed = false;
+
+/**
+ * 有活跃终端会话时询问是否断开。确认后关闭全部会话并返回 true。
+ */
+async function confirmCloseTerminals(win) {
+  const count = terminalManager ? terminalManager.activeCount() : 0;
+  if (count === 0 || terminalCloseConfirmed) return true;
+  const parent = win && !win.isDestroyed() ? win : undefined;
+  const { response } = await dialog.showMessageBox(parent, {
+    type: 'warning',
+    title: '确认关闭',
+    message: `有 ${count} 个终端会话仍在连接`,
+    detail: '继续操作将断开这些会话，远端正在前台运行的程序可能会被终止。',
+    buttons: ['断开并关闭', '取消'],
+    defaultId: 1,
+    cancelId: 1,
+    noLink: true
+  });
+  if (response !== 0) return false;
+  terminalCloseConfirmed = true;
+  terminalManager.closeAll('app-quit');
+  return true;
+}
+
 // 为窗口挂载全局右键菜单：输入框支持 剪切/复制/粘贴/全选，非输入区域选中文本后支持 复制
 function attachContextMenu(win) {
   win.webContents.on('context-menu', (event, params) => {
@@ -322,6 +356,16 @@ function createWindow() {
     }
   });
 
+  // 有活跃终端会话时，关闭窗口前确认（关闭窗口会断开所有会话）
+  mainWindow.on('close', (event) => {
+    if (terminalCloseConfirmed || !terminalManager || terminalManager.activeCount() === 0) return;
+    event.preventDefault();
+    const win = mainWindow;
+    confirmCloseTerminals(win).then((confirmed) => {
+      if (confirmed && win && !win.isDestroyed()) win.close();
+    });
+  });
+
   // 当窗口被关闭时发出close事件
   mainWindow.on('closed', () => {
     // 取消引用window对象，如果你的应用支持多窗口的话，通常会把多个window对象存放在一个数组里面，与此同时，你应该删除相应的元素
@@ -332,57 +376,68 @@ function createWindow() {
   createMenu();
 }
 
+// 终端获得焦点时，暂停与终端按键冲突的菜单快捷键（registerAccelerator: false 只取消快捷键，菜单仍可点击）
+// - 所有平台：缩放（终端内 Ctrl/Cmd +/-/0 用于调整终端字号）
+// - Windows/Linux：Ctrl+I/E/Q/Z/Y/X/C/V/A/R 在 shell 中都有含义（Tab、行尾、撤销、历史搜索等），必须交给远端
+let terminalFocused = false;
+
 function createMenu() {
+  const isMac = process.platform === 'darwin';
+  // conflict: 'all' 所有平台冲突；'nonMac' 仅 Windows/Linux 冲突
+  const k = (item, conflict) => {
+    const suspended = terminalFocused && (conflict === 'all' || (conflict === 'nonMac' && !isMac));
+    return suspended ? { ...item, registerAccelerator: false } : item;
+  };
   const template = [
     {
       label: '文件',
       submenu: [
-        {
+        k({
           label: '导入Excel',
           accelerator: 'CmdOrCtrl+I',
           click: () => {
             mainWindow.webContents.send('menu-import-excel');
           }
-        },
-        {
+        }, 'nonMac'),
+        k({
           label: '导出Excel',
           accelerator: 'CmdOrCtrl+E',
           click: () => {
             mainWindow.webContents.send('menu-export-excel');
           }
-        },
+        }, 'nonMac'),
         { type: 'separator' },
-        {
+        k({
           label: '退出',
           accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
           click: () => {
             app.quit();
           }
-        }
+        }, 'nonMac')
       ]
     },
     {
       label: '编辑',
       submenu: [
-        { role: 'undo', label: '撤销' },
-        { role: 'redo', label: '重做' },
+        k({ role: 'undo', label: '撤销' }, 'nonMac'),
+        k({ role: 'redo', label: '重做' }, 'nonMac'),
         { type: 'separator' },
-        { role: 'cut', label: '剪切' },
-        { role: 'copy', label: '复制' },
-        { role: 'paste', label: '粘贴' },
-        { role: 'selectall', label: '全选' }
+        k({ role: 'cut', label: '剪切' }, 'nonMac'),
+        k({ role: 'copy', label: '复制' }, 'nonMac'),
+        k({ role: 'paste', label: '粘贴' }, 'nonMac'),
+        k({ role: 'selectall', label: '全选' }, 'nonMac')
       ]
     },
     {
       label: '查看',
       submenu: [
-        { role: 'reload', label: '重新加载' },
+        k({ role: 'reload', label: '重新加载' }, 'nonMac'),
         { role: 'forcereload', label: '强制重新加载' },
         { role: 'toggledevtools', label: '切换开发者工具' },
         { type: 'separator' },
-        { role: 'resetzoom', label: '实际大小' },
-        { role: 'zoomin', label: '放大' },
-        { role: 'zoomout', label: '缩小' },
+        k({ role: 'resetzoom', label: '实际大小' }, 'all'),
+        k({ role: 'zoomin', label: '放大' }, 'all'),
+        k({ role: 'zoomout', label: '缩小' }, 'all'),
         { type: 'separator' },
         { role: 'togglefullscreen', label: '切换全屏' }
       ]
@@ -495,6 +550,14 @@ app.whenReady().then(async () => {
     
     // 初始化数据库
     await initDatabase();
+
+    // 主机密码加密迁移：旧版明文密码 → safeStorage 密文（失败不阻断启动）
+    try {
+      const n = await HostModel.encryptLegacyPasswords();
+      if (n > 0) console.log(`已加密 ${n} 台主机的明文密码`);
+    } catch (e) {
+      console.error('主机密码加密迁移失败:', e);
+    }
     
     // 标签类型种子数据初始化（首次运行时）
     await TagTypeModel.seedIfEmpty();
@@ -504,6 +567,23 @@ app.whenReady().then(async () => {
     
     // 初始化SSH服务
     sshService = new SSHService();
+
+    // 初始化远程终端会话管理器
+    const terminalDataDir = path.join(app.getPath('userData'), 'terminal');
+    terminalManager = new TerminalSessionManager({
+      ClientClass: SSH2Client,
+      sshService,
+      loadHost: (hostId) => HostModel.findById(hostId),
+      knownHosts: new KnownHostsStore(path.join(terminalDataDir, 'known_hosts.json')),
+      sessionLogPath: path.join(terminalDataDir, 'sessions.jsonl'),
+      getMaxSessions: () => getTerminalSettings().maxSessions,
+      onSessionOpened: () => {
+        terminalCloseConfirmed = false;
+        connectionPoolMonitor.connectionOpened();
+      },
+      onSessionClosed: () => connectionPoolMonitor.connectionClosed()
+    });
+    terminalHistory = new terminalExtras.CommandHistoryStore(path.join(terminalDataDir, 'history.json'));
     
     // 初始化任务执行器
     taskExecutor = new TaskExecutor({
@@ -595,6 +675,12 @@ app.on('window-all-closed', () => {
 // 退出前：当天未做每日备份则补一次
 let _backupOnQuitDone = false;
 app.on('before-quit', async (event) => {
+  // 先确认断开终端会话；确认后重新触发退出，再进入下方备份流程
+  if (!terminalCloseConfirmed && terminalManager && terminalManager.activeCount() > 0) {
+    event.preventDefault();
+    if (await confirmCloseTerminals(mainWindow)) app.quit();
+    return;
+  }
   if (_backupOnQuitDone || !backupService) return;
   try {
     event.preventDefault();
@@ -606,6 +692,12 @@ app.on('before-quit', async (event) => {
   } finally {
     app.quit();
   }
+});
+
+// 兜底：进程退出前关闭所有终端连接，避免远端残留登录会话
+app.on('will-quit', () => {
+  if (terminalManager) terminalManager.closeAll('app-quit');
+  if (terminalHistory) terminalHistory.flush();
 });
 
 app.on('activate', () => {
@@ -1267,7 +1359,7 @@ ipcMain.handle('host-batch-import', async (event, { records, skipExisting = fals
         if (existing) {
           // 更新现有主机
           const updates = {};
-          if (record.password !== undefined) updates.password = record.password;
+          if (record.password !== undefined) updates.password = encryptSecret(record.password);
           if (record.description !== undefined) updates.description = record.description;
           if (record.environment !== undefined) updates.environment = record.environment;
           if (record.system_name !== undefined) updates.system_name = record.system_name;
@@ -1287,7 +1379,7 @@ ipcMain.handle('host-batch-import', async (event, { records, skipExisting = fals
             ip: record.ip,
             port: recordPort,
             username: record.username,
-            password: record.password || '',
+            password: encryptSecret(record.password || ''),
             private_key_path: record.private_key_path || '',
             public_key_path: record.public_key_path || '',
             description: record.description || '',
@@ -1328,7 +1420,7 @@ ipcMain.handle('host-batch-import', async (event, { records, skipExisting = fals
 
 ipcMain.handle('host-update', async (event, id, hostData) => {
   try {
-    console.log('更新主机:', id, hostData);
+    console.log('更新主机:', id, { ...hostData, password: hostData && hostData.password ? '***' : hostData && hostData.password });
     
     // 确保正确处理tags字段
     if (hostData.tags && typeof hostData.tags !== 'string') {
@@ -1465,6 +1557,17 @@ ipcMain.handle('ai:analyze', async (event, payload) => {
 ipcMain.handle('ai:analyzeExecutionResult', async (event, payload) => {
   try { return await aiService.analyzeExecutionResult(payload || {}); }
   catch (e) { console.error('AI 执行结果分析失败:', e); return { success: false, message: e.message }; }
+});
+
+// 远程终端输出 AI 分析（多轮对话，不落库）；requestId 用于取消
+ipcMain.handle('ai:terminalChat', async (event, payload) => {
+  try { return await aiService.terminalChat(payload || {}); }
+  catch (e) { console.error('终端输出 AI 分析失败:', e); return { success: false, message: e.message }; }
+});
+
+ipcMain.handle('ai:terminalCancel', (event, requestId) => {
+  try { return aiService.cancelTerminalChat(requestId); }
+  catch (e) { return { success: false, message: e.message }; }
 });
 
 // AI 生成脚本草稿（一次性调用，不落库不缓存）
@@ -1891,6 +1994,240 @@ ipcMain.handle('ssh-execute-command', async (event, hostData, command, options) 
       message: error.message,
       timestamp: new Date().toISOString()
     };
+  }
+});
+
+// ============================================================
+// 远程终端 IPC（协议见 docs/requirements/远程终端模块.md 4.4 节）
+// 渲染进程只传 hostId，凭据由主进程查库解密；会话与发起它的 webContents 绑定
+// ============================================================
+const TERMINAL_SETTING_DEFAULTS = {
+  fontSize: 14,
+  scrollback: 10000,
+  cursorStyle: 'block',
+  cursorBlink: true,
+  copyOnSelect: false,
+  rightClickAction: 'copyPaste', // copyPaste：有选区复制、无选区粘贴；menu：弹出菜单
+  confirmMultilinePaste: true,
+  confirmCloseTab: true,
+  maxSessions: 20,
+  autocompleteEnabled: true,
+  autocompleteMinChars: 2,
+  showGutter: true
+};
+
+function normalizeTerminalSettings(input = {}) {
+  const d = TERMINAL_SETTING_DEFAULTS;
+  const int = (v, min, max, def) => {
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : def;
+  };
+  const bool = (v, def) => (typeof v === 'boolean' ? v : def);
+  return {
+    fontSize: int(input.fontSize, 10, 28, d.fontSize),
+    scrollback: int(input.scrollback, 500, 50000, d.scrollback),
+    cursorStyle: ['block', 'underline', 'bar'].includes(input.cursorStyle) ? input.cursorStyle : d.cursorStyle,
+    cursorBlink: bool(input.cursorBlink, d.cursorBlink),
+    copyOnSelect: bool(input.copyOnSelect, d.copyOnSelect),
+    rightClickAction: ['copyPaste', 'menu'].includes(input.rightClickAction) ? input.rightClickAction : d.rightClickAction,
+    confirmMultilinePaste: bool(input.confirmMultilinePaste, d.confirmMultilinePaste),
+    confirmCloseTab: bool(input.confirmCloseTab, d.confirmCloseTab),
+    maxSessions: int(input.maxSessions, 1, 50, d.maxSessions),
+    autocompleteEnabled: bool(input.autocompleteEnabled, d.autocompleteEnabled),
+    autocompleteMinChars: int(input.autocompleteMinChars, 1, 10, d.autocompleteMinChars),
+    showGutter: bool(input.showGutter, d.showGutter)
+  };
+}
+
+function getTerminalSettings() {
+  return normalizeTerminalSettings(getConfig('terminal.settings', {}) || {});
+}
+
+const terminalNotReady = { success: false, message: '终端服务尚未初始化' };
+
+ipcMain.handle('terminal:open', async (event, payload) => {
+  if (!terminalManager) return terminalNotReady;
+  try {
+    return await terminalManager.open(event.sender, payload || {});
+  } catch (error) {
+    console.error('[终端] 打开会话失败:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+ipcMain.on('terminal:input', (event, payload) => {
+  const s = terminalManager && payload && terminalManager.get(event.sender, payload.sessionId);
+  if (s) s.write(payload.data, !!payload.binary);
+});
+
+ipcMain.on('terminal:resize', (event, payload) => {
+  const s = terminalManager && payload && terminalManager.get(event.sender, payload.sessionId);
+  if (s) s.resize(payload.cols, payload.rows);
+});
+
+ipcMain.on('terminal:ack', (event, payload) => {
+  const s = terminalManager && payload && terminalManager.get(event.sender, payload.sessionId);
+  if (s) s.ack(payload.bytes);
+});
+
+ipcMain.on('terminal:prompt-response', (event, payload) => {
+  const s = terminalManager && payload && terminalManager.get(event.sender, payload.sessionId);
+  if (s) s.handlePromptResponse(payload.promptId, payload.answers);
+});
+
+ipcMain.handle('terminal:close', async (event, payload) => {
+  if (!terminalManager || !payload) return { success: false };
+  return { success: terminalManager.close(event.sender, payload.sessionId) };
+});
+
+ipcMain.handle('terminal:list', async (event) => {
+  return terminalManager ? terminalManager.list(event.sender) : [];
+});
+
+// 终端焦点变化：切换冲突菜单快捷键
+ipcMain.on('terminal:focus', (event, payload) => {
+  const focused = !!(payload && payload.focused);
+  if (focused === terminalFocused) return;
+  terminalFocused = focused;
+  createMenu();
+});
+
+ipcMain.handle('terminal:get-settings', async () => getTerminalSettings());
+
+ipcMain.handle('terminal:save-settings', async (event, payload) => {
+  try {
+    const settings = normalizeTerminalSettings(payload || {});
+    await setConfig('terminal.settings', settings);
+    return { success: true, settings };
+  } catch (error) {
+    console.error('[终端] 保存设置失败:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// ---------- 终端关键词高亮规则 ----------
+ipcMain.handle('terminal:get-highlight', async () => {
+  return terminalExtras.normalizeHighlightConfig(getConfig('terminal.highlight', null)).config;
+});
+
+ipcMain.handle('terminal:save-highlight', async (event, payload) => {
+  try {
+    const { config, errors } = terminalExtras.normalizeHighlightConfig(payload);
+    if (errors.length) return { success: false, message: errors.join('；') };
+    await setConfig('terminal.highlight', config);
+    return { success: true, config };
+  } catch (error) {
+    console.error('[终端] 保存高亮规则失败:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// ---------- 终端历史命令（全局共享；日志中不打印命令内容） ----------
+ipcMain.handle('terminal:history-get', async () => (terminalHistory ? terminalHistory.list() : []));
+
+ipcMain.on('terminal:history-add', (event, payload) => {
+  if (terminalHistory && payload) terminalHistory.add(payload.command, payload.hostId);
+});
+
+ipcMain.on('terminal:history-remove', (event, payload) => {
+  if (terminalHistory && payload && typeof payload.command === 'string') terminalHistory.remove(payload.command);
+});
+
+ipcMain.handle('terminal:history-clear', async () => {
+  if (terminalHistory) terminalHistory.clear();
+  return { success: true };
+});
+
+// ---------- 终端快捷命令（存主数据库，随全量备份） ----------
+function readQuickCommands() {
+  const { getDatabase } = require('../database/simple-db');
+  const db = getDatabase();
+  const groups = db.getTable('terminal_command_groups').slice().sort((a, b) => a.sort_order - b.sort_order);
+  const commands = db.getTable('terminal_quick_commands').slice().sort((a, b) => a.sort_order - b.sort_order);
+  return { db, groups, commands };
+}
+
+async function writeQuickCommands(db, data) {
+  db.data.terminal_command_groups = data.groups;
+  db.data.terminal_quick_commands = data.commands;
+  await db.save();
+}
+
+ipcMain.handle('terminal:qc-get', async () => {
+  try {
+    const { db, groups, commands } = readQuickCommands();
+    // 首次使用时内置示例分组；用户删光后不再重新生成
+    if (!db.getSetting('terminal_qc_seeded', false)) {
+      if (groups.length === 0) {
+        const seeded = terminalExtras.seedQuickCommands();
+        await writeQuickCommands(db, seeded);
+        await db.setSetting('terminal_qc_seeded', true);
+        return { success: true, ...seeded };
+      }
+      await db.setSetting('terminal_qc_seeded', true);
+    }
+    return { success: true, groups, commands };
+  } catch (error) {
+    console.error('[终端] 读取快捷命令失败:', error);
+    return { success: false, message: error.message, groups: [], commands: [] };
+  }
+});
+
+ipcMain.handle('terminal:qc-save', async (event, payload) => {
+  try {
+    const { db } = readQuickCommands();
+    if (db.isReadOnly && db.isReadOnly()) return { success: false, message: '数据文件处于只读保护模式，无法保存' };
+    const data = terminalExtras.normalizeQuickCommands(payload);
+    await writeQuickCommands(db, data);
+    return { success: true, ...data };
+  } catch (error) {
+    console.error('[终端] 保存快捷命令失败:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// 导出：payload 为管理对话框中的当前数据（可能尚未保存）
+ipcMain.handle('terminal:qc-export', async (event, payload) => {
+  try {
+    const data = terminalExtras.normalizeQuickCommands(payload);
+    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: '导出快捷命令',
+      defaultPath: path.join(app.getPath('downloads'), `wxbox-quick-commands-${stamp}.json`),
+      filters: [{ name: 'JSON文件', extensions: ['json'] }]
+    });
+    if (result.canceled || !result.filePath) return { success: false, canceled: true };
+    fs.writeFileSync(result.filePath, JSON.stringify(terminalExtras.exportQuickCommands(data), null, 2), 'utf8');
+    return { success: true, filePath: result.filePath };
+  } catch (error) {
+    console.error('[终端] 导出快捷命令失败:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// 导入：合并到 payload（管理对话框中的当前数据）并返回合并结果，由用户在对话框中确认保存
+ipcMain.handle('terminal:qc-import', async (event, payload) => {
+  try {
+    const current = terminalExtras.normalizeQuickCommands(payload);
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: '导入快捷命令',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON文件', extensions: ['json'] }]
+    });
+    if (result.canceled || !result.filePaths || !result.filePaths[0]) return { success: false, canceled: true };
+    const file = result.filePaths[0];
+    if (fs.statSync(file).size > 5 * 1024 * 1024) return { success: false, message: '文件过大（超过 5MB）' };
+    let parsed;
+    try {
+      parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch (e) {
+      return { success: false, message: '文件不是有效的 JSON' };
+    }
+    const { data, stats } = terminalExtras.mergeQuickCommandsImport(current, parsed);
+    return { success: true, ...data, stats };
+  } catch (error) {
+    console.error('[终端] 导入快捷命令失败:', error);
+    return { success: false, message: error.message };
   }
 });
 
@@ -2501,8 +2838,8 @@ ipcMain.handle('task:executeScheduledNow', async (event, taskId) => {
     const timeout = parameters.timeout || 300000;
     const useSudo = parameters.useSudo || false;
     
-    // 执行任务
-    const result = await taskExecutor.executeTask(taskId, { concurrency, timeout, useSudo });
+    // 执行任务（retryTimes 透传：undefined 时沿用执行器默认，0 = 关闭重试）
+    const result = await taskExecutor.executeTask(taskId, { concurrency, timeout, useSudo, retryTimes: parameters.retryTimes });
     return result;
   } catch (error) {
     console.error('立即执行定时任务失败:', error);

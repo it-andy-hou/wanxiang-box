@@ -79,16 +79,22 @@ class ProjectTaskExecutor extends EventEmitter {
         const execId = parseInt(executionId);
         this.stopFlags.set(execId, true);
         
-        // 强制关闭所有活动连接
+        // 先终止远端脚本进程组，再强制关闭所有活动连接（仅断开不会终止远端进程）
         const connections = this.activeConnections.get(execId);
         if (connections) {
-            for (const [hostId, connection] of connections) {
+            await Promise.all([...connections].map(async ([hostId, connection]) => {
+                if (!connection) return;
                 try {
-                    if (connection) await connection.dispose();
+                    await this.sshService.terminateRemoteProcess(connection);
+                } catch (e) {
+                    console.warn(`停止执行时终止远端进程失败 [host:${hostId}]:`, e.message);
+                }
+                try {
+                    await connection.dispose();
                 } catch (e) {
                     console.warn(`停止执行时关闭连接失败 [host:${hostId}]:`, e.message);
                 }
-            }
+            }));
             this.activeConnections.delete(execId);
         }
         

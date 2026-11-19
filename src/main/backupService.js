@@ -12,6 +12,7 @@ const path = require('path');
 const os = require('os');
 const { app } = require('electron');
 const { getDatabase } = require('../database/simple-db');
+const { isEncrypted, decryptSecret } = require('../database/credentialVault');
 
 // 当前备份文件格式版本（不向后兼容时升级主版本号）
 const BACKUP_VERSION = '1.0';
@@ -262,9 +263,15 @@ class BackupService {
         const db = getDatabase();
         await db.replaceAllData(parsed._data);
 
+        // 主机密码以本机钥匙串加密，来自其他电脑的备份在本机无法解密，需要提示用户重新填写
+        const undecryptablePasswords = (parsed._data.hosts || [])
+            .filter(h => isEncrypted(h.password) && !decryptSecret(h.password).ok)
+            .length;
+
         return {
             success: true,
             filePath,
+            undecryptablePasswords,
             beforeImportFile: beforeFile,
             currentStats: parsed.currentStats,
             newStats: parsed.newStats,

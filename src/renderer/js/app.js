@@ -151,7 +151,10 @@ class SSHToolsApp {
         });
         
         // 批量操作事件
-        Utils.on('#copyIpsBtn', 'click', () => this.copySelectedIPs());
+        IpCopy.attach(Utils.$('#copyIpsBtn'), {
+            label: '复制IP列表',
+            onCopy: (format) => this.copySelectedIPs(format)
+        });
         Utils.on('#batchTestBtn', 'click', () => this.batchConnectTest());
         Utils.on('#batchCollectBtn', 'click', () => this.batchCollectInfo());
         Utils.on('#batchConfigKeyBtn', 'click', () => this.batchConfigureKeys());
@@ -513,6 +516,10 @@ class SSHToolsApp {
                     </td>
                     <td>
                         <div class="action-buttons">
+                            <button class="btn btn-sm btn-success" onclick="app.openTerminal(${originalIndex})" 
+                                    title="远程终端" data-tooltip="打开交互式终端">
+                                <span class="btn-icon">${Utils.icon('terminal', 13)}</span>
+                            </button>
                             <button class="btn btn-sm btn-primary" onclick="app.connectHost(${originalIndex})" 
                                     title="连接测试" data-tooltip="测试SSH连接">
                                 <span class="btn-icon">${Utils.icon('plug', 13)}</span>
@@ -1192,7 +1199,7 @@ class SSHToolsApp {
     }
     
     // 复制选中主机IP列表
-    copySelectedIPs() {
+    copySelectedIPs(format = IpCopy.getFormat()) {
         const selectedIndices = this.getSelectedHosts();
         
         if (selectedIndices.length === 0) {
@@ -1208,12 +1215,12 @@ class SSHToolsApp {
             return;
         }
         
-        // 以逗号分隔的格式
-        const ipList = ips.join(',');
+        // 按所选格式拼接（去重、保持勾选顺序）
+        const { text: ipList, count, label } = IpCopy.format(ips, format);
 
         // 复制成功后的重置逻辑（清空勾选、隐藏批量操作栏）
         const onCopySuccess = () => {
-            Utils.notify.success(`已复制 ${ips.length} 个IP地址到剪贴板`);
+            Utils.notify.success(`已复制 ${count} 个IP地址到剪贴板（${label}）`);
             this.clearHostSelection();
         };
         
@@ -1697,6 +1704,14 @@ class SSHToolsApp {
         }
     }
     
+    // 打开交互式远程终端（凭据由主进程按 hostId 读取）
+    openTerminal(index) {
+        const host = this.hosts[index];
+        if (host && window.TerminalPage) {
+            window.TerminalPage.openHost(host);
+        }
+    }
+
     async connectHost(index) {
         const host = this.hosts[index];
         if (host) {
@@ -2426,11 +2441,15 @@ class SSHToolsApp {
                 Utils.notify.error('导入失败：' + (r2 && r2.message || ''));
                 return;
             }
-            Utils.notify.success('导入成功，应用将在 3 秒后重启...');
+            const badPw = r2.data && r2.data.undecryptablePasswords;
+            if (badPw > 0) {
+                Utils.notify.warning(`有 ${badPw} 台主机的密码来自其他电脑加密，本机无法解密，请在主机管理中重新填写密码`, 8000);
+            }
+            Utils.notify.success('导入成功，应用即将重启...');
             try { settingsDialog && settingsDialog.hide && settingsDialog.hide(); } catch (_) {}
             setTimeout(() => {
                 window.BackupService.relaunchApp().catch(() => {});
-            }, 1500);
+            }, badPw > 0 ? 8000 : 1500);
         } catch (e) {
             Utils.notify.error('导入失败：' + e.message);
         }

@@ -50,12 +50,17 @@ const DEFAULT_DATA = {
     tag_values: [],           // 各类型下的标签值
     // 快捷面板
     script_shortcuts: [],     // 脚本执行页快捷面板（全局，上限10个）
+    // 远程终端快捷命令栏
+    terminal_command_groups: [],  // 分组
+    terminal_quick_commands: [],  // 命令（只粘贴不回车）
     // AI 脚本分析结果（每个脚本仅保留最新一条）
     script_ai_analyses: [],
     // AI 请求日志（滚动保留最近 200 条，含耗时/状态/错误等信息）
     ai_request_logs: [],
     // AI 用量按日汇总（长期保留，解决请求日志滚动 200 条无法看长期趋势的问题）
-    ai_usage_daily: []
+    ai_usage_daily: [],
+    // 每表自增 ID 水位（只增不减，防止删除最大 ID 后新记录复用旧 ID）
+    _sequences: {}
 };
 
 class SimpleDatabase {
@@ -404,15 +409,27 @@ class SimpleDatabase {
             this.data[tableName] = [];
         }
         
+        // 持久化自增序列：水位只增不减，删掉 ID 最大的记录后新记录不会复用旧 ID
+        // 与表内现存最大数字 ID 取 max，旧数据文件/导入数据首次插入时自愈对齐
+        if (!this.data._sequences) {
+            this.data._sequences = {};
+        }
+        const currentMaxId = this.data[tableName].reduce((max, item) => {
+            // 只考虑数字ID，忽略字符串ID
+            const numId = typeof item.id === 'number' ? item.id : 0;
+            return Math.max(max, numId);
+        }, 0);
+        let watermark = Math.max(this.data._sequences[tableName] || 0, currentMaxId);
+        
         // 只在没有提供ID时才自动生成数字ID
         if (!record.id) {
-            const maxId = this.data[tableName].reduce((max, item) => {
-                // 只考虑数字ID，忽略字符串ID
-                const numId = typeof item.id === 'number' ? item.id : 0;
-                return Math.max(max, numId);
-            }, 0);
-            record.id = maxId + 1;
+            record.id = watermark + 1;
         }
+        // 无论是自动生成还是显式传入，数字 ID 都抬升水位，避免后续碰撞
+        if (typeof record.id === 'number') {
+            watermark = Math.max(watermark, record.id);
+        }
+        this.data._sequences[tableName] = watermark;
         
         record.created_at = new Date().toISOString();
         record.updated_at = new Date().toISOString();

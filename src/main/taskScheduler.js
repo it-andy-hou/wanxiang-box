@@ -156,11 +156,12 @@ class TaskScheduler {
                 start_time: new Date().toISOString()
             });
 
-            // 执行任务
+            // 执行任务（retryTimes 透传：undefined 时沿用执行器默认，0 = 关闭重试）
             const result = await this.taskExecutor.executeTask(task.id, {
                 concurrency,
                 timeout,
-                useSudo
+                useSudo,
+                retryTimes: parameters.retryTimes
             });
 
             console.log(`定时任务 ${task.id} 执行完成:`, result);

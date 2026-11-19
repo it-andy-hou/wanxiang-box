@@ -553,6 +553,7 @@ const icons = (() => {
         copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
         edit: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
         'trash-2': '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+        terminal: '<path d="m7 11 2-2-2-2"/><path d="M11 13h4"/><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>',
         plug: '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>',
         calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
         bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
@@ -829,4 +830,161 @@ window.HostFilterOptions = (function() {
     }
 
     return { build, render, getValue };
+})();
+
+// IP 列表复制：拆分按钮（主体按默认格式复制，▾ 选择其他格式）
+// 默认格式存 localStorage，所有复制 IP 按钮共享并实时同步
+window.IpCopy = (function() {
+    const STORAGE_KEY = 'ipCopyFormat';
+    const FORMATS = {
+        comma:   { label: '逗号分隔', short: '逗号', sep: ',',  example: '1.1.1.1,2.2.2.2' },
+        newline: { label: '每行一个', short: '换行', sep: '\n', example: '1.1.1.1 ↵ 2.2.2.2' },
+        space:   { label: '空格分隔', short: '空格', sep: ' ',  example: '1.1.1.1 2.2.2.2' }
+    };
+    const ORDER = ['comma', 'newline', 'space'];
+    const buttons = new Set(); // 已挂载的主按钮，格式切换时统一刷新文字
+    let menu = null;
+    let menuCleanup = null;
+
+    function getFormat() {
+        const f = storage.get(STORAGE_KEY, 'comma');
+        return FORMATS[f] ? f : 'comma';
+    }
+
+    function setFormat(f) {
+        if (!FORMATS[f]) return;
+        storage.set(STORAGE_KEY, f);
+        buttons.forEach(refreshLabel);
+    }
+
+    function getLabel(f) {
+        return (FORMATS[f] || FORMATS.comma).label;
+    }
+
+    // 去空、去重（保持原顺序）后按格式拼接
+    function format(ips, f = getFormat()) {
+        const seen = new Set();
+        const list = [];
+        (ips || []).forEach(ip => {
+            const v = String(ip == null ? '' : ip).trim();
+            if (v && !seen.has(v)) {
+                seen.add(v);
+                list.push(v);
+            }
+        });
+        const fmt = FORMATS[f] || FORMATS.comma;
+        return { text: list.join(fmt.sep), count: list.length, format: f, label: fmt.label };
+    }
+
+    function refreshLabel(btn) {
+        if (!btn || !btn.dataset.ipCopyLabel) return;
+        btn.textContent = `${btn.dataset.ipCopyLabel}（${FORMATS[getFormat()].short}）`;
+    }
+
+    function closeMenu() {
+        if (menu) {
+            menu.remove();
+            menu = null;
+        }
+        if (menuCleanup) {
+            menuCleanup();
+            menuCleanup = null;
+        }
+    }
+
+    function openMenu(caret, onPick) {
+        closeMenu();
+        const current = getFormat();
+        const el = document.createElement('div');
+        el.className = 'ip-copy-menu';
+        el.innerHTML = ORDER.map(f => `
+            <div class="ip-copy-menu-item${f === current ? ' active' : ''}" data-format="${f}">
+                <span class="ip-copy-menu-check">${f === current ? '✓' : ''}</span>
+                <span class="ip-copy-menu-label">${FORMATS[f].label}</span>
+                <span class="ip-copy-menu-example">${FORMATS[f].example}</span>
+            </div>
+        `).join('');
+        document.body.appendChild(el);
+
+        // 定位到 ▾ 下方，右对齐；视口放不下时左移/翻转到上方
+        const rect = caret.getBoundingClientRect();
+        let left = rect.right - el.offsetWidth;
+        left = Math.max(8, Math.min(left, window.innerWidth - el.offsetWidth - 8));
+        let top = rect.bottom + 4;
+        if (top + el.offsetHeight + 8 > window.innerHeight && rect.top - el.offsetHeight > 8) {
+            top = rect.top - el.offsetHeight - 4;
+        }
+        el.style.left = `${left}px`;
+        el.style.top = `${top}px`;
+        menu = el;
+
+        el.addEventListener('click', (e) => {
+            const item = e.target.closest('.ip-copy-menu-item');
+            if (!item) return;
+            const f = item.dataset.format;
+            closeMenu();
+            setFormat(f);
+            onPick(f);
+        });
+
+        const onDocDown = (e) => {
+            if (!el.contains(e.target) && e.target !== caret && !caret.contains(e.target)) closeMenu();
+        };
+        const onKey = (e) => { if (e.key === 'Escape') closeMenu(); };
+        const onScroll = () => closeMenu();
+        // 延后绑定，避免触发打开的这次点击立即关闭菜单
+        setTimeout(() => document.addEventListener('mousedown', onDocDown, true), 0);
+        document.addEventListener('keydown', onKey, true);
+        window.addEventListener('resize', onScroll);
+        window.addEventListener('scroll', onScroll, true);
+        menuCleanup = () => {
+            document.removeEventListener('mousedown', onDocDown, true);
+            document.removeEventListener('keydown', onKey, true);
+            window.removeEventListener('resize', onScroll);
+            window.removeEventListener('scroll', onScroll, true);
+        };
+    }
+
+    // 把已有按钮包装成拆分按钮；onCopy(format) 由调用方执行实际复制
+    function attach(mainBtn, { label, onCopy }) {
+        if (!mainBtn || mainBtn.dataset.ipCopyLabel) return;
+        mainBtn.dataset.ipCopyLabel = label;
+
+        const wrapper = document.createElement('span');
+        wrapper.className = 'ip-copy-split';
+        // 初始隐藏状态从按钮转移到外层，后续显隐统一控制外层
+        if (mainBtn.style.display === 'none') {
+            wrapper.style.display = 'none';
+            mainBtn.style.display = '';
+        }
+        mainBtn.parentNode.insertBefore(wrapper, mainBtn);
+        wrapper.appendChild(mainBtn);
+        mainBtn.classList.add('ip-copy-main');
+
+        const caret = document.createElement('button');
+        caret.type = 'button';
+        caret.className = `${mainBtn.className.replace('ip-copy-main', '').trim()} ip-copy-caret`;
+        caret.title = '选择复制格式';
+        caret.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+        wrapper.appendChild(caret);
+
+        mainBtn.addEventListener('click', () => onCopy(getFormat()));
+        caret.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (menu) { closeMenu(); return; }
+            openMenu(caret, onCopy);
+        });
+
+        buttons.add(mainBtn);
+        refreshLabel(mainBtn);
+    }
+
+    // 控制拆分按钮整体显隐（未挂载时退化为控制按钮本身）
+    function setVisible(mainBtn, visible) {
+        if (!mainBtn) return;
+        const target = mainBtn.closest('.ip-copy-split') || mainBtn;
+        target.style.display = visible ? '' : 'none';
+    }
+
+    return { FORMATS, getFormat, setFormat, getLabel, format, attach, refreshLabel, setVisible };
 })();

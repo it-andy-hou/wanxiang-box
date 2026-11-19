@@ -262,7 +262,8 @@ class TaskExecutor extends EventEmitter {
                 let result;
                 let lastError = null;
                 let retryCount = 0;
-                const maxRetries = this.retryTimes || 3;
+                // 支持 options.retryTimes 覆盖（0 = 关闭重试），缺省沿用执行器配置
+                const maxRetries = options.retryTimes !== undefined ? options.retryTimes : (this.retryTimes || 3);
 
                 // 重试循环
                 while (retryCount <= maxRetries) {
@@ -287,7 +288,15 @@ class TaskExecutor extends EventEmitter {
                             break;
                         }
                         
-                        // 执行失败，记录错误并准备重试
+                        // 脚本已真实执行但返回非 0 退出码：属于业务失败，重试无法修复，
+                        // 且会导致非幂等脚本（部署/DB 变更）被重复执行，因此不重试
+                        if (typeof result.exitCode === 'number' && result.exitCode >= 0) {
+                            lastError = result.error || `执行失败 (exitCode: ${result.exitCode})`;
+                            console.log(`主机 ${host.ip} 脚本返回非 0 退出码 (${result.exitCode})，不重试: ${lastError}`);
+                            break;
+                        }
+                        
+                        // 连接/执行异常（exitCode -1），记录错误并准备重试
                         lastError = result.error || `执行失败 (exitCode: ${result.exitCode})`;
                         console.log(`主机 ${host.ip} 执行失败: ${lastError}, 已重试 ${retryCount}/${maxRetries} 次`);
                         
@@ -333,8 +342,11 @@ class TaskExecutor extends EventEmitter {
                 const duration = Date.now() - startTime;
                 const resultStatus = (result.cancelled || this.stopFlags.get(taskId)) ? 'cancelled' : (result.success ? 'success' : 'failed');
 
-                // 更新结果（包含重试信息）
-                const errorMessage = result.success ? '' : 
+                // 更新结果（包含重试信息；破坏性命令后台提交时成功也附带“无法确认结果”说明）
+                const submittedNote = result.submittedOnly
+                    ? '破坏性命令已后台提交执行，无法确认实际执行结果（远程日志路径见 stdout）'
+                    : '';
+                const errorMessage = result.success ? submittedNote : 
                     (retryCount > 0 ? `${result.error || lastError} (重试 ${retryCount} 次后失败)` : (result.error || ''));
                 
                 await TaskResultModel.update(resultRecord.id, {
@@ -535,7 +547,10 @@ class TaskExecutor extends EventEmitter {
             for (const [hostId, connection] of taskConnections.entries()) {
                 console.log(`关闭主机 ${hostId} 的SSH连接...`);
                 closePromises.push(
-                    connection.dispose()
+                    // 先在同一连接上 kill 远端脚本进程组，再断开（仅断开不会终止远端进程）
+                    this.sshService.terminateRemoteProcess(connection)
+                        .catch(() => {})
+                        .then(() => connection.dispose())
                         .then(() => {
                             console.log(`主机 ${hostId} 的SSH连接已关闭`);
                         })
@@ -545,10 +560,10 @@ class TaskExecutor extends EventEmitter {
                 );
             }
             
-            // 等待所有连接关闭（最长等待5秒）
+            // 等待远端终止与连接关闭（最长等待10秒：终止命令含 TERM 后约 2 秒的宽限期）
             await Promise.race([
                 Promise.all(closePromises),
-                new Promise(resolve => setTimeout(resolve, 5000))
+                new Promise(resolve => setTimeout(resolve, 10000))
             ]);
             
             // 清空连接映射

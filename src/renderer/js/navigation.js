@@ -55,6 +55,18 @@ class NavigationManager {
             onLeave: () => this.saveCommandsState()
         });
         
+        this.pages.set('terminal', {
+            id: 'terminal',
+            title: '远程终端',
+            icon: '⌨',
+            description: '交互式 SSH 终端',
+            breadcrumb: ['远程终端'],
+            toolbar: false,
+            // 切走时只隐藏，不销毁会话；切回时重新适配尺寸
+            onEnter: () => window.TerminalPage && window.TerminalPage.onShow(),
+            onLeave: () => window.TerminalPage && window.TerminalPage.onHide()
+        });
+
         this.pages.set('fileupload', {
             id: 'fileupload',
             title: '文件上传',
