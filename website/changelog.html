@@ -145,8 +145,68 @@
       <div class="release">
         <div class="release-card">
           <div class="release-head">
-            <span class="release-version">v1.261022.0</span>
+            <span class="release-version">v1.261119.0</span>
             <span class="release-latest">最新版本</span>
+            <span class="release-date">2026-11-19</span>
+          </div>
+          <div class="release-title">交互式远程终端与终端 AI 分析</div>
+          <ul>
+            <li><span class="tag feature">新增</span>远程终端：基于 xterm.js + ssh2 的交互式 Shell，多标签（拖拽排序、中键关闭）、主机快速选择与最近连接、断线重连、输出搜索、字号缩放；主机列表新增「终端」按钮一键打开</li>
+            <li><span class="tag feature">新增</span>连接安全：首次连接校验并记录主机指纹，指纹变化时告警；支持密码、私钥口令与 keyboard-interactive（验证码）认证；多行粘贴确认，命中高危规则的粘贴内容弹窗二次确认</li>
+            <li><span class="tag feature">新增</span>关键词高亮：错误、警告、成功、IP、URL、时间、百分比、容量、路径、提示符等自动着色，不覆盖远端原有颜色，vim / top 等全屏程序中自动停用；支持自定义正则规则</li>
+            <li><span class="tag feature">新增</span>历史命令补全：输入时弹出候选，按使用频率与最近使用排序，回车只填入不执行；自动跳过密码输入与疑似含密钥、口令的命令</li>
+            <li><span class="tag feature">新增</span>快捷命令栏：多分组预设命令，点击即粘贴到当前终端（不自动回车），支持分组管理与 JSON 导入导出</li>
+            <li><span class="tag feature">新增</span>时间戳与行号栏：终端左侧显示每行首次输出的时间和行号，清屏后编号接续</li>
+            <li><span class="tag feature">新增</span>终端输出 AI 分析：选中输出点「问 AI」，或一键发送最近 200～5000 行；发送前可预览、编辑，支持多轮追问；右侧面板后台分析不影响终端操作，回答中的命令可一键插入终端</li>
+            <li><span class="tag feature">新增</span>复制 IP 支持逗号、换行、空格三种格式，默认格式全局记忆</li>
+            <li><span class="tag improve">优化</span>主机密码改用系统钥匙串加密存储（macOS 钥匙串 / Windows DPAPI / Linux libsecret），旧版明文密码启动时自动迁移；导入其他电脑的备份时提示需重新填写的密码数量</li>
+            <li><span class="tag improve">优化</span>停止任务时先终止远端脚本进程组再断开连接，避免脚本在远端继续运行</li>
+            <li><span class="tag improve">优化</span>脚本返回非 0 退出码时不再自动重试，只有连接或执行异常才重试，避免非幂等脚本被重复执行</li>
+            <li><span class="tag improve">优化</span>重启 / 关机类命令识别更准确，<code>last reboot</code>、注释、字符串中的关键字不再误判；后台提交的命令明确标注「无法确认执行结果」并给出远端日志路径</li>
+            <li><span class="tag fix">修复</span>脚本批量移动目录报错</li>
+            <li><span class="tag fix">修复</span>删除记录后新建数据复用旧 ID，导致定时任务、工程步骤错配到新主机；删除主机、工程时同步清理关联的任务与执行记录</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="release">
+        <div class="release-card">
+          <div class="release-head">
+            <span class="release-version">v1.261109.0</span>
+            <span class="release-date">2026-11-09</span>
+          </div>
+          <div class="release-title">统计看板与主机筛选优化</div>
+          <ul>
+            <li><span class="tag feature">新增</span>统计看板：主机资产多维度统计、执行记录趋势、AI Token 用量趋势，支持时间范围切换（ECharts 离线内置）</li>
+            <li><span class="tag feature">新增</span>主机管理新增系统版本筛选与系统版本列 OS 图标（含国产操作系统）</li>
+            <li><span class="tag feature">新增</span>全部筛选下拉支持关键词搜索与键盘导航；Excel 导入 / 导出合并为一个菜单，新增下载模板</li>
+            <li><span class="tag improve">优化</span>脚本、命令、文件上传、工程任务四处主机选择弹窗同步系统版本筛选，筛选条件双向级联并显示数量</li>
+            <li><span class="tag improve">优化</span>主机管理筛选收纳到「更多筛选」；全局页头按钮统一为图标 + 文字</li>
+            <li><span class="tag fix">修复</span>工具栏下拉框文字被裁切；统计看板双轴配置崩溃与页面无法滚动</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="release">
+        <div class="release-card">
+          <div class="release-head">
+            <span class="release-version">v1.261027.0</span>
+            <span class="release-date">2026-10-27</span>
+          </div>
+          <div class="release-title">AI 请求记录与审计</div>
+          <ul>
+            <li><span class="tag feature">新增</span>AI 请求记录页：每次 AI 请求记录来源、模型、状态、HTTP 状态码、耗时、Token 用量与错误原文，可筛选、查看详情，区分超时、网络错误与接口错误</li>
+            <li><span class="tag feature">新增</span>可选记录完整请求体（默认关闭），满足审计需要</li>
+            <li><span class="tag feature">新增</span>「关闭深度思考」选项：qwen3 等推理模型跳过思考链直接输出，响应明显加快</li>
+            <li><span class="tag improve">优化</span>界面字体随应用内置，Windows / macOS / Linux 显示一致</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="release">
+        <div class="release-card">
+          <div class="release-head">
+            <span class="release-version">v1.261022.0</span>
             <span class="release-date">2026-10-22</span>
           </div>
           <div class="release-title">AI 脚本生成</div>

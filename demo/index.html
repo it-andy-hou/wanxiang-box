@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/enhancements.css">
+    <link rel="stylesheet" href="css/terminal.css">
+    <link rel="stylesheet" href="css/statistics.css">
     <style>
         /* ===== 演示模式专属样式（不影响桌面版） ===== */
         html, body { height: 100%; }
@@ -60,6 +62,67 @@
         #hostsTable td .ip-address { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--primary); font-weight: 500; }
         #hostsTable td .username { color: var(--text-body); }
 
+        /* ===== 远程终端演示（桌面版由 xterm.js + JS 渲染，演示页用静态行模拟） ===== */
+        :root { --surface-hover: #f5f6f8; } /* demo tokens.css 缺少该变量，与桌面版取值一致 */
+        #page-terminal .terminal-page { --dt-row: 18px; }
+        /* 演示终端整体可滚动：行号栏与内容同在一个滚动容器内，保证逐行对齐 */
+        #page-terminal .terminal-view { overflow-x: hidden; overflow-y: auto; align-items: flex-start; scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+        #page-terminal .terminal-gutter { height: auto; min-height: 100%; font-size: 12px; --tg-row-height: var(--dt-row); }
+        #page-terminal .terminal-view-xterm { height: auto; min-height: 100%; overflow: hidden; }
+        .dt-screen { font-family: var(--font-mono); font-size: 13px; color: #dcdfe4; }
+        .dt-line { height: var(--dt-row); line-height: var(--dt-row); white-space: pre; overflow: hidden; text-overflow: clip; }
+        .dt-cursor { display: inline-block; width: 0.6em; height: 15px; vertical-align: -3px; background: #f5a623; animation: dtBlink 1s steps(1) infinite; }
+        @keyframes dtBlink { 50% { opacity: 0; } }
+        .dt-sel { background: rgba(74, 165, 240, 0.35); }
+        /* 关键词高亮配色（取自 terminalHighlighter.js 内置规则真彩色） */
+        .dt-pu { color: #89d185; font-weight: 700; }
+        .dt-pp { color: #61afef; }
+        .dt-ps { color: #e5c07b; font-weight: 700; }
+        .dt-ip { color: #c678dd; }
+        .dt-time { color: #56b6c2; }
+        .dt-pct-hi { color: #ff6b6b; }
+        .dt-pct-mid { color: #e5c07b; }
+        .dt-pct-ok { color: #89d185; }
+        .dt-err { color: #ff6b6b; font-weight: 700; }
+        .dt-ok { color: #89d185; }
+        .dt-str { color: #98c379; }
+        .dt-key { color: #8ab4f8; }
+        .dt-path { color: #7fb4ca; }
+        .dt-num { color: #d19a66; }
+        .dt-url { color: #e5c07b; text-decoration: underline; }
+        /* 演示页 AI 面板中的加载图标（桌面版定义在 enhancements.css，demo 副本没有） */
+        .ai-spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border-default); border-top-color: var(--primary); border-radius: 50%; animation: dtSpin 0.8s linear infinite; flex-shrink: 0; }
+        @keyframes dtSpin { to { transform: rotate(360deg); } }
+
+        /* ===== 统计看板演示图表（桌面版用 ECharts，演示页用 CSS / SVG 简化绘制） ===== */
+        .dc-wrap { height: 100%; display: flex; flex-direction: column; min-height: 0; font-size: 12px; color: var(--text-muted); }
+        .dc-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 6px; }
+        .dc-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+        .dc-plot { flex: 1; min-height: 0; display: flex; align-items: flex-end; gap: 6px; padding: 0 4px; border-bottom: 1px solid var(--border-default);
+            background: repeating-linear-gradient(to top, transparent 0, transparent calc(25% - 1px), var(--border-subtle) calc(25% - 1px), var(--border-subtle) 25%); }
+        .dc-plot.dense { gap: 3px; }
+        .dc-col { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+        .dc-col-val { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .dc-stack { width: 64%; max-width: 34px; display: flex; flex-direction: column-reverse; border-radius: 3px 3px 0 0; overflow: hidden; }
+        .dc-plot.dense .dc-stack { width: 80%; }
+        .dc-axis { display: flex; gap: 6px; padding: 4px 4px 0; }
+        .dc-axis.dense { gap: 3px; }
+        .dc-axis span { flex: 1; min-width: 0; text-align: center; font-size: 11px; white-space: nowrap; overflow: visible; }
+        .dc-donut { height: 100%; display: flex; align-items: center; gap: 16px; }
+        .dc-donut svg { width: 150px; height: 150px; flex-shrink: 0; }
+        .dc-donut-list { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+        .dc-donut-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-body); }
+        .dc-donut-item i { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+        .dc-donut-item span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .dc-donut-item b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-heading); }
+        .dc-donut-item em { font-style: normal; width: 44px; text-align: right; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+        .dc-hbar { height: 100%; display: flex; flex-direction: column; justify-content: space-around; }
+        .dc-hbar-row { display: flex; align-items: center; gap: 8px; }
+        .dc-hbar-label { width: 96px; flex-shrink: 0; text-align: right; color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .dc-hbar-track { flex: 1; min-width: 0; height: 12px; background: var(--surface-subtle); border-radius: 3px; overflow: hidden; }
+        .dc-hbar-fill { height: 100%; border-radius: 3px; }
+        .dc-hbar-val { width: 64px; flex-shrink: 0; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
         /* 窄屏时隐藏部分列，保证演示可读性 */
         @media (max-width: 1200px) {
             #hostsTable th:nth-child(4), #hostsTable td:nth-child(4),
@@ -100,13 +163,16 @@
             <aside class="sidebar" id="mainSidebar">
                 <nav class="sidebar-nav">
                     <a href="#" class="nav-item active" data-page="hosts"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg></span><span class="nav-item-text">主机管理</span></a>
-                    <a href="#" class="nav-item" data-page="project-tasks"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 13v5"/><path d="M12 13v5"/><path d="M16 13v5"/></svg></span><span class="nav-item-text">工程任务</span></a>
                     <a href="#" class="nav-item" data-page="scripts"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg></span><span class="nav-item-text">脚本管理</span></a>
                     <a href="#" class="nav-item" data-page="tasks"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg></span><span class="nav-item-text">脚本执行</span></a>
                     <a href="#" class="nav-item" data-page="commands"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg></span><span class="nav-item-text">命令执行</span></a>
+                    <a href="#" class="nav-item" data-page="terminal"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 2-2-2-2"/><path d="M11 13h4"/><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg></span><span class="nav-item-text">远程终端</span></a>
                     <a href="#" class="nav-item" data-page="fileupload"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg></span><span class="nav-item-text">文件上传</span></a>
+                    <a href="#" class="nav-item" data-page="project-tasks"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 13v5"/><path d="M12 13v5"/><path d="M16 13v5"/></svg></span><span class="nav-item-text">工程任务</span></a>
                     <a href="#" class="nav-item" data-page="scheduled"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="nav-item-text">任务调度</span></a>
                     <a href="#" class="nav-item" data-page="history"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span><span class="nav-item-text">任务记录</span></a>
+                    <a href="#" class="nav-item" data-page="ai-logs"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg></span><span class="nav-item-text">AI 请求记录</span></a>
+                    <a href="#" class="nav-item" data-page="statistics"><span class="nav-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/></svg></span><span class="nav-item-text">统计看板</span></a>
                 </nav>
             </aside>
 
@@ -727,6 +793,114 @@ Mem:            7.6G  3.0G  4.6G  39%</div>
                     </div>
                 </div>
 
+                <!-- ============ 远程终端（外层结构与桌面版一致，终端内容为静态模拟，行由脚本 bindTerminalDemo 生成） ============ -->
+                <div class="page" id="page-terminal" style="display: none;">
+                    <div class="terminal-page">
+                        <div class="terminal-tabbar">
+                            <div class="terminal-tabs" id="terminalTabs">
+                                <div class="terminal-tab is-ready active" title="root@192.168.1.11:22">
+                                    <span class="terminal-tab-dot"></span>
+                                    <span class="terminal-tab-title">root@192.168.1.11</span>
+                                    <span class="terminal-tab-ai" title="AI 分析有新回复">AI</span>
+                                    <button type="button" class="terminal-tab-close" title="关闭">×</button>
+                                </div>
+                                <div class="terminal-tab is-ready ai-unread" title="app@192.168.1.31:22">
+                                    <span class="terminal-tab-dot"></span>
+                                    <span class="terminal-tab-title">app@192.168.1.31</span>
+                                    <span class="terminal-tab-ai" title="AI 分析有新回复">AI</span>
+                                    <button type="button" class="terminal-tab-close" title="关闭">×</button>
+                                </div>
+                                <div class="terminal-tab is-closed" title="deploy@192.168.2.15:2222">
+                                    <span class="terminal-tab-dot"></span>
+                                    <span class="terminal-tab-title">deploy@192.168.2.15</span>
+                                    <span class="terminal-tab-ai" title="AI 分析有新回复">AI</span>
+                                    <button type="button" class="terminal-tab-close" title="关闭">×</button>
+                                </div>
+                            </div>
+                            <button type="button" class="terminal-tabbar-btn" id="terminalNewTabBtn" title="新建终端">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                            </button>
+                            <div class="terminal-tabbar-spacer"></div>
+                            <button type="button" class="terminal-tabbar-btn terminal-tabbar-ai active" id="terminalAiBtn" title="AI 分析终端输出">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+                            </button>
+                            <button type="button" class="terminal-tabbar-btn active" id="terminalQuickBarBtn" title="显示/隐藏快捷命令栏">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                            </button>
+                            <button type="button" class="terminal-tabbar-btn" id="terminalSettingsBtn" title="终端设置">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+                            </button>
+                        </div>
+                        <div class="terminal-main">
+                        <div class="terminal-body" id="terminalBody">
+                            <div class="terminal-view active" id="demoTermView">
+                                <div class="terminal-gutter" id="demoTermGutter"></div>
+                                <div class="terminal-view-xterm">
+                                    <div class="dt-screen" id="demoTermScreen"></div>
+                                </div>
+                                <!-- 选中输出后浮现的「问 AI」按钮（位置由脚本按选区末尾计算） -->
+                                <button type="button" class="terminal-ask-ai" id="demoAskAiBtn" title="把选中内容发送给 AI 分析"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg><span>问 AI</span></button>
+                                <!-- 历史命令补全候选框：演示输入 sys 时的候选（默认不选中任何一项，与桌面版一致） -->
+                                <div class="terminal-ac" id="demoTermAc">
+                                    <div class="terminal-ac-item" data-cmd="systemctl status nginx"><span class="terminal-ac-text"><mark>sys</mark>temctl status nginx</span><span class="terminal-ac-del" title="从历史中删除 (Shift+Delete)">×</span></div>
+                                    <div class="terminal-ac-item" data-cmd="systemctl restart nginx"><span class="terminal-ac-text"><mark>sys</mark>temctl restart nginx</span><span class="terminal-ac-del" title="从历史中删除 (Shift+Delete)">×</span></div>
+                                    <div class="terminal-ac-item" data-cmd="systemctl status order-service"><span class="terminal-ac-text"><mark>sys</mark>temctl status order-service</span><span class="terminal-ac-del" title="从历史中删除 (Shift+Delete)">×</span></div>
+                                    <div class="terminal-ac-item" data-cmd="sysctl -p"><span class="terminal-ac-text"><mark>sys</mark>ctl -p</span><span class="terminal-ac-del" title="从历史中删除 (Shift+Delete)">×</span></div>
+                                    <div class="terminal-ac-item" data-cmd="vim /etc/sysctl.conf"><span class="terminal-ac-text">vim /etc/<mark>sys</mark>ctl.conf</span><span class="terminal-ac-del" title="从历史中删除 (Shift+Delete)">×</span></div>
+                                    <div class="terminal-ac-hint">↑↓ 选择 · Enter 填入 · Esc 关闭</div>
+                                </div>
+                            </div>
+                        </div>
+                        <aside class="terminal-ai-panel" id="terminalAiPanel" style="width: 420px;" aria-label="AI 分析">
+                            <div class="tai-resizer" title="拖动调整宽度"></div>
+                            <div class="tai-head">
+                                <span class="tai-title">AI 分析</span>
+                                <span class="tai-host" title="root@192.168.1.11">root@192.168.1.11</span>
+                                <button type="button" class="tai-head-btn" data-act="new" title="清空当前标签的对话，重新获取内容">新对话</button>
+                                <button type="button" class="tai-head-btn tai-head-close" data-act="close" title="收起（分析会在后台继续）">×</button>
+                            </div>
+                            <div class="tai-scroll" id="demoTaiScroll">
+                                <details class="tai-context" open>
+                                    <summary class="tai-context-summary">分析上下文（已发送）· 最近输出 · 120 行 · 6,842 字符</summary>
+                                    <div class="tai-context-tools">
+                                        <label>最近 <select class="tai-lines"><option value="200">200</option><option value="500" selected>500</option><option value="1000">1000</option><option value="2000">2000</option><option value="5000">5000</option></select> 行</label>
+                                        <button type="button" class="tai-link">重新获取</button>
+                                        <span class="tai-spacer"></span>
+                                        <button type="button" class="tai-link">清空</button>
+                                    </div>
+                                    <textarea class="tai-context-text" id="demoTaiContext" spellcheck="false" readonly></textarea>
+                                    <div class="tai-context-meta">120 行 · 6,842 字符 · 约 2,281 tokens（估算）</div>
+                                    <div class="tai-notice">内容将按原文（不脱敏）发送至当前配置的大模型服务。AI 建议仅供参考，命令不会自动执行。</div>
+                                </details>
+                                <div class="tai-messages" id="demoTaiMessages"></div>
+                            </div>
+                            <div class="tai-input">
+                                <textarea class="tai-question" id="demoTaiQuestion" rows="2" maxlength="2000" placeholder="想问什么？留空则按默认要求分析（Enter 发送，Shift+Enter 换行）"></textarea>
+                                <div class="tai-input-bar">
+                                    <span class="tai-status" id="demoTaiStatus">deepseek-chat</span>
+                                    <button type="button" class="btn btn-sm btn-primary" id="demoTaiSendBtn">发送</button>
+                                </div>
+                            </div>
+                        </aside>
+                        </div>
+                        <div class="terminal-quickbar" id="terminalQuickBar">
+                            <select class="terminal-qb-group" id="demoQbGroup" title="切换分组">
+                                <option value="common">常用</option>
+                                <option value="log">日志</option>
+                                <option value="net">网络</option>
+                            </select>
+                            <div class="terminal-qb-list" id="demoQbList"></div>
+                            <button type="button" class="terminal-qb-manage" title="管理快捷命令（演示模式不可用）">管理</button>
+                        </div>
+                        <div class="terminal-statusbar" id="terminalStatusBar">
+                            <span class="terminal-status-label" data-field="label">root@192.168.1.11:22</span>
+                            <span class="terminal-status-state is-ready" data-field="state">已连接 00:43:18</span>
+                            <span class="terminal-status-spacer"></span>
+                            <span class="terminal-status-meta" data-field="meta">118×38 · UTF-8 · 13px</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ============ 文件上传 ============ -->
                 <div class="page" id="page-fileupload" style="display: none;">
                     <div class="page-header">
@@ -937,6 +1111,116 @@ Mem:            7.6G  3.0G  4.6G  39%</div>
                     </div>
                 </div>
 
+                <!-- ============ AI 请求记录 ============ -->
+                <div class="page" id="page-ai-logs" style="display: none;">
+                    <div class="page-header">
+                        <h2>AI 请求记录</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" title="刷新 AI 请求记录">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                刷新
+                            </button>
+                            <button class="btn btn-danger" title="清空全部 AI 请求记录（不可恢复）">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                清空记录
+                            </button>
+                        </div>
+                    </div>
+                    <div class="toolbar">
+                        <div class="toolbar-left">
+                            <div class="search-bar">
+                                <input type="text" class="form-control" placeholder="搜索脚本名称 / 模型 / 错误信息...">
+                            </div>
+                        </div>
+                        <div class="toolbar-right" style="display: flex; gap: 10px;">
+                            <select class="form-control" style="min-width: 120px;">
+                                <option value="">全部来源</option>
+                                <option value="analyze">脚本分析</option>
+                                <option value="execution_analysis">执行结果分析</option>
+                                <option value="terminal_analysis">终端输出分析</option>
+                                <option value="generate">脚本生成</option>
+                                <option value="test">测试连接</option>
+                            </select>
+                            <select class="form-control" style="min-width: 120px;">
+                                <option value="">全部状态</option>
+                                <option value="success">成功</option>
+                                <option value="timeout">超时</option>
+                                <option value="network_error">网络错误</option>
+                                <option value="http_error">接口错误</option>
+                                <option value="bad_response">响应异常</option>
+                                <option value="parse_error">解析失败</option>
+                                <option value="cancelled">已取消</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="page-content">
+                        <div class="table-container">
+                            <table class="table" id="aiLogsTable">
+                                <thead>
+                                    <tr><th>时间</th><th>来源</th><th>脚本</th><th>模型</th><th>状态</th><th>HTTP</th><th>耗时</th><th>Token</th><th>操作</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>2026/11/19 09:13:26</td><td>终端输出分析</td><td>root@192.168.1.11</td><td>deepseek-chat</td><td><span class="status-badge status-success">成功</span></td><td>200</td><td>8.4s</td><td>2,481</td><td><button class="btn btn-sm btn-primary">详情</button></td></tr>
+                                    <tr><td>2026/11/19 09:02:10</td><td>脚本分析</td><td>clean-expired-logs.sh</td><td>deepseek-chat</td><td><span class="status-badge status-success">成功</span></td><td>200</td><td>5.2s</td><td>1,836</td><td><button class="btn btn-sm btn-primary">详情</button></td></tr>
+                                    <tr><td>2026/11/18 22:41:05</td><td>执行结果分析</td><td>每日磁盘巡检</td><td>qwen-plus</td><td><span class="status-badge status-success">成功</span></td><td>200</td><td style="color: var(--status-warning-fg); font-weight: 600;">12.6s</td><td>4,120</td><td><button class="btn btn-sm btn-primary">详情</button></td></tr>
+                                    <tr><td>2026/11/18 21:15:47</td><td>脚本生成</td><td>-</td><td>deepseek-chat</td><td><span class="status-badge status-unknown">已取消</span></td><td>-</td><td>3.1s</td><td>-</td><td><button class="btn btn-sm btn-primary">详情</button></td></tr>
+                                    <tr><td>2026/11/18 17:30:22</td><td>终端输出分析</td><td>app@192.168.1.31</td><td>qwen-plus</td><td><span class="status-badge status-failed" title="HTTP 429: Too Many Requests">接口错误</span></td><td>429</td><td>1.2s</td><td>-</td><td><button class="btn btn-sm btn-primary">详情</button></td></tr>
+                                    <tr><td>2026/11/18 10:08:13</td><td>测试连接</td><td>-</td><td>gpt-4o-mini</td><td><span class="status-badge status-failed" title="connect ETIMEDOUT">网络错误</span></td><td>-</td><td style="color: var(--status-warning-fg); font-weight: 600;">30.0s</td><td>-</td><td><button class="btn btn-sm btn-primary">详情</button></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ 统计看板（桌面版用 ECharts，演示页图表由 renderStatsDemo 以 CSS / SVG 绘制） ============ -->
+                <div class="page" id="page-statistics" style="display: none;">
+                    <div class="page-header">
+                        <h2>统计看板</h2>
+                        <div class="page-actions">
+                            <div class="stats-range-group" id="statsRangeGroup">
+                                <button class="stats-range-btn active" data-range="7d">近7天</button>
+                                <button class="stats-range-btn" data-range="30d">近30天</button>
+                                <button class="stats-range-btn" data-range="90d">近90天</button>
+                                <button class="stats-range-btn" data-range="all">全部</button>
+                            </div>
+                            <button class="btn btn-secondary" title="刷新统计看板">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                                刷新
+                            </button>
+                        </div>
+                    </div>
+                    <div class="page-content page-content--scroll" id="statisticsContent">
+                        <div class="stats-kpi-row" id="statsKpiRow"></div>
+                        <div class="stats-section">
+                            <div class="stats-section-title">主机资产总览</div>
+                            <div class="stats-grid stats-grid-3">
+                                <div class="stats-card"><div class="stats-card-title">机房分布</div><div class="stats-chart" id="chartDatacenter"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">系统名称分布</div><div class="stats-chart" id="chartSystem"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">应用节点分布</div><div class="stats-chart" id="chartApp"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">环境分布</div><div class="stats-chart" id="chartEnvironment"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">负责人分布</div><div class="stats-chart" id="chartOwner"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">系统版本分布</div><div class="stats-chart" id="chartOsVersion"></div></div>
+                            </div>
+                        </div>
+                        <div class="stats-section">
+                            <div class="stats-section-title">执行记录时间轴</div>
+                            <div class="stats-grid stats-grid-2">
+                                <div class="stats-card"><div class="stats-card-title">每日执行次数与成功率趋势</div><div class="stats-chart tall" id="chartDailyTrend"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">执行时段分布（按小时）</div><div class="stats-chart" id="chartHourly"></div></div>
+                            </div>
+                        </div>
+                        <div class="stats-section">
+                            <div class="stats-section-title">AI 与 Token 用量</div>
+                            <div class="stats-grid stats-grid-2">
+                                <div class="stats-card"><div class="stats-card-title">每日 Token 消耗趋势</div><div class="stats-chart tall" id="chartTokenTrend"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">AI 请求耗时趋势</div><div class="stats-chart" id="chartAiDuration"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">AI 用途分布</div><div class="stats-chart" id="chartAiPurpose"></div></div>
+                                <div class="stats-card"><div class="stats-card-title">模型 Token 对比</div><div class="stats-chart" id="chartModelTokens"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </section>
         </main>
 
@@ -978,7 +1262,7 @@ Mem:            7.6G  3.0G  4.6G  39%</div>
                 </span>
             </div>
             <div class="footer-right">
-                <span>版本: <span id="demoAppVersion">1.261022.0</span></span>
+                <span>版本: <span id="demoAppVersion">1.261119.0</span></span>
             </div>
         </footer>
 
@@ -1215,20 +1499,20 @@ Mem:            7.6G  3.0G  4.6G  39%</div>
                     }, 1200);
                 });
             }
-            
-            // Excel 数据下拉（导入 / 导出 / 下载模板）：与桌面版同款交互，点击外部 / ESC 收起
+
+            // ===== Excel 数据下拉（导入 / 导出 / 下载模板）：与桌面版同款交互，点击外部 / ESC 收起 =====
             function bindExcelMenu() {
                 var btn = document.getElementById('excelMenuBtn');
                 var panel = document.getElementById('excelMenuPanel');
                 if (!btn || !panel) return;
                 var wrap = btn.parentNode;
-            
+
                 function close() {
                     panel.classList.remove('open');
                     wrap.classList.remove('open');
                     btn.setAttribute('aria-expanded', 'false');
                 }
-            
+
                 btn.addEventListener('click', function (e) {
                     e.stopPropagation();
                     var open = panel.classList.toggle('open');
@@ -1243,6 +1527,380 @@ Mem:            7.6G  3.0G  4.6G  39%</div>
                 });
                 document.addEventListener('keydown', function (e) {
                     if (e.key === 'Escape') close();
+                });
+            }
+
+            // ===== 远程终端演示：静态行模拟 xterm 输出 + 行号栏 + 补全 / 快捷命令 / AI 面板交互 =====
+            function bindTerminalDemo() {
+                var view = document.getElementById('demoTermView');
+                var screen = document.getElementById('demoTermScreen');
+                var gutter = document.getElementById('demoTermGutter');
+                if (!view || !screen || !gutter) return;
+
+                // ---- 高亮片段（配色见 <style> 中 .dt-*，规则顺序参照 docs/requirements/远程终端模块.md 13.2）----
+                function c(cls, s) { return '<span class="dt-' + cls + '">' + s + '</span>'; }
+                function pct(s) {
+                    var n = parseInt(s, 10);
+                    return c(n >= 90 ? 'pct-hi' : (n >= 70 ? 'pct-mid' : 'pct-ok'), s);
+                }
+                function prompt(cmd) { return '[' + c('pu', 'root@order-01') + ' ' + c('pp', '~') + ']' + c('ps', '#') + ' ' + (cmd || ''); }
+                function kv(key, val) { return c('key', key) + '=' + val; }
+                // df -h 一行：先按列宽补齐空格，再给各列上色，保证等宽对齐
+                function df(fs, size, used, avail, use, mnt) {
+                    return c('path', fs) + new Array(25 - fs.length).join(' ') +
+                        pad(size, 5) + pad(used, 6) + pad(avail, 6) + ' ' + pad(use, 4, true) + ' ' + c('path', mnt);
+                }
+                function pad(s, w, isPct) {
+                    var sp = new Array(Math.max(1, w - s.length + 1)).join(' ');
+                    return sp + (isPct ? pct(s) : (s === '0' ? s : c('num', s)));
+                }
+                function freeRow(label, vals) {
+                    // 表头 total 列右对齐到第 19 列，其余列宽 12
+                    var out = label + new Array(Math.max(1, 19 - label.length - vals[0].length + 1)).join(' ') + c('num', vals[0]);
+                    for (var i = 1; i < vals.length; i++) out += new Array(13 - vals[i].length).join(' ') + c('num', vals[i]);
+                    return out;
+                }
+
+                // [时间, 内容 HTML]；sel 标记为预置的"选中"行
+                var LINES = [
+                    ['09:12:03', 'Last login: Wed Nov 19 ' + c('time', '09:12:03') + ' ' + c('num', '2026') + ' from ' + c('ip', '192.168.4.20')],
+                    ['09:12:08', prompt('df -h')],
+                    ['09:12:08', 'Filesystem               Size  Used Avail Use% Mounted on'],
+                    ['09:12:08', df('/dev/mapper/centos-root', '50G', '46G', '4.1G', '92%', '/')],
+                    ['09:12:08', df('devtmpfs', '3.8G', '0', '3.8G', '0%', '/dev')],
+                    ['09:12:08', df('tmpfs', '3.9G', '396M', '3.5G', '10%', '/run')],
+                    ['09:12:08', df('/dev/sda1', '1014M', '186M', '829M', '19%', '/boot')],
+                    ['09:12:08', df('/dev/mapper/centos-data', '200G', '148G', '53G', '74%', '/data')],
+                    ['09:12:15', prompt('free -h')],
+                    ['09:12:15', '              total        used        free      shared  buff/cache   available'],
+                    ['09:12:15', freeRow('Mem:', ['7.6G', '5.1G', '412M', '396M', '2.1G', '1.8G'])],
+                    ['09:12:15', freeRow('Swap:', ['4.0G', '1.2G', '2.8G'])],
+                    ['09:12:31', prompt('systemctl status nginx')],
+                    ['09:12:31', c('ok', '●') + ' nginx.service - The nginx HTTP and reverse proxy server'],
+                    ['09:12:31', '   Loaded: loaded (' + c('path', '/usr/lib/systemd/system/nginx.service') + '; enabled; vendor preset: disabled)'],
+                    ['09:12:31', '   Active: ' + c('ok', 'active') + ' (' + c('ok', 'running') + ') since Wed ' + c('time', '2026-11-19 08:30:12') + ' CST; ' + c('num', '42') + 'min ago'],
+                    ['09:12:31', ' Main PID: ' + c('num', '1287') + ' (nginx)'],
+                    ['09:12:31', '   CGroup: ' + c('path', '/system.slice/nginx.service')],
+                    ['09:12:31', '           ├─' + c('num', '1287') + ' nginx: master process ' + c('path', '/usr/sbin/nginx')],
+                    ['09:12:31', '           └─' + c('num', '1288') + ' nginx: worker process'],
+                    ['09:12:31', ''],
+                    ['09:12:31', '<span class="dt-sel">Nov 19 ' + c('time', '09:05:41') + ' order-01 nginx[' + c('num', '1288') + ']: [' + c('err', 'error') + '] connect() ' + c('err', 'failed') + ' (' + c('num', '111') + ': Connection ' + c('err', 'refused') + ')</span>'],
+                    ['09:12:31', '<span class="dt-sel" id="demoTermSelEnd">Nov 19 ' + c('time', '09:05:41') + ' order-01 nginx[' + c('num', '1288') + ']: upstream: "' + c('url', 'http://127.0.0.1:8080/api/order/list') + '"</span>'],
+                    ['09:12:52', prompt('cat ' + c('path', '/etc/os-release'))],
+                    ['09:12:52', kv('NAME', c('str', '"CentOS Linux"'))],
+                    ['09:12:52', kv('VERSION', c('str', '"7 (Core)"'))],
+                    ['09:12:52', kv('ID', c('str', '"centos"'))],
+                    ['09:12:52', kv('ID_LIKE', c('str', '"rhel fedora"'))],
+                    ['09:12:52', kv('VERSION_ID', c('str', '"7"'))],
+                    ['09:12:52', kv('PRETTY_NAME', c('str', '"CentOS Linux 7 (Core)"'))],
+                    ['09:12:52', kv('HOME_URL', '"' + c('url', 'https://www.centos.org/') + '"')],
+                    ['09:13:05', prompt('') + '<span id="demoTermInput">sys</span><span class="dt-cursor"></span>']
+                ];
+                // 模拟回滚缓冲区共 120 行，当前只显示末尾这些行（与 AI 面板"120 行"一致）
+                var TOTAL = 120;
+                var first = TOTAL - LINES.length + 1;
+                var gHtml = '', sHtml = '';
+                LINES.forEach(function (l, i) {
+                    var cur = i === LINES.length - 1;
+                    gHtml += '<div class="tg-row' + (cur ? ' tg-cur' : '') + '"><span class="tg-time">[' + l[0] + ']</span><span class="tg-num">' + (first + i) + '</span></div>';
+                    sHtml += '<div class="dt-line">' + (l[1] || ' ') + '</div>';
+                });
+                gutter.innerHTML = gHtml;
+                screen.innerHTML = sHtml;
+
+                var inputEl = document.getElementById('demoTermInput');
+                var acEl = document.getElementById('demoTermAc');
+                var askBtn = document.getElementById('demoAskAiBtn');
+                var selEnd = document.getElementById('demoTermSelEnd');
+                var promptLine = inputEl.parentNode;
+
+                // 补全框 / 问 AI 按钮均是 terminal-view 的绝对定位子元素，坐标随内容滚动
+                function layout() {
+                    if (!view.offsetHeight) return; // 页面未显示时无法测量
+                    if (acEl.style.display !== 'none') {
+                        var top = promptLine.offsetTop - acEl.offsetHeight - 2; // 优先显示在提示符上方
+                        if (top < 0) top = promptLine.offsetTop + promptLine.offsetHeight + 2;
+                        acEl.style.top = top + 'px';
+                        acEl.style.left = (inputEl.offsetLeft + 8) + 'px';
+                    }
+                    if (askBtn.style.display !== 'none') {
+                        askBtn.style.top = (selEnd.offsetTop + selEnd.offsetHeight + 2) + 'px';
+                        askBtn.style.left = Math.min(selEnd.offsetLeft + selEnd.offsetWidth - 40, view.clientWidth - 90) + 'px';
+                    }
+                }
+                var scrolled = false;
+                function onShow() {
+                    layout();
+                    if (!scrolled && view.offsetHeight) { view.scrollTop = view.scrollHeight; scrolled = true; }
+                }
+                var navItem = document.querySelector('.sidebar-nav .nav-item[data-page="terminal"]');
+                if (navItem) navItem.addEventListener('click', onShow);
+                window.addEventListener('resize', layout);
+
+                // 填入命令行：与桌面版一致，只填入不执行
+                function hideAc() { acEl.style.display = 'none'; }
+                function insertText(text) {
+                    if (acEl.style.display !== 'none') { hideAc(); inputEl.textContent = ''; } // 补全查询词视为未完成输入
+                    inputEl.textContent += text;
+                    view.scrollTop = view.scrollHeight;
+                }
+                acEl.addEventListener('mousedown', function (e) { e.preventDefault(); });
+                acEl.addEventListener('click', function (e) {
+                    var item = e.target.closest('.terminal-ac-item');
+                    if (!item) return;
+                    if (e.target.closest('.terminal-ac-del')) { // 从历史中删除该条
+                        item.parentNode.removeChild(item);
+                        if (!acEl.querySelector('.terminal-ac-item')) hideAc();
+                        layout();
+                        return;
+                    }
+                    hideAc();
+                    inputEl.textContent = item.getAttribute('data-cmd');
+                });
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape' && acEl.style.display !== 'none') hideAc();
+                });
+
+                // ---- 快捷命令栏 ----
+                var QB = {
+                    common: ['df -h', 'free -h', 'top -c', 'uptime', 'ps aux --sort=-%cpu | head -10', 'du -sh /data/* | sort -rh | head'],
+                    log: ['tail -f /var/log/messages', 'journalctl -u nginx -n 100 --no-pager', 'tail -n 200 /var/log/nginx/error.log', 'dmesg -T | tail -20'],
+                    net: ['ip addr', 'ss -tlnp', 'ping -c 4 192.168.1.1', 'curl -I http://127.0.0.1:8080', 'netstat -an | grep ESTABLISHED | wc -l']
+                };
+                var groupEl = document.getElementById('demoQbGroup');
+                var listEl = document.getElementById('demoQbList');
+                function renderQb() {
+                    listEl.innerHTML = '';
+                    QB[groupEl.value].forEach(function (cmd) {
+                        var b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'terminal-qb-btn';
+                        b.textContent = cmd;
+                        b.title = cmd;
+                        b.addEventListener('click', function () { insertText(cmd); });
+                        listEl.appendChild(b);
+                    });
+                }
+                groupEl.addEventListener('change', renderQb);
+                renderQb();
+                var qbBar = document.getElementById('terminalQuickBar');
+                var qbToggle = document.getElementById('terminalQuickBarBtn');
+                qbToggle.addEventListener('click', function () {
+                    var show = qbBar.style.display === 'none';
+                    qbBar.style.display = show ? '' : 'none';
+                    qbToggle.classList.toggle('active', show);
+                });
+
+                // ---- AI 面板 ----
+                var panel = document.getElementById('terminalAiPanel');
+                var aiBtn = document.getElementById('terminalAiBtn');
+                var msgsEl = document.getElementById('demoTaiMessages');
+                var scrollEl = document.getElementById('demoTaiScroll');
+                var questionEl = document.getElementById('demoTaiQuestion');
+                var sendBtn = document.getElementById('demoTaiSendBtn');
+                var statusEl = document.getElementById('demoTaiStatus');
+                function setPanel(open) {
+                    panel.style.display = open ? '' : 'none';
+                    aiBtn.classList.toggle('active', open);
+                    layout();
+                }
+                aiBtn.addEventListener('click', function () { setPanel(panel.style.display === 'none'); });
+                panel.querySelector('[data-act="close"]').addEventListener('click', function () { setPanel(false); });
+                panel.querySelector('[data-act="new"]').addEventListener('click', function () { msgsEl.innerHTML = ''; });
+                askBtn.addEventListener('click', function () { setPanel(true); questionEl.focus(); });
+
+                // 待发送内容：取终端可见文本（演示数据，真实环境为最近 N 行回滚缓冲）
+                document.getElementById('demoTaiContext').value = Array.prototype.map.call(
+                    screen.querySelectorAll('.dt-line'), function (l) { return l.textContent; }).join('\n');
+
+                function esc(s) {
+                    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                }
+                // AI 回复（桌面版由 terminalAiPanel.js 把 Markdown 渲染为同样的结构）
+                function codeBlock(lang, code) {
+                    return '<div class="tai-code"><div class="tai-code-bar"><span>' + lang + '</span>' +
+                        '<button type="button" data-code-act="copy" data-code="' + esc(code) + '">复制</button>' +
+                        '<button type="button" data-code-act="insert" data-code="' + esc(code) + '" title="填入终端命令行，不自动执行">插入终端</button>' +
+                        '</div><pre><code>' + esc(code) + '</code></pre></div>';
+                }
+                function userMsg(text) { return '<div class="tai-msg tai-msg-user"><div class="tai-msg-body">' + esc(text) + '</div></div>'; }
+                function aiMsg(html, meta) {
+                    return '<div class="tai-msg tai-msg-ai"><div class="tai-msg-body tai-md">' + html + '</div>' +
+                        '<div class="tai-msg-meta"><span>' + meta + '</span><span class="tai-spacer"></span>' +
+                        '<button type="button" class="tai-link" data-act="copy-reply">复制回复</button></div></div>';
+                }
+                var FIRST_REPLY =
+                    '<h4>原因分析</h4>' +
+                    '<p>nginx 本身运行正常（<code>active (running)</code>），报错出在<strong>反向代理到上游</strong>这一步：</p>' +
+                    '<ul><li><code>connect() failed (111: Connection refused)</code> 表示 <code>127.0.0.1:8080</code> 上没有进程监听，上游订单服务 order-service 大概率已停止或端口变更。</li>' +
+                    '<li>根分区 <code>/</code> 使用率已达 <strong>92%</strong>，磁盘写满也可能导致服务异常退出，建议一并清理。</li></ul>' +
+                    '<h4>建议排查</h4>' +
+                    '<p>先确认 8080 端口是否有进程监听：</p>' +
+                    codeBlock('bash', 'ss -tlnp | grep :8080') +
+                    '<p>若无输出，执行 <code>systemctl status order-service</code> 查看服务状态和最近日志，确认原因后再用 <code>systemctl restart order-service</code> 重启。</p>';
+                var FOLLOW_REPLY =
+                    '<p>可以按占用大小找出 <code>/</code> 下的大目录，优先清理日志和临时文件：</p>' +
+                    codeBlock('bash', 'du -xh --max-depth=1 / 2>/dev/null | sort -rh | head -10') +
+                    '<p>常见占用来源是 <code>/var/log</code> 下未轮转的日志，确认后再删除，避免误删业务数据。</p>';
+                msgsEl.innerHTML = userMsg('这个报错是什么原因？') + aiMsg(FIRST_REPLY, '09:13:26 · 2,481 tokens');
+
+                msgsEl.addEventListener('click', function (e) {
+                    var reply = e.target.closest('[data-act="copy-reply"]');
+                    if (reply) { // 复制整条回复的纯文本
+                        var body = reply.closest('.tai-msg').querySelector('.tai-msg-body');
+                        if (navigator.clipboard) navigator.clipboard.writeText(body.innerText).catch(function () {});
+                        reply.textContent = '已复制';
+                        setTimeout(function () { reply.textContent = '复制回复'; }, 1200);
+                        return;
+                    }
+                    var b = e.target.closest('[data-code-act]');
+                    if (!b) return;
+                    var code = b.getAttribute('data-code');
+                    if (b.getAttribute('data-code-act') === 'insert') { insertText(code); return; }
+                    if (navigator.clipboard) navigator.clipboard.writeText(code).catch(function () {});
+                    b.textContent = '已复制';
+                    setTimeout(function () { b.textContent = '复制'; }, 1200);
+                });
+
+                // 模拟追问：延迟后追加固定回复
+                function send() {
+                    if (sendBtn.disabled) return;
+                    var q = questionEl.value.trim() || '按默认要求分析';
+                    questionEl.value = '';
+                    sendBtn.disabled = true;
+                    statusEl.textContent = '正在分析…';
+                    msgsEl.insertAdjacentHTML('beforeend', userMsg(q) +
+                        '<div class="tai-msg tai-msg-ai tai-pending" id="demoTaiPending"><span class="ai-spin"></span> <span class="tai-pending-text">正在分析…</span></div>');
+                    scrollEl.scrollTop = scrollEl.scrollHeight;
+                    setTimeout(function () {
+                        var p = document.getElementById('demoTaiPending');
+                        if (p) p.parentNode.removeChild(p);
+                        var now = new Date();
+                        var t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(function (n) { return (n < 10 ? '0' : '') + n; }).join(':');
+                        msgsEl.insertAdjacentHTML('beforeend', aiMsg(FOLLOW_REPLY, t + ' · 1,127 tokens'));
+                        scrollEl.scrollTop = scrollEl.scrollHeight;
+                        sendBtn.disabled = false;
+                        statusEl.textContent = 'deepseek-chat';
+                    }, 1200);
+                }
+                sendBtn.addEventListener('click', send);
+                questionEl.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
+                });
+
+                // 点击带 AI 角标的标签：清除未读（演示仅保留当前会话内容，不切换终端）
+                document.querySelectorAll('#terminalTabs .terminal-tab.ai-unread').forEach(function (tab) {
+                    tab.addEventListener('click', function () { tab.classList.remove('ai-unread'); });
+                });
+            }
+
+            // ===== 统计看板演示：KPI 卡 + CSS / SVG 简化图表 =====
+            function renderStatsDemo() {
+                var kpiRow = document.getElementById('statsKpiRow');
+                if (!kpiRow) return;
+                var PALETTE = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-3)', '#64748b', '#0ea5e9'];
+                var fmt = function (n) { return Number(n).toLocaleString(); };
+
+                var KPIS = [
+                    ['主机总数', '128', '在线 96 台 · 在线率 75%'],
+                    ['脚本总数', '56', '内置 18 · 自定义 38'],
+                    ['执行次数（近7天）', '342', '累计 4,815 次'],
+                    ['执行成功率（近7天）', '96.2%', '成功 329 / 342 次'],
+                    ['平均执行耗时', '8.6s', 'P95 42.3s'],
+                    ['工程任务数', '12', '共 58 个步骤 · 均 4.8 步/工程'],
+                    ['AI Token（近7天）', '186,400', '累计 1,284,600 tokens'],
+                    ['AI 请求成功率（近7天）', '94.1%', '请求 136 次 · 累计 912 次']
+                ];
+                kpiRow.innerHTML = KPIS.map(function (k) {
+                    return '<div class="stats-kpi-card"><div class="stats-kpi-label">' + k[0] + '</div>' +
+                        '<div class="stats-kpi-value">' + k[1] + '</div><div class="stats-kpi-sub">' + k[2] + '</div></div>';
+                }).join('');
+
+                // 环形图：SVG 圆环 stroke-dasharray 分段
+                function donut(id, data) {
+                    var total = data.reduce(function (s, d) { return s + d[1]; }, 0);
+                    var r = 38, C = 2 * Math.PI * r, off = 0;
+                    var segs = data.map(function (d, i) {
+                        var len = d[1] / total * C;
+                        var s = '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke-width="14" style="stroke:' + PALETTE[i % PALETTE.length] + '"' +
+                            ' stroke-dasharray="' + len.toFixed(2) + ' ' + (C - len).toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 50 50)"/>';
+                        off += len;
+                        return s;
+                    }).join('');
+                    var list = data.map(function (d, i) {
+                        return '<div class="dc-donut-item"><i style="background:' + PALETTE[i % PALETTE.length] + '"></i><span>' + d[0] + '</span>' +
+                            '<b>' + fmt(d[1]) + '</b><em>' + (d[1] / total * 100).toFixed(1) + '%</em></div>';
+                    }).join('');
+                    document.getElementById(id).innerHTML = '<div class="dc-donut"><svg viewBox="0 0 100 100" aria-hidden="true">' + segs +
+                        '<text x="50" y="48" text-anchor="middle" font-size="14" font-weight="700" style="fill:var(--text-heading)">' + fmt(total) + '</text>' +
+                        '<text x="50" y="62" text-anchor="middle" font-size="8" style="fill:var(--text-muted)">合计</text></svg>' +
+                        '<div class="dc-donut-list">' + list + '</div></div>';
+                }
+                // 横向条形图
+                function hbar(id, data, color) {
+                    var max = Math.max.apply(null, data.map(function (d) { return d[1]; }));
+                    document.getElementById(id).innerHTML = '<div class="dc-hbar">' + data.map(function (d) {
+                        return '<div class="dc-hbar-row"><span class="dc-hbar-label" title="' + d[0] + '">' + d[0] + '</span>' +
+                            '<div class="dc-hbar-track"><div class="dc-hbar-fill" style="width:' + (d[1] / max * 100).toFixed(1) + '%;background:' + (color || 'var(--chart-1)') + '"></div></div>' +
+                            '<span class="dc-hbar-val">' + fmt(d[1]) + '</span></div>';
+                    }).join('') + '</div>';
+                }
+                // 纵向柱状图（支持堆叠）：labels 为 X 轴，series 为 [{name, color, data}]
+                function vbar(id, labels, series, opts) {
+                    opts = opts || {};
+                    var totals = labels.map(function (_, i) { return series.reduce(function (s, se) { return s + se.data[i]; }, 0); });
+                    var max = Math.max.apply(null, totals) * 1.15;
+                    var dense = opts.dense ? ' dense' : '';
+                    var legend = series.length > 1 || opts.legend ? '<div class="dc-legend">' + series.map(function (se) {
+                        return '<span><i style="background:' + se.color + '"></i>' + se.name + '</span>';
+                    }).join('') + (opts.extraLegend || '') + '</div>' : '';
+                    var cols = labels.map(function (_, i) {
+                        // 段高度为占本柱总高的百分比；柱高为占绘图区的百分比
+                        var segs = series.map(function (se) {
+                            var h = totals[i] ? (se.data[i] / totals[i] * 100).toFixed(2) : 0;
+                            return '<div style="height:' + h + '%;background:' + se.color + ';flex-shrink:0"></div>';
+                        }).join('');
+                        var val = opts.valueText ? opts.valueText(i, totals[i]) : '';
+                        return '<div class="dc-col" title="' + labels[i] + '：' + fmt(totals[i]) + '">' +
+                            (val ? '<span class="dc-col-val">' + val + '</span>' : '') +
+                            '<div class="dc-stack" style="height:' + (totals[i] / max * 100).toFixed(2) + '%">' + segs + '</div></div>';
+                    }).join('');
+                    var axis = labels.map(function (l, i) { return '<span>' + (opts.labelEvery && i % opts.labelEvery ? '' : l) + '</span>'; }).join('');
+                    document.getElementById(id).innerHTML = '<div class="dc-wrap">' + legend + '<div class="dc-plot' + dense + '">' + cols + '</div>' +
+                        '<div class="dc-axis' + dense + '">' + axis + '</div></div>';
+                }
+
+                donut('chartDatacenter', [['华东一区', 56], ['华北二区', 38], ['华南一区', 22], ['西南一区', 12]]);
+                hbar('chartSystem', [['订单中心', 24], ['用户中心', 20], ['支付网关', 18], ['库存中心', 16], ['数据平台', 14], ['运维工具', 12], ['其他', 24]]);
+                hbar('chartApp', [['order-service', 24], ['user-service', 20], ['pay-gateway', 18], ['inventory-svc', 16], ['report-job', 14], ['log-agent', 8], ['jump-admin', 4]], 'var(--chart-2)');
+                donut('chartEnvironment', [['生产', 72], ['测试', 28], ['灰度', 16], ['开发', 12]]);
+                hbar('chartOwner', [['张伟', 34], ['王强', 26], ['李娜', 22], ['刘洋', 20], ['侯金刚', 16], ['未分配', 10]], 'var(--chart-4)');
+                donut('chartOsVersion', [['CentOS 7.9', 52], ['Ubuntu 22.04', 38], ['Ubuntu 20.04', 20], ['Rocky 8.8', 12], ['其他', 6]]);
+
+                var days = ['11-13', '11-14', '11-15', '11-16', '11-17', '11-18', '11-19'];
+                var ok = [40, 49, 37, 52, 46, 58, 47], fail = [2, 2, 1, 3, 1, 3, 1];
+                vbar('chartDailyTrend', days, [
+                    { name: '成功', color: 'var(--chart-4)', data: ok },
+                    { name: '失败', color: 'var(--status-critical-fg)', data: fail }
+                ], { valueText: function (i, t) { return (ok[i] / t * 100).toFixed(1) + '%'; }, extraLegend: '<span>柱顶数字：成功率</span>' });
+                var hours = [], hourly = [3, 1, 4, 18, 2, 1, 2, 6, 24, 31, 28, 22, 12, 15, 26, 29, 25, 21, 14, 9, 7, 5, 22, 15];
+                for (var h = 0; h < 24; h++) hours.push(h + '时');
+                vbar('chartHourly', hours, [{ name: '执行次数', color: 'var(--chart-1)', data: hourly }], { dense: true, labelEvery: 3 });
+
+                vbar('chartTokenTrend', days, [{ name: 'Token', color: 'var(--chart-3)', data: [21400, 18900, 26300, 31200, 24800, 35600, 28200] }],
+                    { legend: true, valueText: function (i, t) { return (t / 1000).toFixed(1) + 'k'; } });
+                var dur = [6.2, 5.8, 7.4, 9.1, 6.6, 8.3, 7.0];
+                vbar('chartAiDuration', days, [{ name: '平均耗时（秒）', color: 'var(--chart-5)', data: dur }],
+                    { legend: true, valueText: function (i) { return dur[i] + 's'; } });
+                donut('chartAiPurpose', [['终端输出分析', 46], ['脚本分析', 38], ['执行结果分析', 27], ['脚本生成', 19], ['测试连接', 6]]);
+                hbar('chartModelTokens', [['deepseek-chat', 112300], ['qwen-plus', 58600], ['gpt-4o-mini', 15500]], 'var(--chart-3)');
+
+                // 时间范围按钮：演示仅切换高亮，数据不变
+                document.querySelectorAll('#statsRangeGroup .stats-range-btn').forEach(function (btn, _, all) {
+                    btn.addEventListener('click', function () {
+                        Array.prototype.forEach.call(all, function (b) { b.classList.remove('active'); });
+                        btn.classList.add('active');
+                    });
                 });
             }
 
@@ -1265,6 +1923,8 @@ Mem:            7.6G  3.0G  4.6G  39%</div>
             bindResultCards();
             bindAddScriptDemo();
             bindExcelMenu();
+            bindTerminalDemo();
+            renderStatsDemo();
             syncAppVersion();
         })();
     </script>

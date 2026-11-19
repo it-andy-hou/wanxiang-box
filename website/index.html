@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>万象匣 WanXiang Box — 跨平台运维自动化管控平台</title>
-<meta name="description" content="万象匣是一款基于 Electron 的跨平台运维自动化管控平台：批量 SSH 主机管理、脚本批量执行、AI 脚本生成与风险审查、工程化任务编排、文件传输与数据备份，一匣尽揽。">
+<meta name="description" content="万象匣是一款基于 Electron 的跨平台运维自动化管控平台：批量 SSH 主机管理、脚本批量执行、交互式远程终端、AI 脚本生成与风险审查、终端输出 AI 分析、工程化任务编排、文件传输与数据备份，一匣尽揽。">
 <link rel="icon" type="image/png" href="./assets/logo.png">
 <style>
   :root {
@@ -217,10 +217,11 @@
     <div class="container">
       <img class="hero-logo" src="./assets/logo.png" alt="万象匣">
       <h1>一匣尽揽，<span class="accent">批量掌控</span>万千主机</h1>
-      <p class="tagline">基于 Electron 的跨平台运维自动化管控平台 —— 批量 SSH 主机管理、脚本批量执行、AI 风险审查、工程化任务编排、文件传输与数据备份，一站式完成。</p>
+      <p class="tagline">基于 Electron 的跨平台运维自动化管控平台 —— 批量 SSH 主机管理、脚本批量执行、交互式远程终端、AI 风险审查与终端输出分析、工程化任务编排、文件传输与数据备份，一站式完成。</p>
       <div class="hero-badges">
         <span class="badge"><span class="dot ok"></span>Windows / macOS / Linux</span>
         <span class="badge"><span class="dot blue"></span>批量并发执行</span>
+        <span class="badge"><span class="dot ok"></span>交互式远程终端</span>
         <span class="badge"><span class="dot violet"></span>AI 一句话生成脚本</span>
         <span class="badge"><span class="dot amber"></span>AI 脚本风险审查</span>
         <span class="badge"><span class="dot violet"></span>无需外部数据库</span>
@@ -267,7 +268,17 @@
         <div class="feature">
           <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
           <h3>主机管理</h3>
-          <p>增删改查、标签分类、Excel/CSV 批量导入导出、批量连接测试与 Ping 探测。</p>
+          <p>增删改查、标签分类、系统版本筛选、Excel/CSV 批量导入导出、批量连接测试与 Ping 探测；主机密码经系统钥匙串加密存储。</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 2-2-2-2"/><path d="M11 13h4"/><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg></div>
+          <h3>远程终端</h3>
+          <p>多标签交互式 SSH 终端：关键词高亮、历史命令补全、快捷命令栏、时间戳与行号栏，主机指纹校验与高危粘贴拦截。</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></div>
+          <h3>终端 AI 分析</h3>
+          <p>选中报错点「问 AI」或一键发送最近输出，发送前可预览编辑，支持多轮追问；AI 在侧边面板后台分析，给出的命令可一键插入终端。</p>
         </div>
         <div class="feature">
           <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
@@ -316,8 +327,13 @@
         </div>
         <div class="feature">
           <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></div>
-          <h3>仪表盘</h3>
-          <p>主机统计、今日执行次数、成功率、待办任务一览。</p>
+          <h3>统计看板</h3>
+          <p>主机资产多维度分布、执行次数与成功率趋势、AI Token 用量趋势，支持按时间范围切换。</p>
+        </div>
+        <div class="feature">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg></div>
+          <h3>AI 请求记录</h3>
+          <p>每次 AI 请求的来源、模型、耗时、Token 与错误原文都有记录，超时、网络错误、接口错误一眼区分，可选记录完整请求体用于审计。</p>
         </div>
         <div class="feature">
           <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
