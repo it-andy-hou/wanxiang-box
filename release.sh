@@ -37,6 +37,18 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 || fail "当前目录不是 
 branch=$(git rev-parse --abbrev-ref HEAD) || fail "无法读取当前分支"
 printf '当前分支: %s\n' "$branch"
 
+# ---------- 0.5 可选：临时代理（仅本次脚本内生效，不修改 git 全局配置） ----------
+proxy_opts=""
+read -r -p "是否走本机代理推送 GitHub？(Y/N，默认 N，网络不畅时选 Y) " use_proxy || use_proxy=""
+if [[ "$use_proxy" =~ ^[Yy] ]]; then
+    read -r -p "代理端口 (默认 7890) " proxy_port || proxy_port=""
+    proxy_port=${proxy_port:-7890}
+    proxy_opts="-c http.proxy=http://127.0.0.1:$proxy_port -c https.proxy=http://127.0.0.1:$proxy_port"
+    printf '已启用临时代理: http://127.0.0.1:%s (仅本次脚本生效)\n\n' "$proxy_port"
+else
+    printf '\n'
+fi
+
 # ---------- 1. 计算新版本号 1.yyMMdd.N ----------
 today=$(date +%y%m%d)
 current=$(node -p 'require("./package.json").version' 2>/dev/null) || fail "无法从 package.json 读取版本号"
@@ -49,8 +61,8 @@ if [[ "$current" =~ ^1\.$today\.([0-9]+)$ ]]; then
 fi
 
 # 同步远程 tag 列表，避免与已推送的 tag 冲突
-git fetch --tags --quiet 2>/dev/null || true
-remote_tags=$(git ls-remote --tags origin 2>/dev/null || true)
+git $proxy_opts fetch --tags --quiet 2>/dev/null || true
+remote_tags=$(git $proxy_opts ls-remote --tags origin 2>/dev/null || true)
 
 while true; do
     version="1.$today.$patch"
@@ -106,10 +118,10 @@ printf '已创建 tag: %s\n' "$tag"
 
 # ---------- 6. 推送代码和 tag ----------
 printf '\n正在推送分支 %s ...\n' "$branch"
-git push origin "$branch" || fail "推送分支失败，请检查网络或远程权限"
+git $proxy_opts push origin "$branch" || fail "推送分支失败，请检查网络或远程权限（可重跑脚本并选择走代理）"
 
 printf '正在推送 tag %s ...\n' "$tag"
-git push origin "$tag" || fail "推送 tag 失败"
+git $proxy_opts push origin "$tag" || fail "推送 tag 失败（可重跑脚本并选择走代理）"
 
 # ---------- 7. 完成提示 ----------
 printf '\n====================================\n'
